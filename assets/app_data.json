@@ -1,0 +1,364 @@
+{
+  "locationCards": [
+    {
+      "tag": "Discover",
+      "title": "Library",
+      "imagePath": "https://pbs.twimg.com/media/BvRG3dgCYAAXhsn.jpg"
+    },
+    {
+      "tag": "Exclusive",
+      "title": "Play Area",
+      "imagePath": "https://iuisl.iqra.edu.pk/wp-content/uploads/2-1024x576.jpg"
+    },
+    {
+      "tag": "NEW",
+      "title": "Auditorium",
+      "imagePath": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=2131412113619715"
+    },
+    {
+      "tag": "NEW",
+      "title": "Class Rooms",
+      "imagePath": "https://static.wixstatic.com/media/030a37_6d0214341554445da67056c15a67b0af~mv2.jpg/v1/fill/w_980,h_784,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/030a37_6d0214341554445da67056c15a67b0af~mv2.jpg"
+    },
+    {
+      "tag": "Discover",
+      "title": "Amphitheater",
+      "imagePath": "https://lookaside.instagram.com/seo/google_widget/crawler/?media_id=3782966841472613900"
+    },
+    {
+      "tag": "Discover",
+      "title": "Cafeteria",
+      "imagePath": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=975803082482305"
+    },
+    {
+      "tag": "Discover",
+      "title": "Common Room",
+      "imagePath": "https://iqra.edu.pk/wp-content/uploads/2024/03/digitalmarketing-768x512.jpg"
+    },
+    {
+      "tag": "Discover",
+      "title": "Playground",
+      "imagePath": "https://iuisl.iqra.edu.pk/wp-content/uploads/2-1024x576.jpg"
+    },
+    {
+      "tag": "Discover",
+      "title": "Swimming Pool",
+      "imagePath": "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=549674481822160"
+    },
+    {
+      "tag": "Discover",
+      "title": "Webinar Room",
+      "imagePath": "https://iqra.edu.pk/wp-content/uploads/2025/05/6556-768x512.jpg"
+    }
+  ],
+  "panoramaImages": {
+    "Library": "assets/images/panoramas/library_panorama.jpg",
+    "Play Area": "assets/images/panoramas/play_area_panorama.jpg",
+    "Auditorium": "assets/images/panoramas/auditorium_panorama.jpg",
+    "Class Rooms": "assets/images/panoramas/class_rooms_panorama.jpg",
+    "Amphitheater": "assets/images/panoramas/amphitheater_panorama.jpg",
+    "Cafeteria": "assets/images/panoramas/cafeteria_panorama.jpg",
+    "Common Room": "assets/images/panoramas/common_room_panorama.jpg",
+    "Playground": "assets/images/panoramas/playground_panorama.jpg",
+    "Swimming Pool": "assets/images/panoramas/swimming_pool_panorama.jpg",
+    "Webinar Room": "assets/images/panoramas/webinar_room_panorama.jpg"
+  },
+  "fallbackPanoramaImage": "assets/images/panoramas/fallback_panorama.jpg",
+  "panoramaHotspots": {
+    "Library": [
+      {
+        "pitch": 0.0,
+        "yaw": 90.0,
+        "type": "scene",
+        "sceneId": "Cafeteria",
+        "text": "Go to Cafeteria"
+      },
+      {
+        "pitch": 10.0,
+        "yaw": -45.0,
+        "type": "info",
+        "text": "Library Info Desk"
+      }
+    ],
+    "Cafeteria": [
+      {
+        "pitch": 0.0,
+        "yaw": -90.0,
+        "type": "scene",
+        "sceneId": "Library",
+        "text": "Back to Library"
+      },
+      {
+        "pitch": -10.0,
+        "yaw": 30.0,
+        "type": "scene",
+        "sceneId": "Play Area",
+        "text": "Go to Play Area"
+      }
+    ],
+    "Play Area": [
+      {
+        "pitch": 0.0,
+        "yaw": 180.0,
+        "type": "scene",
+        "sceneId": "Cafeteria",
+        "text": "Back to Cafeteria"
+      },
+      {
+        "pitch": 5.0,
+        "yaw": 45.0,
+        "type": "scene",
+        "sceneId": "Playground",
+        "text": "Go to Playground"
+      }
+    ],
+    "Auditorium": [
+      {
+        "pitch": 5.0,
+        "yaw": 0.0,
+        "type": "scene",
+        "sceneId": "Class Rooms",
+        "text": "Go to Class Rooms"
+      }
+    ],
+    "Class Rooms": [
+      {
+        "pitch": 0.0,
+        "yaw": -45.0,
+        "type": "scene",
+        "sceneId": "Auditorium",
+        "text": "Back to Auditorium"
+      },
+      {
+        "pitch": 10.0,
+        "yaw": 45.0,
+        "type": "scene",
+        "sceneId": "Library",
+        "text": "Go to Library"
+      }
+    ],
+    "Amphitheater": [
+      {
+        "pitch": 0.0,
+        "yaw": 90.0,
+        "type": "scene",
+        "sceneId": "Play Area",
+        "text": "Go to Play Area"
+      }
+    ],
+    "Common Room": [
+      {
+        "pitch": 0.0,
+        "yaw": -90.0,
+        "type": "scene",
+        "sceneId": "Cafeteria",
+        "text": "Go to Cafeteria"
+      },
+      {
+        "pitch": 5.0,
+        "yaw": 45.0,
+        "type": "scene",
+        "sceneId": "Webinar Room",
+        "text": "Go to Webinar Room"
+      }
+    ],
+    "Playground": [
+      {
+        "pitch": 0.0,
+        "yaw": 180.0,
+        "type": "scene",
+        "sceneId": "Play Area",
+        "text": "Back to Play Area"
+      },
+      {
+        "pitch": -5.0,
+        "yaw": -45.0,
+        "type": "scene",
+        "sceneId": "Swimming Pool",
+        "text": "Go to Swimming Pool"
+      }
+    ],
+    "Swimming Pool": [
+      {
+        "pitch": 0.0,
+        "yaw": 45.0,
+        "type": "scene",
+        "sceneId": "Playground",
+        "text": "Back to Playground"
+      }
+    ],
+    "Webinar Room": []
+  },
+  "locationFeatures": {
+    "Library": [
+      {
+        "title": "Modern Design",
+        "description": "Sleek architecture with state-of-the-art facilities.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Accessible Location",
+        "description": "Centrally located for easy access across the campus.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Extensive Resources",
+        "description": "Access to a vast collection of books and digital media.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Play Area": [
+      {
+        "title": "Open Space",
+        "description": "Spacious area dedicated to sports and recreation.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Sports Facilities",
+        "description": "Equipped with modern sports equipment.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Seating Areas",
+        "description": "Comfortable seating for relaxation and socializing.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Auditorium": [
+      {
+        "title": "Large Capacity",
+        "description": "Accommodates large gatherings and events.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Advanced Audio System",
+        "description": "State-of-the-art sound system for clear acoustics.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Dynamic Lighting",
+        "description": "Professional lighting setup for performances.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Class Rooms": [
+      {
+        "title": "Smart Technology",
+        "description": "Equipped with interactive smart boards and projectors.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Comfortable Seating",
+        "description": "Ergonomic chairs designed for extended sessions.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Natural Lighting",
+        "description": "Large windows providing a bright and inviting environment.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Amphitheater": [
+      {
+        "title": "Outdoor Venue",
+        "description": "Open-air setting with scenic campus views.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Performance Stage",
+        "description": "Dedicated stage for cultural and musical events.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Tiered Seating",
+        "description": "Optimal viewing from graduated seating levels.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Cafeteria": [
+      {
+        "title": "Diverse Menu",
+        "description": "Wide variety of food options to suit all tastes.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Ample Seating",
+        "description": "Plenty of space for students and staff.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Hygiene Standards",
+        "description": "Maintained to ensure cleanliness and comfort.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Common Room": [
+      {
+        "title": "Relaxation Zone",
+        "description": "Cozy space for students to unwind and socialize.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Entertainment Options",
+        "description": "Equipped with games and multimedia facilities.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Charging Stations",
+        "description": "Convenient power outlets for electronic devices.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Playground": [
+      {
+        "title": "Play Structures",
+        "description": "Safe and engaging equipment for recreational activities.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Safety Features",
+        "description": "Designed with student safety as a priority.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Open Layout",
+        "description": "Spacious area suitable for group activities.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Swimming Pool": [
+      {
+        "title": "Professional Supervision",
+        "description": "Lifeguard services available for safety.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Clean Facilities",
+        "description": "Well-maintained changing rooms and showers.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Poolside Area",
+        "description": "Relaxing seating around the pool.",
+        "actionType": "snackbar"
+      }
+    ],
+    "Webinar Room": [
+      {
+        "title": "High-Speed Internet",
+        "description": "Reliable connectivity for virtual meetings and classes.",
+        "actionType": "navigate"
+      },
+      {
+        "title": "Advanced AV Equipment",
+        "description": "Professional tools for presentations and webinars.",
+        "actionType": "dialog"
+      },
+      {
+        "title": "Soundproof Environment",
+        "description": "Ensures clear audio without external interference.",
+        "actionType": "snackbar"
+      }
+    ]
+  }
+}
