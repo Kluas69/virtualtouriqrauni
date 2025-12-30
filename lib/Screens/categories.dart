@@ -1,5 +1,5 @@
+// lib/Screens/categories.dart - MOBILE CRASH FIX
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +7,13 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
+import 'package:virtualtouriu/core/widgets/glassmorphic_container.dart';
+import 'package:virtualtouriu/core/widgets/tag_badge.dart';
+import 'package:virtualtouriu/core/widgets/empty_state.dart';
+import 'package:virtualtouriu/core/widgets/loading_state.dart';
+import 'package:virtualtouriu/core/widgets/error_state.dart';
+import 'package:virtualtouriu/core/utils/image_utils.dart';
+import 'package:virtualtouriu/core/utils/memory_manager.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -22,11 +29,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   final _scrollController = ScrollController();
 
   Timer? _debounceTimer;
+  Timer? _scrollDebounceTimer;
   int _hoveredIndex = -1;
   String _searchQuery = '';
   bool _isSearchFocused = false;
   double _scrollOffset = 0.0;
   bool _showParallax = true;
+  bool _memoryOptimized = false;
+  bool _isScrolling = false;
 
   List<MapEntry<int, LocationCardData>>? _cachedFilteredLocations;
   String _lastSearchQuery = '';
@@ -44,8 +54,18 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_memoryOptimized && mounted) {
+      MemoryManager.optimizeForDevice(context);
+      _memoryOptimized = true;
+    }
+  }
+
+  @override
   void dispose() {
     _debounceTimer?.cancel();
+    _scrollDebounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -62,19 +82,38 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     if (!mounted || !_scrollController.hasClients) return;
 
     final offset = _scrollController.offset;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
 
-    if (offset < 500 && (offset - _scrollOffset).abs() > 10) {
+    // Mark scrolling state
+    if (!_isScrolling) {
+      setState(() => _isScrolling = true);
+    }
+
+    // Cancel previous timer and set new one
+    _scrollDebounceTimer?.cancel();
+    _scrollDebounceTimer = Timer(const Duration(milliseconds: 150), () {
+      if (mounted) {
+        setState(() => _isScrolling = false);
+      }
+    });
+
+    // Reduce update frequency for parallax
+    if (!isMobile && offset < 500 && (offset - _scrollOffset).abs() > 20) {
       setState(() => _scrollOffset = offset);
     }
 
     final shouldShowParallax = offset <= 500;
-    if (_showParallax != shouldShowParallax) {
+    if (_showParallax != shouldShowParallax && !isMobile) {
       setState(() => _showParallax = shouldShowParallax);
     }
   }
 
   void _updateHoveredIndex(int index) {
-    if (_hoveredIndex != index && mounted) {
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
+
+    if (!isMobile && _hoveredIndex != index && mounted && !_isScrolling) {
       setState(() => _hoveredIndex = index);
     }
   }
@@ -107,18 +146,27 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     final isDark = themeProvider.isDark;
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
-    final isDesktop = size.width >= 900;
+    final isMobile = size.width < 600;
     final isTablet = size.width >= 600 && size.width < 900;
+    final isDesktop = size.width >= 900;
 
     return FutureBuilder<void>(
       future: _initializationFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingScreen(isDark, theme);
+          return Scaffold(
+            backgroundColor:
+                isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+            body: LoadingState(isDark: isDark, message: 'Loading locations...'),
+          );
         }
 
         if (snapshot.hasError) {
-          return _buildErrorScreen(isDark, snapshot.error);
+          return Scaffold(
+            backgroundColor:
+                isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+            body: ErrorState(message: 'Error: ${snapshot.error}'),
+          );
         }
 
         return Scaffold(
@@ -133,13 +181,13 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   physics: const BouncingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  cacheExtent: 1000,
+                  cacheExtent: isMobile ? 800 : 1200, // Increased cache
                   slivers: [
                     _buildAppBar(isDark, themeProvider),
-                    _buildHeroSection(isDark, isDesktop, size),
-                    _buildSearchBar(theme, isDark, isDesktop, size),
+                    _buildHeroSection(isDark, isDesktop, size, isMobile),
+                    _buildSearchBar(theme, isDark, isDesktop, size, isMobile),
                     _buildQuickFilters(theme, isDark, size),
-                    _buildLocationGrid(theme, isDesktop, isTablet, size),
+                    _buildLocationGrid(theme, isDesktop, isTablet, isMobile),
                     const SliverToBoxAdapter(child: SizedBox(height: 80)),
                   ],
                 ),
@@ -166,82 +214,6 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
-  Widget _buildLoadingScreen(bool isDark, ThemeData theme) {
-    return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              color: theme.primaryColor,
-              strokeWidth: 3,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Loading locations...',
-              style: GoogleFonts.roboto(
-                fontSize: 16,
-                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorScreen(bool isDark, Object? error) {
-    return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Icon(
-                  Icons.error_outline_rounded,
-                  size: 64,
-                  color: Colors.red.shade400,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Oops! Something went wrong',
-                style: GoogleFonts.roboto(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Error: $error',
-                style: GoogleFonts.roboto(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildAppBar(bool isDark, ThemeProvider themeProvider) {
     return SliverAppBar(
       floating: true,
@@ -254,30 +226,20 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       toolbarHeight: 70,
       leading: const SizedBox.shrink(),
       automaticallyImplyLeading: false,
-      flexibleSpace: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            decoration: BoxDecoration(
-              color:
-                  isDark
-                      ? Colors.black.withOpacity(0.3)
-                      : Colors.white.withOpacity(0.3),
-              border: Border(
-                bottom: BorderSide(
-                  color:
-                      isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: SafeArea(
-              child: _buildTopNavigationBar(isDark, themeProvider),
-            ),
+      flexibleSpace: GlassmorphicContainer(
+        isDark: isDark,
+        borderRadius: 0,
+        padding: EdgeInsets.zero,
+        border: Border(
+          bottom: BorderSide(
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.black.withOpacity(0.05),
+            width: 1,
           ),
         ),
+        child: SafeArea(child: _buildTopNavigationBar(isDark, themeProvider)),
       ),
     );
   }
@@ -367,27 +329,64 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
-  Widget _buildHeroSection(bool isDark, bool isDesktop, Size size) {
+  Widget _buildHeroSection(
+    bool isDark,
+    bool isDesktop,
+    Size size,
+    bool isMobile,
+  ) {
     final heroContent = Padding(
       padding: EdgeInsets.symmetric(
         horizontal: size.width * (isDesktop ? 0.08 : 0.06),
-        vertical: isDesktop ? 48 : 32,
+        vertical:
+            isDesktop
+                ? 48
+                : isMobile
+                ? 24
+                : 32,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildBadge(Theme.of(context), 'VIRTUAL TOUR'),
-          SizedBox(height: isDesktop ? 24 : 20),
+          TagBadge(
+            text: 'VIRTUAL TOUR',
+            fontSize: 12,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          ),
+          SizedBox(
+            height:
+                isDesktop
+                    ? 24
+                    : isMobile
+                    ? 16
+                    : 20,
+          ),
           _buildGradientText(
             context,
             'Discover IQRA\nUniversity',
-            isDesktop ? 64 : 42,
+            isDesktop
+                ? 64
+                : isMobile
+                ? 36
+                : 42,
           ),
-          SizedBox(height: isDesktop ? 20 : 16),
+          SizedBox(
+            height:
+                isDesktop
+                    ? 20
+                    : isMobile
+                    ? 12
+                    : 16,
+          ),
           Text(
-            'Experience every corner of our campus through immersive 360° panoramic views. Choose a location below to begin your virtual journey.',
+            'Experience every corner of our campus through immersive 360° panoramic views.',
             style: GoogleFonts.roboto(
-              fontSize: isDesktop ? 18 : 16,
+              fontSize:
+                  isDesktop
+                      ? 18
+                      : isMobile
+                      ? 14
+                      : 16,
               height: 1.7,
               color: Theme.of(
                 context,
@@ -401,47 +400,12 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
     return SliverToBoxAdapter(
       child:
-          _showParallax
+          _showParallax && !isMobile
               ? Transform.translate(
                 offset: Offset(0, _scrollOffset * 0.3),
                 child: heroContent,
               )
               : heroContent,
-    );
-  }
-
-  Widget _buildBadge(ThemeData theme, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.primaryColor.withOpacity(0.15),
-            theme.primaryColor.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.primaryColor.withOpacity(0.3),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.explore_rounded, size: 18, color: theme.primaryColor),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: GoogleFonts.roboto(
-              fontSize: 12,
-              color: theme.primaryColor,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.8,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -476,6 +440,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     bool isDark,
     bool isDesktop,
     Size size,
+    bool isMobile,
   ) {
     return SliverPersistentHeader(
       pinned: true,
@@ -538,7 +503,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Search locations, facilities, buildings...',
+                  hintText:
+                      isMobile
+                          ? 'Search...'
+                          : 'Search locations, facilities, buildings...',
                   hintStyle: GoogleFonts.roboto(
                     color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
                     letterSpacing: 0.3,
@@ -668,25 +636,27 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     ThemeData theme,
     bool isDesktop,
     bool isTablet,
-    Size size,
+    bool isMobile,
   ) {
     final filteredLocations = _getFilteredLocations();
 
     if (AppConstants.locationCards.isEmpty) {
-      return _buildEmptyState(
-        theme,
-        Icons.location_off_rounded,
-        'No locations available',
-        'Please check app_data.json',
+      return SliverFillRemaining(
+        child: EmptyState(
+          icon: Icons.location_off_rounded,
+          title: 'No locations available',
+          subtitle: 'Please check app_data.json',
+        ),
       );
     }
 
     if (filteredLocations.isEmpty) {
-      return _buildEmptyState(
-        theme,
-        Icons.search_off_rounded,
-        'No locations found',
-        'Try adjusting your search',
+      return SliverFillRemaining(
+        child: EmptyState(
+          icon: Icons.search_off_rounded,
+          title: 'No locations found',
+          subtitle: 'Try adjusting your search',
+        ),
       );
     }
 
@@ -696,6 +666,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             : isTablet
             ? 3
             : 2;
+    final size = MediaQuery.of(context).size;
 
     return SliverPadding(
       padding: EdgeInsets.symmetric(
@@ -710,52 +681,16 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           final entry = filteredLocations[index];
           return RepaintBoundary(
             key: ValueKey(entry.key),
-            child: _buildGridItem(context, entry.key, theme, entry.value),
+            child: _buildGridItem(
+              context,
+              entry.key,
+              theme,
+              entry.value,
+              isMobile,
+            ),
           );
         },
         childCount: filteredLocations.length,
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(
-    ThemeData theme,
-    IconData icon,
-    String title,
-    String subtitle,
-  ) {
-    return SliverFillRemaining(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 64, color: Colors.grey.shade400),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              title,
-              style: GoogleFonts.roboto(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: theme.textTheme.bodyMedium?.color,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: GoogleFonts.roboto(
-                fontSize: 14,
-                color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -765,8 +700,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     int index,
     ThemeData theme,
     LocationCardData data,
+    bool isMobile,
   ) {
-    final isHovered = _hoveredIndex == index;
+    final isHovered = !isMobile && _hoveredIndex == index && !_isScrolling;
     final isDark = theme.brightness == Brightness.dark;
     final baseHeight =
         index % 3 == 0
@@ -776,18 +712,26 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             : 330.0;
 
     return MouseRegion(
-      onEnter: (_) {
-        _debounceTimer?.cancel();
-        _debounceTimer = Timer(const Duration(milliseconds: 50), () {
-          _updateHoveredIndex(index);
-        });
-      },
-      onExit: (_) {
-        _debounceTimer?.cancel();
-        _debounceTimer = Timer(const Duration(milliseconds: 50), () {
-          _updateHoveredIndex(-1);
-        });
-      },
+      onEnter:
+          isMobile
+              ? null
+              : (_) {
+                if (!_isScrolling) {
+                  _debounceTimer?.cancel();
+                  _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+                    _updateHoveredIndex(index);
+                  });
+                }
+              },
+      onExit:
+          isMobile
+              ? null
+              : (_) {
+                _debounceTimer?.cancel();
+                _debounceTimer = Timer(const Duration(milliseconds: 100), () {
+                  _updateHoveredIndex(-1);
+                });
+              },
       child: GestureDetector(
         onTap: () {
           Navigator.push(
@@ -807,21 +751,25 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           );
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: Duration(milliseconds: _isScrolling ? 0 : 200),
           curve: Curves.easeOutCubic,
           height: baseHeight,
-          transform: Matrix4.identity()..translate(0.0, isHovered ? -8.0 : 0.0),
+          transform:
+              isMobile || _isScrolling
+                  ? Matrix4.identity()
+                  : (Matrix4.identity()
+                    ..translate(0.0, isHovered ? -8.0 : 0.0)),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color:
-                    isHovered
+                    isHovered && !_isScrolling
                         ? theme.primaryColor.withOpacity(0.4)
                         : Colors.black.withOpacity(0.12),
-                blurRadius: isHovered ? 32 : 16,
-                spreadRadius: isHovered ? 4 : 0,
-                offset: Offset(0, isHovered ? 12 : 6),
+                blurRadius: isHovered && !_isScrolling ? 32 : 16,
+                spreadRadius: isHovered && !_isScrolling ? 4 : 0,
+                offset: Offset(0, isHovered && !_isScrolling ? 12 : 6),
               ),
             ],
           ),
@@ -830,36 +778,56 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                AnimatedScale(
-                  scale: isHovered ? 1.08 : 1.0,
-                  duration: const Duration(milliseconds: 200),
-                  child: Image.asset(
-                    data.imagePath,
-                    fit: BoxFit.cover,
-                    cacheWidth: 600,
-                    cacheHeight: 600,
-                    errorBuilder:
-                        (_, __, ___) => Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                theme.primaryColor.withOpacity(0.4),
-                                theme.primaryColor.withOpacity(0.1),
-                              ],
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.image_not_supported_rounded,
-                              size: 56,
-                              color: Colors.white.withOpacity(0.6),
-                            ),
-                          ),
+                // Always use optimized loading on mobile
+                isMobile
+                    ? ResponsiveImageLoader.loadOptimizedImage(
+                      imagePath: data.imagePath,
+                      fit: BoxFit.cover,
+                    )
+                    : _isScrolling
+                    // Show placeholder during fast scroll
+                    ? Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.primaryColor.withOpacity(0.3),
+                            theme.primaryColor.withOpacity(0.1),
+                          ],
                         ),
-                  ),
-                ),
+                      ),
+                    )
+                    : AnimatedScale(
+                      scale: isHovered ? 1.08 : 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Image.asset(
+                        data.imagePath,
+                        fit: BoxFit.cover,
+                        cacheWidth: 600,
+                        cacheHeight: 600,
+                        errorBuilder:
+                            (_, __, ___) => Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    theme.primaryColor.withOpacity(0.4),
+                                    theme.primaryColor.withOpacity(0.1),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.image_not_supported_rounded,
+                                  size: 56,
+                                  color: Colors.white.withOpacity(0.6),
+                                ),
+                              ),
+                            ),
+                      ),
+                    ),
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -867,173 +835,152 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.black.withOpacity(0.0),
-                        Colors.black.withOpacity(isHovered ? 0.65 : 0.45),
-                        Colors.black.withOpacity(isHovered ? 0.85 : 0.75),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.3),
-                        ],
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (data.tag.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  theme.primaryColor,
-                                  theme.primaryColor.withOpacity(0.8),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: theme.primaryColor.withOpacity(0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Text(
-                              data.tag.toUpperCase(),
-                              style: GoogleFonts.roboto(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                        Text(
-                          data.title,
-                          style: GoogleFonts.roboto(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            height: 1.2,
-                            letterSpacing: 0.2,
-                            shadows: [
-                              Shadow(
-                                blurRadius: 12,
-                                color: Colors.black.withOpacity(0.6),
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        Colors.black.withOpacity(
+                          isHovered && !_isScrolling ? 0.65 : 0.45,
                         ),
-                        if (isHovered)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.4),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Explore Now',
-                                        style: GoogleFonts.roboto(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      const Icon(
-                                        Icons.arrow_forward_rounded,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.threesixty_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '360°',
-                          style: GoogleFonts.roboto(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
+                        Colors.black.withOpacity(
+                          isHovered && !_isScrolling ? 0.85 : 0.75,
                         ),
                       ],
                     ),
                   ),
                 ),
+                _buildCardContent(data, theme, isHovered, isMobile),
+                _build360Badge(),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardContent(
+    LocationCardData data,
+    ThemeData theme,
+    bool isHovered,
+    bool isMobile,
+  ) {
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (data.tag.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.primaryColor,
+                      theme.primaryColor.withOpacity(0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  data.tag.toUpperCase(),
+                  style: GoogleFonts.roboto(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+            Text(
+              data.title,
+              style: GoogleFonts.roboto(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                height: 1.2,
+                letterSpacing: 0.2,
+                shadows: [
+                  Shadow(
+                    blurRadius: 12,
+                    color: Colors.black.withOpacity(0.6),
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (isHovered && !isMobile && !_isScrolling)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Explore Now',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _build360Badge() {
+    return Positioned(
+      top: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.threesixty_rounded, color: Colors.white, size: 14),
+            const SizedBox(width: 4),
+            Text(
+              '360°',
+              style: GoogleFonts.roboto(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

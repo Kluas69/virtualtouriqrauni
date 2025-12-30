@@ -1,30 +1,36 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:virtualtouriu/Screens/HomeScreen.dart';
+import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
+import 'package:virtualtouriu/core/utils/image_utils.dart';
+import 'package:virtualtouriu/core/utils/memory_manager.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
+import 'package:virtualtouriu/core/widgets/header_badge.dart';
+import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
+import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
-import 'package:animate_do/animate_do.dart';
 
-class MobileHomeScreen extends StatefulWidget {
+class MobileHomeScreenOptimized extends StatefulWidget {
   final ScrollController? scrollController;
 
-  const MobileHomeScreen({super.key, this.scrollController});
+  const MobileHomeScreenOptimized({super.key, this.scrollController});
 
   @override
-  State<MobileHomeScreen> createState() => _MobileHomeScreenState();
+  State<MobileHomeScreenOptimized> createState() =>
+      _MobileHomeScreenOptimizedState();
 }
 
-class _MobileHomeScreenState extends State<MobileHomeScreen> {
+class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
   late final PageController _controller;
   late final ScrollController _scrollController;
 
   int _selectedIndex = 0;
   bool _isHeaderVisible = true;
   double _lastScrollPosition = 0;
+  bool _memoryOptimized = false;
 
   static final _initFuture = AppConstants.initialize();
 
@@ -32,6 +38,16 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
   void initState() {
     super.initState();
     _initializeControllers();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Optimize memory only once
+    if (!_memoryOptimized && mounted) {
+      MemoryManager.optimizeForDevice(context);
+      _memoryOptimized = true;
+    }
   }
 
   void _initializeControllers() {
@@ -51,7 +67,7 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     if (!mounted || !_scrollController.hasClients) return;
 
     final pos = _scrollController.offset;
-    final shouldHide = pos > _lastScrollPosition && pos > 100;
+    final shouldHide = pos > _lastScrollPosition && pos > 80;
 
     if (_isHeaderVisible == shouldHide) {
       setState(() => _isHeaderVisible = !shouldHide);
@@ -81,19 +97,19 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     if (index != -1) {
       _controller.animateToPage(
         index,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
       );
 
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
+      if (_scrollController.hasClients) {
+        Future.delayed(const Duration(milliseconds: 100), () {
           _scrollController.animateTo(
             _scrollController.position.maxScrollExtent * 0.6,
-            duration: const Duration(milliseconds: 600),
+            duration: const Duration(milliseconds: 500),
             curve: Curves.easeInOut,
           );
-        }
-      });
+        });
+      }
 
       _showSnackBar('Taking you to ${cards[index].title}', true);
     } else {
@@ -139,19 +155,34 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
       future: _initFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: theme.primaryColor),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading...',
+                  style: GoogleFonts.roboto(
+                    fontSize: 14,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final heroHeight = (size.height * 0.50).clamp(400.0, 550.0);
-        final cardHeight = size.height * 0.42;
+        final heroHeight = (size.height * 0.50).clamp(380.0, 520.0);
+        final cardHeight = size.height * 0.40;
 
         return Stack(
           children: [
-            _buildBackground(isDark),
+            _buildSimpleBackground(isDark),
             _buildScrollableContent(
               size,
               heroHeight,
@@ -167,25 +198,17 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     );
   }
 
-  Widget _buildBackground(bool isDark) {
+  // Simple background - NO blur filter for performance
+  Widget _buildSimpleBackground(bool isDark) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            isDark ? Colors.black.withOpacity(0.1) : Colors.grey.shade100,
-            isDark ? Colors.black.withOpacity(0.2) : Colors.white,
+            isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF5F5F5),
+            isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF),
           ],
-        ),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: isDark ? 8 : 5,
-          sigmaY: isDark ? 8 : 5,
-        ),
-        child: Container(
-          color: (isDark ? Colors.black : Colors.white).withOpacity(0.2),
         ),
       ),
     );
@@ -203,33 +226,237 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
       physics: const BouncingScrollPhysics(),
       child: Column(
         children: [
-          FadeInDown(
-            duration: const Duration(milliseconds: 600),
-            child: SizedBox(
-              height: heroHeight,
-              child: HomeScreen.buildHeroSection(
-                context: context,
-                fontSize: (size.width * 0.10).clamp(32.0, 48.0),
-                heightFactor: 1.0,
-              ),
-            ),
+          // Hero section - simplified for mobile
+          SizedBox(
+            height: heroHeight,
+            child: _buildMobileHeroSection(context, size, isDark),
           ),
           SizedBox(height: size.height * 0.04),
-          FadeInUp(
-            duration: const Duration(milliseconds: 700),
-            child: HomeScreen.buildInfoSection(
-              context: context,
-              isMobile: true,
-            ),
+
+          // Info section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: _buildMobileInfoSection(context, theme, isDark),
           ),
           SizedBox(height: size.height * 0.05),
-          FadeInUp(
-            duration: const Duration(milliseconds: 900),
-            child: _buildCarouselSection(size, cardHeight, isDark, theme),
-          ),
+
+          // Carousel section
+          _buildCarouselSection(size, cardHeight, isDark, theme),
           SizedBox(height: size.height * 0.08),
         ],
       ),
+    );
+  }
+
+  // Simplified hero section for mobile performance
+  Widget _buildMobileHeroSection(BuildContext context, Size size, bool isDark) {
+    return Stack(
+      children: [
+        // Background image with optimized loading
+        Positioned.fill(
+          child: ResponsiveImageLoader.loadOptimizedImage(
+            imagePath: 'lib/images/backgroundiu.jpg',
+            fit: BoxFit.cover,
+          ),
+        ),
+
+        // Simple gradient overlay (no blur)
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.2),
+                Colors.black.withOpacity(0.7),
+              ],
+            ),
+          ),
+        ),
+
+        // Content
+        Positioned(
+          bottom: size.height * 0.08,
+          left: 20,
+          right: 20,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'H-9 Islamabad Campus',
+                      style: GoogleFonts.roboto(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'IQRA UNIVERSITY',
+                style: GoogleFonts.roboto(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Virtual Campus Tour',
+                style: GoogleFonts.roboto(
+                  color: Colors.white.withOpacity(0.95),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Simplified info section
+  Widget _buildMobileInfoSection(
+    BuildContext context,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+          ),
+          child: Text(
+            '360° VIRTUAL TOUR',
+            style: GoogleFonts.roboto(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: theme.primaryColor,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Explore Iqra University',
+          style: GoogleFonts.roboto(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            color: theme.textTheme.headlineMedium?.color,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Discover our state-of-the-art H-9 Islamabad campus through an immersive virtual experience.',
+          style: GoogleFonts.roboto(
+            fontSize: 15,
+            height: 1.6,
+            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Simple stats row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildSimpleStat(Icons.view_in_ar_rounded, '3D Tour', isDark),
+            _buildSimpleStat(Icons.location_city, '8+ Locations', isDark),
+            _buildSimpleStat(Icons.explore, 'HD Quality', isDark),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // Start tour button
+        Center(
+          child: ElevatedButton(
+            onPressed: () => HomeScreen.navigateToCategories(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              elevation: 4,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.explore_rounded, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Start Virtual Tour',
+                  style: GoogleFonts.roboto(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimpleStat(IconData icon, String label, bool isDark) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: GoogleFonts.roboto(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 
@@ -243,19 +470,36 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
       children: [
         SizedBox(
           height: cardHeight,
-          child: HomeScreen.buildCarousel(
-            context: context,
-            cardHeight: cardHeight,
+          child: PageView.builder(
             controller: _controller,
-            selectedIndex: _selectedIndex,
-            isInteracting: false,
             onPageChanged: (index) => setState(() => _selectedIndex = index),
-            isDesktop: false,
-            onTap: (_) {},
-            setInteracting: (_) {},
+            physics: const BouncingScrollPhysics(),
+            itemCount: AppConstants.locationCards.length,
+            itemBuilder: (context, index) {
+              final card = AppConstants.locationCards[index];
+              final isSelected = index == _selectedIndex;
+
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.9, end: isSelected ? 1.0 : 0.9),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                builder: (context, scale, child) {
+                  return Transform.scale(
+                    scale: scale,
+                    child: Opacity(
+                      opacity: isSelected ? 1.0 : 0.6,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: _buildMobileCard(card, theme, isDark),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         SmoothPageIndicator(
           controller: _controller,
           count: AppConstants.locationCards.length,
@@ -267,48 +511,135 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
             dotColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-            ),
-          ),
-          child: Text(
-            '${_selectedIndex + 1} / ${AppConstants.locationCards.length}',
-            style: TextStyle(
-              color: (isDark ? Colors.white : Colors.black).withOpacity(0.7),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+        const SizedBox(height: 12),
+        PageCounter(
+          currentIndex: _selectedIndex,
+          totalCount: AppConstants.locationCards.length,
+          isDark: isDark,
         ),
       ],
     );
   }
 
-  Widget _buildAnimatedHeader(bool isDark, ThemeData theme) {
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 300),
-      top: _isHeaderVisible ? 0 : -100,
-      left: 0,
-      right: 0,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildMobileCard(LocationCardData card, ThemeData theme, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => LocationDetailScreen(
+                  locationName: card.title,
+                  imagePath: card.imagePath,
+                  locationData: card,
+                ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              FadeInLeft(
-                duration: const Duration(milliseconds: 600),
-                child: _buildHeaderBadge(isDark, theme),
+              ResponsiveImageLoader.loadOptimizedImage(
+                imagePath: card.imagePath,
+                fit: BoxFit.cover,
               ),
-              FadeInRight(
-                duration: const Duration(milliseconds: 600),
-                child: _buildThemeToggle(isDark),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 16,
+                left: 16,
+                right: 16,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (card.tag.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          card.tag.toUpperCase(),
+                          style: GoogleFonts.roboto(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      card.title,
+                      style: GoogleFonts.roboto(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.threesixty_rounded,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '360°',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -317,49 +648,30 @@ class _MobileHomeScreenState extends State<MobileHomeScreen> {
     );
   }
 
-  Widget _buildHeaderBadge(bool isDark, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school, size: 20, color: theme.primaryColor),
-          const SizedBox(width: 8),
-          Text(
-            'IQRA Virtual Tour',
-            style: GoogleFonts.roboto(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
+  Widget _buildAnimatedHeader(bool isDark, ThemeData theme) {
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 250),
+      top: _isHeaderVisible ? 0 : -100,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              HeaderBadge(
+                isDark: isDark,
+                text: 'IQRA Virtual Tour',
+                icon: Icons.school,
+              ),
+              ThemeToggleButton(
+                isDark: isDark,
+                onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeToggle(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
         ),
-      ),
-      child: IconButton(
-        icon: Icon(
-          isDark ? Icons.light_mode : Icons.dark_mode,
-          color: isDark ? Colors.amber : Colors.indigo,
-        ),
-        onPressed: () => context.read<ThemeProvider>().toggleTheme(),
       ),
     );
   }

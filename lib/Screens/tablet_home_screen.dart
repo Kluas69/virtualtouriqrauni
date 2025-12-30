@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:virtualtouriu/Screens/HomeScreen.dart';
-import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
+import 'package:virtualtouriu/core/widgets/header_badge.dart';
+import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
+import 'package:virtualtouriu/core/widgets/page_counter.dart';
+import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class TabletHomeScreen extends StatefulWidget {
   const TabletHomeScreen({super.key});
@@ -107,12 +109,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
     );
   }
 
-  // Add navigation handler for chatbot
   void _handleChatbotNavigation(String location) {
-    // Normalize the input location
     final normalizedLocation = location.toLowerCase().trim();
 
-    // Create a mapping of common terms to actual card titles from constants.dart
     final locationMappings = {
       'library': ['library', 'lib', 'book', 'study', 'reading'],
       'play area': [
@@ -170,10 +169,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
       ],
     };
 
-    // Try to find a match
     int locationIndex = -1;
 
-    // First, try direct match with card titles
     locationIndex = AppConstants.locationCards.indexWhere(
       (card) =>
           card.title.toLowerCase().trim() == normalizedLocation ||
@@ -181,7 +178,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
           normalizedLocation.contains(card.title.toLowerCase()),
     );
 
-    // If no direct match, try the mappings
     if (locationIndex == -1) {
       for (var entry in locationMappings.entries) {
         if (entry.value.any(
@@ -198,14 +194,12 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
     }
 
     if (locationIndex != -1) {
-      // Navigate to the found location
       _controller.animateToPage(
         locationIndex,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeInOutCubic,
       );
 
-      // Scroll to carousel section
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -216,7 +210,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
         }
       });
 
-      // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -236,7 +229,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
         ),
       );
     } else {
-      // Show available locations
       final availableLocations = AppConstants.locationCards
           .map((card) => card.title)
           .take(5)
@@ -350,7 +342,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                     ),
                   ),
                   SizedBox(height: size.height * 0.045),
-
                   FadeInUp(
                     duration: const Duration(milliseconds: 700),
                     child: Padding(
@@ -364,8 +355,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                     ),
                   ),
                   SizedBox(height: size.height * 0.05),
-
-                  // Section header
                   FadeInUp(
                     duration: const Duration(milliseconds: 800),
                     delay: const Duration(milliseconds: 100),
@@ -402,8 +391,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                     ),
                   ),
                   SizedBox(height: size.height * 0.05),
-
-                  // Enhanced carousel with navigation
                   FadeInUp(
                     duration: const Duration(milliseconds: 900),
                     delay: const Duration(milliseconds: 200),
@@ -435,32 +422,27 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                                   setInteracting: (value) {},
                                 ),
                               ),
-
                               if (_showLeftArrow)
                                 Positioned(
                                   left: 0,
-                                  child: _buildNavigationArrow(
+                                  child: NavigationArrow(
                                     icon: Icons.arrow_back_ios_new_rounded,
                                     onPressed: () => _navigateToPage(-1),
                                     isDark: isDark,
-                                    theme: theme,
                                   ),
                                 ),
-
                               if (_showRightArrow)
                                 Positioned(
                                   right: 0,
-                                  child: _buildNavigationArrow(
+                                  child: NavigationArrow(
                                     icon: Icons.arrow_forward_ios_rounded,
                                     onPressed: () => _navigateToPage(1),
                                     isDark: isDark,
-                                    theme: theme,
                                   ),
                                 ),
                             ],
                           ),
                           const SizedBox(height: 32),
-
                           SmoothPageIndicator(
                             controller: _controller,
                             count: AppConstants.locationCards.length,
@@ -476,38 +458,11 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                               paintStyle: PaintingStyle.fill,
                             ),
                           ),
-
                           const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                                  isDark
-                                      ? Colors.white.withOpacity(0.05)
-                                      : Colors.black.withOpacity(0.04),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color:
-                                    isDark
-                                        ? Colors.white.withOpacity(0.1)
-                                        : Colors.black.withOpacity(0.06),
-                              ),
-                            ),
-                            child: Text(
-                              '${_selectedIndex + 1} / ${AppConstants.locationCards.length}',
-                              style: TextStyle(
-                                color:
-                                    isDark
-                                        ? Colors.white.withOpacity(0.7)
-                                        : Colors.black.withOpacity(0.6),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
+                          PageCounter(
+                            currentIndex: _selectedIndex,
+                            totalCount: AppConstants.locationCards.length,
+                            isDark: isDark,
                           ),
                         ],
                       ),
@@ -518,7 +473,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
               ),
             ),
             _buildAnimatedHeader(context, isDark, theme),
-            // Add chatbot widget
             ChatbotWidget(onNavigate: _handleChatbotNavigation),
           ],
         );
@@ -547,158 +501,20 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
             children: [
               FadeInLeft(
                 duration: const Duration(milliseconds: 600),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.black.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color:
-                          isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.black.withOpacity(0.05),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            isDark
-                                ? Colors.black.withOpacity(0.3)
-                                : Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.school, size: 20, color: theme.primaryColor),
-                      const SizedBox(width: 8),
-                      Text(
-                        'IQRA Virtual Tour',
-                        style: GoogleFonts.roboto(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: HeaderBadge(
+                  isDark: isDark,
+                  text: 'IQRA Virtual Tour',
+                  icon: Icons.school,
                 ),
               ),
               FadeInRight(
                 duration: const Duration(milliseconds: 600),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color:
-                        isDark
-                            ? Colors.white.withOpacity(0.05)
-                            : Colors.black.withOpacity(0.03),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color:
-                          isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.black.withOpacity(0.05),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            isDark
-                                ? Colors.black.withOpacity(0.3)
-                                : Colors.black.withOpacity(0.05),
-                        blurRadius: 20,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      transitionBuilder: (child, animation) {
-                        return RotationTransition(
-                          turns: animation,
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
-                      child: Icon(
-                        isDark ? Icons.light_mode : Icons.dark_mode,
-                        key: ValueKey(isDark),
-                        color: isDark ? Colors.amber : Colors.indigo,
-                      ),
-                    ),
-                    onPressed: () => themeProvider.toggleTheme(),
-                    tooltip: isDark ? 'Light Mode' : 'Dark Mode',
-                  ),
+                child: ThemeToggleButton(
+                  isDark: isDark,
+                  onPressed: () => themeProvider.toggleTheme(),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavigationArrow({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required bool isDark,
-    required ThemeData theme,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color:
-                    isDark
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.white.withOpacity(0.95),
-                border: Border.all(
-                  color:
-                      isDark
-                          ? Colors.white.withOpacity(0.2)
-                          : Colors.black.withOpacity(0.08),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                  BoxShadow(
-                    color: theme.primaryColor.withOpacity(0.1),
-                    blurRadius: 30,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: isDark ? Colors.white : theme.primaryColor,
-                size: 22,
-              ),
-            ),
           ),
         ),
       ),

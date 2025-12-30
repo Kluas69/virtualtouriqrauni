@@ -1,3 +1,4 @@
+// lib/Screens/location_detail_screen.dart - OPTIMIZED FOR MOBILE
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +6,11 @@ import 'package:provider/provider.dart';
 import 'package:virtualtouriu/Screens/PanoramaScreen.dart';
 import 'package:virtualtouriu/Screens/webgl_room_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
+import 'package:virtualtouriu/core/widgets/custom_button.dart';
+import 'package:virtualtouriu/core/widgets/tag_badge.dart';
+import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
+import 'package:virtualtouriu/core/utils/image_utils.dart';
+import 'package:virtualtouriu/core/utils/memory_manager.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
 
 class LocationDetailScreen extends StatefulWidget {
@@ -29,6 +35,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
   late final List<Map<String, dynamic>> _features;
 
   bool _isScrolled = false;
+  bool _memoryOptimized = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -42,6 +49,19 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
         _scrollController.addListener(_onScroll);
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_memoryOptimized && mounted) {
+      final size = MediaQuery.of(context).size;
+      final isMobile = size.width < 600;
+      if (isMobile) {
+        MemoryManager.optimizeForDevice(context);
+        _memoryOptimized = true;
+      }
+    }
   }
 
   List<Map<String, dynamic>> _getLocationFeatures() {
@@ -196,36 +216,65 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
 
   Widget _buildAppBar(bool isDark, ThemeData theme, bool isMobile) {
     return SliverAppBar(
-      expandedHeight: isMobile ? 400 : 500,
+      expandedHeight: isMobile ? 350 : 500,
       pinned: true,
       elevation: 0,
       backgroundColor:
           isDark
               ? const Color(0xFF1A1A1A).withOpacity(_isScrolled ? 0.95 : 0)
               : Colors.white.withOpacity(_isScrolled ? 0.95 : 0),
-      leading: _buildCircularButton(
-        isDark,
-        Icons.arrow_back_ios_new_rounded,
-        () => mounted ? Navigator.pop(context) : null,
+      leading: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                isDark
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.white.withOpacity(0.9),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: isDark ? Colors.white : Colors.black87,
+              size: 20,
+            ),
+            onPressed: () => mounted ? Navigator.pop(context) : null,
+          ),
+        ),
       ),
       actions: [
-        _buildCircularButton(
-          isDark,
-          isDark ? Icons.light_mode : Icons.dark_mode,
-          () => context.read<ThemeProvider>().toggleTheme(),
-          iconColor: isDark ? Colors.amber : Colors.indigo,
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: ThemeToggleButton(
+            isDark: isDark,
+            onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+          ),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
-              widget.locationData.imagePath,
-              fit: BoxFit.cover,
-              cacheWidth: 1200,
-              cacheHeight: 800,
-            ),
+            // Use optimized image loader on mobile
+            isMobile
+                ? ResponsiveImageLoader.loadOptimizedImage(
+                  imagePath: widget.locationData.imagePath,
+                  fit: BoxFit.cover,
+                )
+                : Image.asset(
+                  widget.locationData.imagePath,
+                  fit: BoxFit.cover,
+                  cacheWidth: 1200,
+                  cacheHeight: 800,
+                ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -237,18 +286,22 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             ),
             Positioned(
               bottom: 32,
-              left: 32,
-              right: 32,
+              left: isMobile ? 20 : 32,
+              right: isMobile ? 20 : 32,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildTagBadge(theme),
+                  TagBadge(
+                    text:
+                        widget.locationData.tag.isNotEmpty
+                            ? widget.locationData.tag
+                            : 'CAMPUS',
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     widget.locationData.name,
                     style: GoogleFonts.roboto(
-                      fontSize:
-                          MediaQuery.of(context).size.width < 600 ? 36 : 48,
+                      fontSize: isMobile ? 32 : 48,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                       height: 1.1,
@@ -271,63 +324,6 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     );
   }
 
-  Widget _buildCircularButton(
-    bool isDark,
-    IconData icon,
-    VoidCallback? onPressed, {
-    Color? iconColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Container(
-        decoration: BoxDecoration(
-          color:
-              isDark
-                  ? Colors.black.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.9),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: IconButton(
-          icon: Icon(
-            icon,
-            color: iconColor ?? (isDark ? Colors.white : Colors.black87),
-            size: 20,
-          ),
-          onPressed: onPressed,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTagBadge(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.primaryColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
-      ),
-      child: Text(
-        widget.locationData.tag.isNotEmpty
-            ? widget.locationData.tag.toUpperCase()
-            : 'CAMPUS',
-        style: GoogleFonts.roboto(
-          fontSize: 11,
-          color: theme.primaryColor,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
-
   Widget _buildContent(
     ThemeData theme,
     bool isDark,
@@ -344,7 +340,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                   : isTablet
                   ? 32
                   : 48,
-          vertical: 48,
+          vertical: isMobile ? 32 : 48,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,39 +348,22 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             FadeInUp(
               duration: const Duration(milliseconds: 600),
               child: Center(
-                child: ElevatedButton.icon(
+                child: CustomButton(
+                  text: 'Start Virtual Tour',
                   onPressed: _openTour,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 32 : 48,
-                      vertical: 20,
-                    ),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  icon: const Icon(Icons.view_in_ar_rounded, size: 24),
-                  label: Text(
-                    'Start Virtual Tour',
-                    style: GoogleFonts.roboto(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
+                  fontSize: 16,
+                  isMobile: isMobile,
+                  width: isMobile ? double.infinity : null,
                 ),
               ),
             ),
-            const SizedBox(height: 48),
+            SizedBox(height: isMobile ? 40 : 48),
             FadeInUp(
               duration: const Duration(milliseconds: 700),
               delay: const Duration(milliseconds: 100),
               child: _buildAboutSection(theme, isMobile),
             ),
-            const SizedBox(height: 56),
+            SizedBox(height: isMobile ? 48 : 56),
             FadeInUp(
               duration: const Duration(milliseconds: 800),
               delay: const Duration(milliseconds: 200),
@@ -401,30 +380,14 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: theme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
-          ),
-          child: Text(
-            'ABOUT THIS LOCATION',
-            style: GoogleFonts.roboto(
-              fontSize: 11,
-              color: theme.primaryColor,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
+        TagBadge(text: 'ABOUT THIS LOCATION', fontSize: 11),
         const SizedBox(height: 16),
         Text(
           widget.locationData.description.isNotEmpty
               ? widget.locationData.description
               : 'Experience the vibrant and modern atmosphere of ${widget.locationData.name} at Iqra University Islamabad Campus. This space is designed to inspire learning, collaboration, and community engagement.',
           style: GoogleFonts.roboto(
-            fontSize: isMobile ? 16 : 18,
+            fontSize: isMobile ? 15 : 18,
             height: 1.7,
             color: theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
             letterSpacing: 0.2,
@@ -446,7 +409,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
         Text(
           'Key Features',
           style: GoogleFonts.roboto(
-            fontSize: isMobile ? 28 : 36,
+            fontSize: isMobile ? 24 : 36,
             fontWeight: FontWeight.w900,
             color: theme.textTheme.headlineMedium?.color,
             height: 1.2,
@@ -457,11 +420,11 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
         Text(
           'What makes this location special',
           style: GoogleFonts.roboto(
-            fontSize: 16,
+            fontSize: isMobile ? 14 : 16,
             color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
           ),
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: isMobile ? 24 : 32),
         _buildFeatureGrid(isMobile, isTablet, isDark, theme),
       ],
     );
@@ -501,7 +464,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                             : (constraints.maxWidth -
                                     spacing * (crossAxisCount - 1)) /
                                 crossAxisCount,
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(isMobile ? 20 : 24),
                     decoration: BoxDecoration(
                       color:
                           isDark
@@ -534,14 +497,14 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                           child: Icon(
                             feature['icon'] ?? Icons.star_outline,
                             color: theme.primaryColor,
-                            size: 28,
+                            size: isMobile ? 24 : 28,
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           feature['title'] ?? 'Feature',
                           style: GoogleFonts.roboto(
-                            fontSize: 18,
+                            fontSize: isMobile ? 16 : 18,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.3,
                           ),
@@ -550,7 +513,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                         Text(
                           feature['description'] ?? 'Description',
                           style: GoogleFonts.roboto(
-                            fontSize: 14,
+                            fontSize: isMobile ? 13 : 14,
                             height: 1.5,
                             color: theme.textTheme.bodyMedium?.color
                                 ?.withOpacity(0.7),

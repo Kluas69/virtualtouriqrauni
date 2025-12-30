@@ -1,3 +1,4 @@
+// lib/Screens/desktop_home_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +8,10 @@ import 'package:virtualtouriu/Screens/HomeScreen.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
+import 'package:virtualtouriu/core/widgets/header_badge.dart';
+import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
+import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
+import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
 import 'package:animate_do/animate_do.dart';
 
@@ -327,21 +332,19 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
               if (_showLeftArrow)
                 Positioned(
                   left: 0,
-                  child: _buildNavigationArrow(
-                    Icons.arrow_back_ios_new_rounded,
-                    () => _navigateToPage(-1),
-                    isDark,
-                    theme,
+                  child: NavigationArrow(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onPressed: () => _navigateToPage(-1),
+                    isDark: isDark,
                   ),
                 ),
               if (_showRightArrow)
                 Positioned(
                   right: 0,
-                  child: _buildNavigationArrow(
-                    Icons.arrow_forward_ios_rounded,
-                    () => _navigateToPage(1),
-                    isDark,
-                    theme,
+                  child: NavigationArrow(
+                    icon: Icons.arrow_forward_ios_rounded,
+                    onPressed: () => _navigateToPage(1),
+                    isDark: isDark,
                   ),
                 ),
             ],
@@ -359,30 +362,12 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildPageCounter(isDark),
+          PageCounter(
+            currentIndex: _selectedIndex,
+            totalCount: AppConstants.locationCards.length,
+            isDark: isDark,
+          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPageCounter(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-        ),
-      ),
-      child: Text(
-        '${_selectedIndex + 1} / ${AppConstants.locationCards.length}',
-        style: TextStyle(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.7),
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.0,
-        ),
       ),
     );
   }
@@ -402,142 +387,20 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
             children: [
               FadeInLeft(
                 duration: const Duration(milliseconds: 600),
-                child: _buildHeaderBadge(isDark, theme),
+                child: HeaderBadge(
+                  isDark: isDark,
+                  text: 'IQRA Virtual Tour',
+                  icon: Icons.school,
+                ),
               ),
               FadeInRight(
                 duration: const Duration(milliseconds: 600),
-                child: _buildThemeToggle(isDark),
+                child: ThemeToggleButton(
+                  isDark: isDark,
+                  onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+                ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderBadge(bool isDark, ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : Colors.black).withOpacity(
-              isDark ? 0.3 : 0.05,
-            ),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.school, size: 20, color: theme.primaryColor),
-          const SizedBox(width: 8),
-          Text(
-            'IQRA Virtual Tour',
-            style: GoogleFonts.roboto(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeToggle(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (isDark ? Colors.black : Colors.black).withOpacity(
-              isDark ? 0.3 : 0.05,
-            ),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder:
-              (child, animation) => RotationTransition(
-                turns: animation,
-                child: FadeTransition(opacity: animation, child: child),
-              ),
-          child: Icon(
-            isDark ? Icons.light_mode : Icons.dark_mode,
-            key: ValueKey(isDark),
-            color: isDark ? Colors.amber : Colors.indigo,
-          ),
-        ),
-        onPressed: () => context.read<ThemeProvider>().toggleTheme(),
-        tooltip: isDark ? 'Light Mode' : 'Dark Mode',
-      ),
-    );
-  }
-
-  Widget _buildNavigationArrow(
-    IconData icon,
-    VoidCallback onPressed,
-    bool isDark,
-    ThemeData theme,
-  ) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  isDark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.white.withOpacity(0.95),
-              border: Border.all(
-                color:
-                    isDark
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.08),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: theme.primaryColor.withOpacity(0.1),
-                  blurRadius: 30,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Icon(
-              icon,
-              color: isDark ? Colors.white : theme.primaryColor,
-              size: 22,
-            ),
           ),
         ),
       ),

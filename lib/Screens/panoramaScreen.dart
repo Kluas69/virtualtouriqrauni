@@ -1,4 +1,4 @@
-import 'dart:ui';
+// lib/Screens/panoramaScreen.dart
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/Screens/webgl_room_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
+import 'package:virtualtouriu/core/widgets/glassmorphic_container.dart';
+import 'package:virtualtouriu/core/widgets/circular_control_button.dart';
+import 'package:virtualtouriu/core/widgets/help_item.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
 
 class PanoramaScreen extends StatefulWidget {
@@ -176,7 +179,6 @@ class _PanoramaScreenState extends State<PanoramaScreen>
       return;
     }
 
-    // Panorama navigation
     if (AppConstants.panoramaImages.containsKey(targetLocation)) {
       _loadPanorama(targetLocation);
     } else {
@@ -239,61 +241,10 @@ class _PanoramaScreenState extends State<PanoramaScreen>
     }).toList();
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required String tooltip,
-    bool isEnabled = true,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Tooltip(
-      message: tooltip,
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color:
-                  isEnabled
-                      ? theme.primaryColor.withOpacity(0.3)
-                      : Colors.black.withOpacity(0.2),
-              blurRadius: 12,
-              spreadRadius: 1,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(50),
-            onTap: isEnabled ? onPressed : null,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isEnabled ? theme.primaryColor : Colors.grey.shade600,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 2,
-                ),
-              ),
-              child: Icon(icon, color: Colors.white, size: 28),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final size = MediaQuery.of(context).size;
 
     final String panoramaImage =
         AppConstants.panoramaImages[_currentLocation] ??
@@ -330,7 +281,6 @@ class _PanoramaScreenState extends State<PanoramaScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Panorama Viewer
           Panorama(
             animSpeed: 1.0,
             sensitivity: 2.0,
@@ -368,473 +318,354 @@ class _PanoramaScreenState extends State<PanoramaScreen>
                   ),
             ),
           ),
-
-          // Fade overlay when controls are hidden
           if (!_showControls)
             FadeTransition(
               opacity: _fadeAnimation,
               child: Container(color: Colors.black.withOpacity(0.3)),
             ),
-
-          // Top Bar Controls with glassmorphism
-          if (_showControls)
-            SafeArea(
-              child: FadeInDown(
-                duration: const Duration(milliseconds: 400),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              isDark
-                                  ? Colors.black.withOpacity(0.6)
-                                  : Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildControlButton(
-                              icon: Icons.arrow_back,
-                              tooltip: 'Back',
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            Expanded(
-                              child: Center(
-                                child: Text(
-                                  _currentLocation,
-                                  style: GoogleFonts.roboto(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                    shadows: [
-                                      Shadow(
-                                        blurRadius: 10,
-                                        color: Colors.black.withOpacity(0.5),
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            _buildControlButton(
-                              icon: Icons.info_outline,
-                              tooltip: 'Location Info',
-                              onPressed: _toggleInfoOverlay,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // Bottom Controls with glassmorphism
-          if (_showControls)
-            SafeArea(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: FadeInUp(
-                  duration: const Duration(milliseconds: 400),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 32.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? Colors.black.withOpacity(0.6)
-                                    : Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildControlButton(
-                                icon: Icons.zoom_in,
-                                tooltip: 'Zoom In',
-                                onPressed: _zoomIn,
-                              ),
-                              const SizedBox(width: 16),
-                              _buildControlButton(
-                                icon: Icons.zoom_out,
-                                tooltip: 'Zoom Out',
-                                onPressed: _zoomOut,
-                              ),
-                              const SizedBox(width: 16),
-                              _buildControlButton(
-                                icon: Icons.refresh,
-                                tooltip: 'Reset View',
-                                onPressed: _resetView,
-                              ),
-                              const SizedBox(width: 24),
-                              _buildControlButton(
-                                icon:
-                                    _isFullScreen
-                                        ? Icons.fullscreen_exit
-                                        : Icons.fullscreen,
-                                tooltip: 'Toggle Fullscreen',
-                                onPressed: _toggleFullScreen,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // First-Time Help Overlay
-          if (_showHelpOverlay)
-            FadeIn(
-              duration: const Duration(milliseconds: 400),
-              child: Container(
-                color: Colors.black.withOpacity(0.9),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          padding: const EdgeInsets.all(32.0),
-                          decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? Colors.grey.shade900.withOpacity(0.95)
-                                    : Colors.white.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: theme.primaryColor.withOpacity(0.3),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: theme.primaryColor.withOpacity(0.2),
-                                blurRadius: 30,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.panorama_photosphere,
-                                size: 64,
-                                color: theme.primaryColor,
-                              ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Welcome to 360° Virtual Tour',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 24),
-                              _buildHelpItem(
-                                Icons.touch_app,
-                                'Drag to look around',
-                              ),
-                              _buildHelpItem(
-                                Icons.pinch,
-                                'Pinch to zoom in/out',
-                              ),
-                              _buildHelpItem(
-                                Icons.control_camera,
-                                'Tap glowing hotspots to navigate',
-                              ),
-                              _buildHelpItem(
-                                Icons.touch_app_outlined,
-                                'Tap anywhere to toggle controls',
-                              ),
-                              const SizedBox(height: 32),
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(30),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: theme.primaryColor.withOpacity(
-                                        0.4,
-                                      ),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: ElevatedButton(
-                                  onPressed: _dismissHelpOverlay,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: theme.primaryColor,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 48,
-                                      vertical: 18,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                  child: Text(
-                                    'Got It!',
-                                    style: GoogleFonts.roboto(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-          // Info Overlay
-          if (_showInfoOverlay)
-            FadeIn(
-              duration: const Duration(milliseconds: 400),
-              child: Container(
-                color: Colors.black.withOpacity(0.85),
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          padding: const EdgeInsets.all(32.0),
-                          decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? Colors.grey.shade900.withOpacity(0.95)
-                                    : Colors.white.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: theme.primaryColor.withOpacity(0.3),
-                              width: 2,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 56,
-                                color: theme.primaryColor,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                _currentLocation,
-                                style: GoogleFonts.roboto(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Explore this location in immersive 360° view. Navigate using hotspots to discover connected areas.',
-                                style: GoogleFonts.roboto(
-                                  fontSize: 16,
-                                  height: 1.6,
-                                  letterSpacing: 0.3,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 32),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  OutlinedButton(
-                                    onPressed: _toggleInfoOverlay,
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: theme.primaryColor,
-                                      side: BorderSide(
-                                        color: theme.primaryColor,
-                                        width: 2,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 32,
-                                        vertical: 16,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Close',
-                                      style: GoogleFonts.roboto(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(30),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: theme.primaryColor.withOpacity(
-                                            0.4,
-                                          ),
-                                          blurRadius: 12,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          PageRouteBuilder(
-                                            pageBuilder:
-                                                (
-                                                  context,
-                                                  animation,
-                                                  _,
-                                                ) => FadeTransition(
-                                                  opacity: animation,
-                                                  child: LocationDetailScreen(
-                                                    locationName:
-                                                        _currentLocation,
-                                                    imagePath:
-                                                        AppConstants
-                                                            .panoramaImages[_currentLocation] ??
-                                                        'lib/images/fallback.jpg',
-                                                    locationData: AppConstants
-                                                        .locationCards
-                                                        .firstWhere(
-                                                          (card) =>
-                                                              card.title ==
-                                                              _currentLocation,
-                                                          orElse:
-                                                              () => LocationCardData(
-                                                                title:
-                                                                    _currentLocation,
-                                                                imagePath:
-                                                                    'lib/images/fallback.jpg',
-                                                                tag: '',
-                                                              ),
-                                                        ),
-                                                  ),
-                                                ),
-                                            transitionDuration: const Duration(
-                                              milliseconds: 400,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: theme.primaryColor,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 32,
-                                          vertical: 16,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            30,
-                                          ),
-                                        ),
-                                        elevation: 0,
-                                      ),
-                                      child: Text(
-                                        'More Details',
-                                        style: GoogleFonts.roboto(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+          if (_showControls) _buildTopControls(isDark, theme),
+          if (_showControls) _buildBottomControls(isDark, theme),
+          if (_showHelpOverlay) _buildHelpOverlay(isDark, theme),
+          if (_showInfoOverlay) _buildInfoOverlay(isDark, theme),
         ],
       ),
     );
   }
 
-  Widget _buildHelpItem(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildTopControls(bool isDark, ThemeData theme) {
+    return SafeArea(
+      child: FadeInDown(
+        duration: const Duration(milliseconds: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: GlassmorphicContainer(
+            isDark: isDark,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CircularControlButton(
+                  icon: Icons.arrow_back,
+                  tooltip: 'Back',
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _currentLocation,
+                      style: GoogleFonts.roboto(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 10,
+                            color: Colors.black.withOpacity(0.5),
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                CircularControlButton(
+                  icon: Icons.info_outline,
+                  tooltip: 'Location Info',
+                  onPressed: _toggleInfoOverlay,
+                ),
+              ],
             ),
-            child: Icon(icon, color: Theme.of(context).primaryColor, size: 24),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              text,
-              style: GoogleFonts.roboto(
-                fontSize: 16,
-                height: 1.5,
-                letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControls(bool isDark, ThemeData theme) {
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: FadeInUp(
+          duration: const Duration(milliseconds: 400),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 32.0),
+            child: GlassmorphicContainer(
+              isDark: isDark,
+              borderRadius: 30,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularControlButton(
+                    icon: Icons.zoom_in,
+                    tooltip: 'Zoom In',
+                    onPressed: _zoomIn,
+                  ),
+                  const SizedBox(width: 16),
+                  CircularControlButton(
+                    icon: Icons.zoom_out,
+                    tooltip: 'Zoom Out',
+                    onPressed: _zoomOut,
+                  ),
+                  const SizedBox(width: 16),
+                  CircularControlButton(
+                    icon: Icons.refresh,
+                    tooltip: 'Reset View',
+                    onPressed: _resetView,
+                  ),
+                  const SizedBox(width: 24),
+                  CircularControlButton(
+                    icon:
+                        _isFullScreen
+                            ? Icons.fullscreen_exit
+                            : Icons.fullscreen,
+                    tooltip: 'Toggle Fullscreen',
+                    onPressed: _toggleFullScreen,
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpOverlay(bool isDark, ThemeData theme) {
+    return FadeIn(
+      duration: const Duration(milliseconds: 400),
+      child: Container(
+        color: Colors.black.withOpacity(0.9),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: GlassmorphicContainer(
+              isDark: isDark,
+              borderRadius: 24,
+              padding: const EdgeInsets.all(32.0),
+              border: Border.all(
+                color: theme.primaryColor.withOpacity(0.3),
+                width: 2,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.panorama_photosphere,
+                    size: 64,
+                    color: theme.primaryColor,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Welcome to 360° Virtual Tour',
+                    style: GoogleFonts.roboto(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  HelpItem(icon: Icons.touch_app, text: 'Drag to look around'),
+                  HelpItem(icon: Icons.pinch, text: 'Pinch to zoom in/out'),
+                  HelpItem(
+                    icon: Icons.control_camera,
+                    text: 'Tap glowing hotspots to navigate',
+                  ),
+                  HelpItem(
+                    icon: Icons.touch_app_outlined,
+                    text: 'Tap anywhere to toggle controls',
+                  ),
+                  const SizedBox(height: 32),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.primaryColor.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _dismissHelpOverlay,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 48,
+                          vertical: 18,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Got It!',
+                        style: GoogleFonts.roboto(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoOverlay(bool isDark, ThemeData theme) {
+    return FadeIn(
+      duration: const Duration(milliseconds: 400),
+      child: Container(
+        color: Colors.black.withOpacity(0.85),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: GlassmorphicContainer(
+              isDark: isDark,
+              borderRadius: 24,
+              padding: const EdgeInsets.all(32.0),
+              border: Border.all(
+                color: theme.primaryColor.withOpacity(0.3),
+                width: 2,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.location_on, size: 56, color: theme.primaryColor),
+                  const SizedBox(height: 16),
+                  Text(
+                    _currentLocation,
+                    style: GoogleFonts.roboto(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Explore this location in immersive 360° view. Navigate using hotspots to discover connected areas.',
+                    style: GoogleFonts.roboto(
+                      fontSize: 16,
+                      height: 1.6,
+                      letterSpacing: 0.3,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      OutlinedButton(
+                        onPressed: _toggleInfoOverlay,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.primaryColor,
+                          side: BorderSide(color: theme.primaryColor, width: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: Text(
+                          'Close',
+                          style: GoogleFonts.roboto(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.primaryColor.withOpacity(0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, _) => FadeTransition(
+                                      opacity: animation,
+                                      child: LocationDetailScreen(
+                                        locationName: _currentLocation,
+                                        imagePath:
+                                            AppConstants
+                                                .panoramaImages[_currentLocation] ??
+                                            'lib/images/fallback.jpg',
+                                        locationData: AppConstants.locationCards
+                                            .firstWhere(
+                                              (card) =>
+                                                  card.title ==
+                                                  _currentLocation,
+                                              orElse:
+                                                  () => LocationCardData(
+                                                    title: _currentLocation,
+                                                    imagePath:
+                                                        'lib/images/fallback.jpg',
+                                                    tag: '',
+                                                  ),
+                                            ),
+                                      ),
+                                    ),
+                                transitionDuration: const Duration(
+                                  milliseconds: 400,
+                                ),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            'More Details',
+                            style: GoogleFonts.roboto(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

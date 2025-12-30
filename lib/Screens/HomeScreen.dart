@@ -1,3 +1,4 @@
+// lib/Screens/HomeScreen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,8 +8,11 @@ import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:virtualtouriu/Screens/categories.dart';
 import 'package:virtualtouriu/Screens/desktop_home_screen.dart';
 import 'package:virtualtouriu/Screens/mobile_home_screen.dart';
+import 'package:virtualtouriu/Screens/tablet_home_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/location_card.dart';
+import 'package:virtualtouriu/core/widgets/stat_card.dart';
+import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/responsive/Responsive_Layout.dart';
 import 'package:virtualtouriu/themes/Themes.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
@@ -88,7 +92,6 @@ class HomeScreen extends StatelessWidget {
         return Scaffold(
           body: Stack(
             children: [
-              // Premium background
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -129,11 +132,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // Responsive body - NO HEADER HERE, each screen has its own
               const ResponsiveLayout(
-                mobileBody: MobileHomeScreen(),
-                tabletBody: MobileHomeScreen(),
+                mobileBody: MobileHomeScreenOptimized(),
+                tabletBody: TabletHomeScreen(),
                 desktopBody: DesktopHomeScreen(),
               ),
             ],
@@ -402,22 +403,9 @@ class HomeScreen extends StatelessWidget {
         children: [
           FadeInUp(
             duration: const Duration(milliseconds: 600),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
-              ),
-              child: Text(
-                '360° VIRTUAL TOUR',
-                style: GoogleFonts.roboto(
-                  fontSize: isMobile ? 11 : 13,
-                  color: theme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2.0,
-                ),
-              ),
+            child: TagBadge(
+              text: '360° VIRTUAL TOUR',
+              fontSize: isMobile ? 11 : 13,
             ),
           ),
           SizedBox(height: isMobile ? 16 : 20),
@@ -450,8 +438,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           SizedBox(height: isMobile ? 32 : 40),
-
-          // 3D Tour Feature Block
           FadeInUp(
             duration: const Duration(milliseconds: 850),
             delay: const Duration(milliseconds: 250),
@@ -523,10 +509,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-
           SizedBox(height: isMobile ? 24 : 32),
-
-          // Stats
           FadeInUp(
             duration: const Duration(milliseconds: 900),
             delay: const Duration(milliseconds: 300),
@@ -534,32 +517,27 @@ class HomeScreen extends StatelessWidget {
               spacing: isMobile ? 16 : 32,
               runSpacing: 16,
               children: [
-                _buildStatCard(
+                StatCard(
                   icon: Icons.view_in_ar_rounded,
                   value: '3D',
                   label: 'Virtual Tour',
                   isDark: isDark,
-                  primaryColor: theme.primaryColor,
                 ),
-                _buildStatCard(
+                StatCard(
                   icon: Icons.location_city,
                   value: '8+',
                   label: 'Locations',
                   isDark: isDark,
-                  primaryColor: theme.primaryColor,
                 ),
-                _buildStatCard(
+                StatCard(
                   icon: Icons.explore,
                   value: 'HD',
                   label: 'Quality Tours',
                   isDark: isDark,
-                  primaryColor: theme.primaryColor,
                 ),
               ],
             ),
           ),
-
-          // Start Tour Button (Futuristic & Animated)
           SizedBox(height: isMobile ? 32 : 40),
           FadeInUp(
             duration: const Duration(milliseconds: 950),
@@ -570,67 +548,6 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () => navigateToCategories(context),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _buildStatCard({
-    required IconData icon,
-    required String value,
-    required String label,
-    required bool isDark,
-    required Color primaryColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color:
-            isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.black.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color:
-              isDark
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.black.withOpacity(0.05),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: primaryColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                style: GoogleFonts.roboto(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Text(
-                label,
-                style: GoogleFonts.roboto(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -721,7 +638,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// Futuristic Animated Tour Button
 class _FuturisticTourButton extends StatefulWidget {
   final bool isMobile;
   final VoidCallback onPressed;
