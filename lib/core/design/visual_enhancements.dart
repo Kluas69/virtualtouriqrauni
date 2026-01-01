@@ -183,6 +183,16 @@ class VisualEnhancements {
       CurvedAnimation(parent: controller, curve: curve),
     );
   }
+  
+  /// Get elevated shadow for prominent elements
+  static List<BoxShadow> getElevatedShadow(bool isDark) {
+    return getLayeredShadows(isDark, isHovered: true);
+  }
+  
+  /// Get subtle shadow for background elements
+  static List<BoxShadow> getSubtleShadow(bool isDark) {
+    return [getThemedShadow(isDark, intensity: 0.5)];
+  }
 }
 
 /// Extension for easy access to visual enhancements

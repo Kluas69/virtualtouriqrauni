@@ -89,6 +89,17 @@ class AppSpacing {
       return baseRadius;
     }
   }
+  
+  /// Get responsive padding value
+  static double getResponsivePadding(Size screenSize) {
+    if (screenSize.width < mobileBreakpoint) {
+      return 16.0;
+    } else if (screenSize.width < tabletBreakpoint) {
+      return 20.0;
+    } else {
+      return 24.0;
+    }
+  }
 }
 
 /// Extension to make spacing easier to use with MediaQuery

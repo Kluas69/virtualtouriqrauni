@@ -6,6 +6,9 @@ import '../state/futuristic_ui_state.dart';
 import '../design/app_spacing.dart';
 import '../navigation/safe_navigation.dart';
 import '../../Screens/categories.dart';
+import '../../Screens/about_university_screen.dart';
+import '../../Screens/campus_map_screen.dart';
+
 
 /// Quick action model for grid items
 class QuickAction {
@@ -103,51 +106,61 @@ class QuickActionsGrid extends StatelessWidget {
   }
 
   Widget _buildResponsiveGrid(BuildContext context, List<QuickAction> actions, Size size) {
-    // Improved responsive breakpoints
+    // Google-style responsive design with better proportions
     int crossAxisCount;
     double childAspectRatio;
     double spacing;
+    double maxWidth;
     
     if (size.width < AppSpacing.mobileBreakpoint) {
       // Mobile: Single column with Google-style horizontal cards
       crossAxisCount = 1;
-      childAspectRatio = 4.5; // Wider aspect ratio for horizontal layout
-      spacing = 8.0; // Tighter spacing for cleaner look
+      childAspectRatio = 5.0; // Wider for better mobile experience
+      spacing = 12.0;
+      maxWidth = double.infinity;
     } else if (size.width < AppSpacing.tabletBreakpoint) {
-      // Tablet: 2x2 grid
+      // Tablet: 2x2 grid with better proportions
       crossAxisCount = 2;
-      childAspectRatio = 1.4;
+      childAspectRatio = 2.2; // More rectangular, Google-style
       spacing = 16.0;
-    } else if (size.width < AppSpacing.desktopBreakpoint) {
-      // Small desktop: 2x2 grid
+      maxWidth = 600; // Constrain width for better appearance
+    } else if (size.width < 1200) {
+      // Small desktop: 2x2 grid (not too wide)
       crossAxisCount = 2;
-      childAspectRatio = 1.3;
+      childAspectRatio = 2.8; // Wider cards for desktop
       spacing = 20.0;
+      maxWidth = 800; // Constrain width
     } else {
-      // Large desktop: All 4 in one row
-      crossAxisCount = 4;
-      childAspectRatio = 1.15;
+      // Large desktop: 2x2 grid with maximum width constraint
+      crossAxisCount = 2;
+      childAspectRatio = 3.2; // Even wider for large screens
       spacing = 24.0;
+      maxWidth = 900; // Maximum width for better UX
     }
     
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: spacing,
-        mainAxisSpacing: spacing,
-        childAspectRatio: childAspectRatio,
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemCount: actions.length,
+          itemBuilder: (context, index) {
+            return EnhancedQuickActionCard(
+              action: actions[index],
+              isDark: isDark,
+              index: index,
+              onTap: () => onActionTapped(actions[index]),
+            );
+          },
+        ),
       ),
-      itemCount: actions.length,
-      itemBuilder: (context, index) {
-        return EnhancedQuickActionCard(
-          action: actions[index],
-          isDark: isDark,
-          index: index,
-          onTap: () => onActionTapped(actions[index]),
-        );
-      },
     );
   }
 
@@ -175,209 +188,61 @@ class QuickActionsGrid extends StatelessWidget {
     return [
       QuickAction(
         title: 'Start Virtual Tour',
-        subtitle: 'Begin interactive campus exploration',
+        subtitle: 'Explore campus locations',
         icon: Icons.explore_rounded,
         color: const Color(0xFF4285F4), // Google Blue
         tooltip: 'Begin an immersive virtual tour of the campus',
         onTap: () {
-          // Show loading screen before navigation
-          _showLoadingAndNavigate(context);
+          // Navigate directly to categories screen for virtual tour
+          _showLoadingAndNavigate(context, CategoriesScreen(), 'categories');
         },
       ),
       QuickAction(
-        title: 'Campus Map',
-        subtitle: 'Interactive navigation and directions',
-        icon: Icons.map_rounded,
-        color: const Color(0xFF34A853), // Google Green
-        tooltip: 'View detailed campus map with locations',
-        onTap: () {
-          // Show loading screen before navigation
-          _showLoadingAndNavigate(context);
-        },
-      ),
-      QuickAction(
-        title: 'Locations',
-        subtitle: 'Browse all campus facilities',
+        title: 'Campus Locations',
+        subtitle: 'Browse all locations',
         icon: Icons.location_on_rounded,
-        color: const Color(0xFF9C27B0), // Material Purple
+        color: const Color(0xFF34A853), // Google Green
         tooltip: 'Explore different campus locations and facilities',
         onTap: () {
-          // Show loading screen before navigation
-          _showLoadingAndNavigate(context);
+          // Navigate to categories screen to browse locations
+          _showLoadingAndNavigate(context, CategoriesScreen(), 'categories');
+        },
+      ),
+      QuickAction(
+        title: 'Interactive Map',
+        subtitle: 'Campus navigation',
+        icon: Icons.map_rounded,
+        color: const Color(0xFF9C27B0), // Material Purple
+        tooltip: 'View detailed campus map with clickable locations',
+        onTap: () {
+          // Navigate to campus map
+          _showLoadingAndNavigate(context, CampusMapScreen(), 'campus_map');
         },
       ),
       QuickAction(
         title: 'About IQRA',
-        subtitle: 'University information and history',
+        subtitle: 'University information',
         icon: Icons.school_rounded,
         color: const Color(0xFFFF9800), // Material Orange
         tooltip: 'Learn about IQRA University history and achievements',
         onTap: () {
-          // Show about dialog
-          showDialog(
-            context: context,
-            builder: (context) => _buildAboutDialog(context),
-          );
+          // Navigate to about university page
+          _showLoadingAndNavigate(context, AboutUniversityScreen(), 'about_university');
         },
       ),
     ];
   }
 
-  Widget _buildAboutDialog(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.grey[900] : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF9800).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.school_rounded,
-                    color: Color(0xFFFF9800),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    'About IQRA University',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: isDark ? Colors.white70 : Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Content
-            Text(
-              'IQRA University is a leading educational institution committed to providing quality higher education. Our state-of-the-art campus features modern facilities, advanced laboratories, and comprehensive learning environments designed to foster academic excellence and innovation.',
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.5,
-                color: isDark ? Colors.white70 : Colors.black87,
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Features
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey[800] : Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Campus Features:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...[
-                    '• Modern classrooms with smart boards',
-                    '• Advanced computer and science laboratories',
-                    '• Comprehensive library with digital resources',
-                    '• Sports facilities and recreational areas',
-                    '• Student cafeteria and dining areas',
-                  ].map((feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(
-                      feature,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDark ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-                  )),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Action button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  // Use safe navigation with loading
-                  _showLoadingAndNavigate(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF9800),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Start Virtual Tour',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Safe navigation with proper preloading to prevent mobile crashes
-  static Future<void> _showLoadingAndNavigate(BuildContext context) async {
+  static Future<void> _showLoadingAndNavigate(BuildContext context, Widget screen, String screenName) async {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
     
     await SafeNavigation.navigateToScreen(
       context: context,
-      screen: const CategoriesScreen(),
-      screenName: 'categories',
-      routeName: '/categories',
+      screen: screen,
+      screenName: screenName,
+      routeName: '/$screenName',
       showLoadingDialog: true,
       minLoadingTime: Duration(milliseconds: isMobile ? 3000 : 2000), // Longer for mobile
     );
@@ -451,7 +316,9 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+          transform: _isPressed 
+              ? (Matrix4.identity()..setEntry(0, 0, 0.98)..setEntry(1, 1, 0.98))
+              : Matrix4.identity(),
           child: MouseRegion(
             onEnter: (_) => _handleHover(true),
             onExit: (_) => _handleHover(false),
@@ -501,11 +368,13 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
 
   double _getCardHeight(Size size) {
     if (size.width < AppSpacing.mobileBreakpoint) {
-      return 80; // Reduced height for Google-style horizontal layout
+      return 72; // Google-style compact mobile cards
     } else if (size.width < AppSpacing.tabletBreakpoint) {
-      return 140;
+      return 100; // Smaller, more elegant tablet cards
+    } else if (size.width < 1200) {
+      return 110; // Compact desktop cards
     } else {
-      return 160;
+      return 120; // Slightly larger for very wide screens
     }
   }
 
@@ -513,49 +382,59 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
     final isMobile = MediaQuery.of(context).size.width < AppSpacing.mobileBreakpoint;
     
     if (isMobile) {
-      // Google-style mobile shadows - subtle and clean
+      // Google Material Design 3 mobile shadows
       return [
         BoxShadow(
           color: widget.isDark 
-              ? Colors.black.withValues(alpha: 0.2)
-              : Colors.black.withValues(alpha: 0.08),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
+              ? Colors.black.withValues(alpha: 0.15)
+              : Colors.black.withValues(alpha: 0.04),
+          blurRadius: 4,
+          offset: const Offset(0, 1),
         ),
         if (_isHovered)
           BoxShadow(
-            color: widget.action.color.withValues(alpha: 0.15),
-            blurRadius: 12,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
+            color: widget.action.color.withValues(alpha: 0.12),
+            blurRadius: 8,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
           ),
       ];
     } else {
-      // Desktop/tablet shadows (unchanged)
+      // Google Material Design 3 desktop/tablet shadows
       if (_isHovered) {
         return [
+          // Primary shadow
           BoxShadow(
             color: widget.isDark 
-                ? Colors.black.withValues(alpha: 0.4)
-                : Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
+                ? Colors.black.withValues(alpha: 0.2)
+                : Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          // Secondary shadow for depth
+          BoxShadow(
+            color: widget.isDark 
+                ? Colors.black.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
             offset: const Offset(0, 8),
           ),
+          // Accent color glow
           BoxShadow(
-            color: widget.action.color.withValues(alpha: 0.2),
+            color: widget.action.color.withValues(alpha: 0.08),
             blurRadius: 16,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
           ),
         ];
       } else {
         return [
           BoxShadow(
             color: widget.isDark 
-                ? Colors.black.withValues(alpha: 0.3)
-                : Colors.black.withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+                ? Colors.black.withValues(alpha: 0.15)
+                : Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ];
       }
@@ -566,24 +445,24 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
     final isMobile = MediaQuery.of(context).size.width < AppSpacing.mobileBreakpoint;
     
     if (isMobile) {
-      // Google-style mobile card colors - clean and minimal
+      // Google Material Design 3 mobile colors
       final baseColor = widget.isDark 
-          ? const Color(0xFF1F1F1F)  // Darker for better contrast
-          : Colors.white;
+          ? const Color(0xFF1C1B1F)  // Material Design 3 dark surface
+          : const Color(0xFFFFFBFE); // Material Design 3 light surface
       
       if (_isHovered) {
-        return Color.lerp(baseColor, widget.action.color, 0.03)!;
+        return Color.lerp(baseColor, widget.action.color, 0.02)!;
       } else {
         return baseColor;
       }
     } else {
-      // Desktop/tablet colors (unchanged)
+      // Google Material Design 3 desktop/tablet colors
       final baseColor = widget.isDark 
-          ? Colors.grey[850]!
-          : Colors.white;
+          ? const Color(0xFF1C1B1F)  // Material Design 3 dark surface
+          : const Color(0xFFFFFBFE); // Material Design 3 light surface
       
       if (_isHovered) {
-        return Color.lerp(baseColor, widget.action.color, 0.05)!;
+        return Color.lerp(baseColor, widget.action.color, 0.03)!;
       } else {
         return baseColor;
       }
@@ -594,33 +473,33 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
     final isMobile = MediaQuery.of(context).size.width < AppSpacing.mobileBreakpoint;
     
     if (isMobile) {
-      // Google-style mobile borders - very subtle
+      // Google Material Design 3 mobile borders - minimal
       if (_isHovered) {
         return Border.all(
-          color: widget.action.color.withValues(alpha: 0.2),
+          color: widget.action.color.withValues(alpha: 0.12),
           width: 1,
         );
       } else {
         return Border.all(
           color: widget.isDark 
-              ? Colors.grey.withValues(alpha: 0.15)
-              : Colors.black.withValues(alpha: 0.06),
+              ? const Color(0xFF49454F).withValues(alpha: 0.12) // Material Design 3 outline
+              : const Color(0xFF79747E).withValues(alpha: 0.12),
           width: 0.5,
         );
       }
     } else {
-      // Desktop/tablet borders (unchanged)
+      // Google Material Design 3 desktop/tablet borders
       if (_isHovered) {
         return Border.all(
-          color: widget.action.color.withValues(alpha: 0.3),
-          width: 1.5,
+          color: widget.action.color.withValues(alpha: 0.16),
+          width: 1,
         );
       } else {
         return Border.all(
           color: widget.isDark 
-              ? Colors.grey.withValues(alpha: 0.2)
-              : Colors.black.withValues(alpha: 0.08),
-          width: 1,
+              ? const Color(0xFF49454F).withValues(alpha: 0.12) // Material Design 3 outline
+              : const Color(0xFF79747E).withValues(alpha: 0.12),
+          width: 0.5,
         );
       }
     }
@@ -693,68 +572,71 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
         ],
       );
     } else {
-      // Desktop/tablet layout (unchanged)
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.start,
+      // Google Material Design 3 desktop/tablet layout
+      return Row(
         children: [
-          // Simple icon with background
+          // Icon container with Material Design 3 styling
           Container(
-            padding: EdgeInsets.all(16),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: widget.action.color.withValues(alpha: 0.1),
+              color: widget.action.color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               widget.action.icon,
-              size: 32,
+              size: 24,
               color: widget.action.color,
             ),
           ),
           
-          // Text content with flexible spacing
+          const SizedBox(width: 16),
+          
+          // Text content with Google typography
           Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(top: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  // Title
-                  Flexible(
-                    child: Text(
-                      widget.action.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        letterSpacing: -0.2,
-                        height: 1.1,
-                        color: widget.isDark ? Colors.white : Colors.black87,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.action.title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    letterSpacing: -0.1,
+                    height: 1.2,
+                    color: widget.isDark 
+                        ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                        : const Color(0xFF1C1B1F),
                   ),
-                  
-                  SizedBox(height: 6),
-                  
-                  // Subtitle
-                  Flexible(
-                    child: Text(
-                      widget.action.subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        height: 1.2,
-                        letterSpacing: 0.0,
-                        color: widget.isDark ? Colors.white70 : Colors.black54,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  widget.action.subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.3,
+                    letterSpacing: 0.1,
+                    color: widget.isDark 
+                        ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                        : const Color(0xFF49454F),
                   ),
-                ],
-              ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
+          ),
+          
+          // Arrow indicator with Material Design 3 styling
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 16,
+            color: widget.isDark 
+                ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                : const Color(0xFF49454F),
           ),
         ],
       );

@@ -33,14 +33,13 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   Timer? _scrollDebounceTimer;
   int _hoveredIndex = -1;
   String _searchQuery = '';
+  String _selectedFilter = 'All';
   bool _isSearchFocused = false;
   double _scrollOffset = 0.0;
   bool _showParallax = true;
   bool _memoryOptimized = false;
   bool _isScrolling = false;
 
-  List<MapEntry<int, LocationCardData>>? _cachedFilteredLocations;
-  String _lastSearchQuery = '';
 
   static final _initializationFuture = AppConstants.initialize();
 
@@ -167,23 +166,50 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   }
 
   List<MapEntry<int, LocationCardData>> _getFilteredLocations() {
-    if (_searchQuery == _lastSearchQuery && _cachedFilteredLocations != null) {
-      return _cachedFilteredLocations!;
-    }
-
-    _lastSearchQuery = _searchQuery;
+    // Always recalculate when filter or search changes
     final query = _searchQuery.toLowerCase();
 
-    _cachedFilteredLocations =
-        _searchQuery.isEmpty
-            ? AppConstants.locationCards.asMap().entries.toList()
-            : AppConstants.locationCards
-                .asMap()
-                .entries
-                .where((e) => e.value.title.toLowerCase().contains(query))
-                .toList();
+    var filteredBySearch = _searchQuery.isEmpty
+        ? AppConstants.locationCards.asMap().entries.toList()
+        : AppConstants.locationCards
+            .asMap()
+            .entries
+            .where((e) => 
+                e.value.title.toLowerCase().contains(query) ||
+                e.value.description.toLowerCase().contains(query))
+            .toList();
 
-    return _cachedFilteredLocations!;
+    // Apply category filter
+    if (_selectedFilter != 'All') {
+      filteredBySearch = filteredBySearch.where((e) {
+        final title = e.value.title.toLowerCase();
+        final description = e.value.description.toLowerCase();
+        
+        switch (_selectedFilter) {
+          case 'Classrooms':
+            return title.contains('class') || title.contains('room') ||
+                   description.contains('classroom') || description.contains('learning');
+          case 'Labs':
+            return title.contains('lab') || title.contains('webinar') ||
+                   description.contains('technology') || description.contains('digital');
+          case 'Facilities':
+            return title.contains('library') || title.contains('cafeteria') || 
+                   title.contains('common') || title.contains('auditorium') ||
+                   description.contains('dining') || description.contains('books') ||
+                   description.contains('venue') || description.contains('meeting');
+          case 'Outdoor':
+            return title.contains('playground') || title.contains('ground') || 
+                   title.contains('amphitheater') || title.contains('swimming') ||
+                   title.contains('play area') || description.contains('outdoor') ||
+                   description.contains('sports') || description.contains('recreational') ||
+                   description.contains('open-air');
+          default:
+            return true;
+        }
+      }).toList();
+    }
+
+    return filteredBySearch;
   }
 
   @override
@@ -460,6 +486,15 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               letterSpacing: 0.3,
             ),
           ),
+          // Add extra spacing to prevent overlap with search bar
+          SizedBox(
+            height:
+                isDesktop
+                    ? 60
+                    : isMobile
+                    ? 40
+                    : 50,
+          ),
         ],
       ),
     );
@@ -560,7 +595,11 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 onChanged: (value) {
                   _debounceTimer?.cancel();
                   _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-                    if (mounted) setState(() => _searchQuery = value);
+                    if (mounted) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    }
                   });
                 },
                 style: GoogleFonts.roboto(
@@ -600,7 +639,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                 onTap: () {
                                   _searchController.clear();
                                   if (mounted) {
-                                    setState(() => _searchQuery = '');
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
                                   }
                                 },
                                 child: Padding(
@@ -644,13 +685,18 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             physics: const BouncingScrollPhysics(),
             itemCount: filters.length,
             itemBuilder: (context, index) {
-              final isFirst = index == 0;
+              final filter = filters[index];
+              final isSelected = _selectedFilter == filter;
               return Padding(
                 padding: const EdgeInsets.only(right: 12),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {},
+                    onTap: () {
+                      setState(() {
+                        _selectedFilter = filter;
+                      });
+                    },
                     borderRadius: BorderRadius.circular(24),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -659,7 +705,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       ),
                       decoration: BoxDecoration(
                         color:
-                            isFirst
+                            isSelected
                                 ? theme.primaryColor
                                 : isDark
                                 ? Colors.white.withValues(alpha: 0.06)
@@ -667,7 +713,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color:
-                              isFirst
+                              isSelected
                                   ? theme.primaryColor
                                   : isDark
                                   ? Colors.white.withValues(alpha: 0.1)
@@ -675,12 +721,12 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                         ),
                       ),
                       child: Text(
-                        filters[index],
+                        filter,
                         style: GoogleFonts.roboto(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color:
-                              isFirst
+                              isSelected
                                   ? Colors.white
                                   : theme.textTheme.bodyMedium?.color,
                           letterSpacing: 0.3,
