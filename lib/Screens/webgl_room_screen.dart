@@ -128,8 +128,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
         
         // Additional GLB capability check for classroom model
         if (_isWebGLSupported && _webglService is WebGLServiceWeb) {
-          final webglService = _webglService as WebGLServiceWeb;
-          final canRenderGLB = await webglService.canRenderGLB();
+          final canRenderGLB = await _webglService.canRenderGLB();
           
           if (!canRenderGLB) {
             AppLogger.warning('GLB rendering capability uncertain',

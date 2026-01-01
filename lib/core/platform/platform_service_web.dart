@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:html' as html;
 import 'dart:ui_web' as ui;
 import 'platform_service.dart';
+import '../logging/app_logger.dart';
 
 /// Factory function for creating platform service
 PlatformService createPlatformService() => WebPlatformService();
@@ -46,30 +47,37 @@ class WebPlatformService implements PlatformService {
       // Method 1: Try WebGL 2.0 first (best performance)
       var context = canvas.getContext('webgl2');
       if (context != null) {
-        print('WebGL 2.0 context created successfully');
+        AppLogger.debug('WebGL 2.0 context created successfully',
+          component: 'PlatformServiceWeb');
         return true;
       }
       
       // Method 2: Try standard WebGL 1.0
       context = canvas.getContext('webgl');
       if (context != null) {
-        print('WebGL 1.0 context created successfully');
+        AppLogger.debug('WebGL 1.0 context created successfully',
+          component: 'PlatformServiceWeb');
         return true;
       }
       
       // Method 3: Try experimental WebGL (older browsers)
       context = canvas.getContext('experimental-webgl');
       if (context != null) {
-        print('Experimental WebGL context created successfully');
+        AppLogger.debug('Experimental WebGL context created successfully',
+          component: 'PlatformServiceWeb');
         return true;
       }
       
-      print('No WebGL context could be created');
+      AppLogger.warning('No WebGL context could be created',
+        component: 'PlatformServiceWeb');
       return false;
     } catch (e) {
       // CRITICAL FIX: Don't fail completely - let Three.js attempt to initialize
-      print('WebGL detection failed with error: $e');
-      print('Allowing Three.js to attempt initialization anyway...');
+      AppLogger.warning('WebGL detection failed with error',
+        component: 'PlatformServiceWeb',
+        error: e);
+      AppLogger.info('Allowing Three.js to attempt initialization anyway...',
+        component: 'PlatformServiceWeb');
       return true; // Return true to allow Three.js fallback
     }
   }
@@ -126,7 +134,9 @@ class WebPlatformService implements PlatformService {
                  canvas.getContext('experimental-webgl') != null;
         } catch (e) {
           // If detection fails, assume WebGL might still work
-          print('WebGL feature detection failed: $e, assuming available');
+          AppLogger.warning('WebGL feature detection failed, assuming available',
+            component: 'PlatformServiceWeb',
+            error: e);
           return true;
         }
       case 'glb_support':

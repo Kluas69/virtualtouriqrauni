@@ -764,7 +764,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               isMobile || _isScrolling
                   ? Matrix4.identity()
                   : (Matrix4.identity()
-                    ..translate(0.0, isHovered ? -8.0 : 0.0, 0.0)),
+                    ..translate(0.0, isHovered ? -8.0 : 0.0)),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [

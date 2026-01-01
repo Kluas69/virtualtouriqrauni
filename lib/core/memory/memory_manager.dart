@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
 import '../logging/app_logger.dart';
 import '../platform/platform_utils.dart';
 
@@ -58,6 +58,38 @@ class MemoryManager {
         });
     } catch (e) {
       AppLogger.error('Failed to initialize memory manager',
+        component: 'MemoryManager',
+        error: e);
+    }
+  }
+  
+  /// Optimize memory settings for the current device
+  void optimizeForDevice(BuildContext context) {
+    try {
+      final size = MediaQuery.of(context).size;
+      final isMobile = size.width < 600;
+      
+      if (isMobile) {
+        // Mobile optimization
+        AppLogger.info('Optimizing for mobile device',
+          component: 'MemoryManager',
+          metadata: {'screenWidth': size.width});
+        
+        // Trigger cleanup more frequently on mobile
+        _performCleanup();
+        
+        // Register for memory pressure monitoring
+        if (!_isInitialized) {
+          initialize();
+        }
+      } else {
+        // Desktop optimization
+        AppLogger.debug('Optimizing for desktop device',
+          component: 'MemoryManager',
+          metadata: {'screenWidth': size.width});
+      }
+    } catch (e) {
+      AppLogger.warning('Failed to optimize for device',
         component: 'MemoryManager',
         error: e);
     }

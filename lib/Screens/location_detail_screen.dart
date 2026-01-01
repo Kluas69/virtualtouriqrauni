@@ -10,7 +10,7 @@ import 'package:virtualtouriu/core/widgets/custom_button.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
-import 'package:virtualtouriu/core/utils/memory_manager.dart';
+import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 
 class LocationDetailScreen extends StatefulWidget {
@@ -58,7 +58,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
       final size = MediaQuery.of(context).size;
       final isMobile = size.width < 600;
       if (isMobile) {
-        MemoryManager.optimizeForDevice(context);
+        MemoryManager().optimizeForDevice(context);
         _memoryOptimized = true;
       }
     }

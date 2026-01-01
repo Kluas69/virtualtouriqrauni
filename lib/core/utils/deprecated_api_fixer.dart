@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'dart:ui' as ui;
 
 /// Utility class to handle deprecated API migrations
@@ -32,16 +33,9 @@ class DeprecatedApiFixer {
   
   /// Replace deprecated Matrix4.translate with translateByVector3
   static Matrix4 fixTranslate(double x, double y, [double z = 0.0]) {
-    try {
-      // Use the new translateByVector3 method
-      final matrix = Matrix4.identity();
-      matrix.translate(x, y, z);
-      return matrix;
-    } catch (e) {
-      // Fallback to deprecated translate for older Flutter versions
-      // ignore: deprecated_member_use
-      return Matrix4.identity()..translate(x, y, z);
-    }
+    final matrix = Matrix4.identity();
+    matrix.setTranslation(Vector3(x, y, z));
+    return matrix;
   }
   
   /// Get device pixel ratio safely

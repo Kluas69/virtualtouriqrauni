@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../logging/app_logger.dart';
 
 class ChatbotWidget extends StatefulWidget {
   final Function(String)? onNavigate;
@@ -221,15 +222,18 @@ Be helpful, concise, and engaging. Encourage exploration!
   }
 
   void _handleNavigation(String location) {
-    print('🔥 CHATBOT: Navigation button clicked for: "$location"');
-    print('🔥 CHATBOT: Calling onNavigate callback...');
+    AppLogger.debug('Navigation button clicked',
+      component: 'ChatbotWidget',
+      metadata: {'location': location});
 
     // Call the parent's navigation handler
     if (widget.onNavigate != null) {
       widget.onNavigate!(location);
-      print('✅ CHATBOT: onNavigate called successfully');
+      AppLogger.debug('onNavigate called successfully',
+        component: 'ChatbotWidget');
     } else {
-      print('❌ CHATBOT: onNavigate is null!');
+      AppLogger.warning('onNavigate callback is null',
+        component: 'ChatbotWidget');
     }
 
     // Close the chatbot after a short delay to allow navigation

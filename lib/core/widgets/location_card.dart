@@ -29,7 +29,6 @@ class _LocationCardState extends State<LocationCard>
   late AnimationController _rippleController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _elevationAnimation;
-  late Animation<double> _borderAnimation;
 
   bool _internalHovered = false;
 
@@ -55,10 +54,6 @@ class _LocationCardState extends State<LocationCard>
       begin: 2.0,
       end: 16.0,
     ).animate(CurvedAnimation(parent: _hoverController, curve: Curves.easeOut));
-
-    _borderAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _hoverController, curve: Curves.easeInOut),
-    );
   }
 
   @override
@@ -106,7 +101,6 @@ class _LocationCardState extends State<LocationCard>
     final isDark = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 600;
-    final isMediumScreen = size.width >= 600 && size.width < 1200;
 
     return MouseRegion(
       onEnter: (_) {

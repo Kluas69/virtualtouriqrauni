@@ -6,7 +6,7 @@ import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
-import 'package:virtualtouriu/core/utils/memory_manager.dart';
+import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
@@ -45,7 +45,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
     super.didChangeDependencies();
     // Optimize memory only once
     if (!_memoryOptimized && mounted) {
-      MemoryManager.optimizeForDevice(context);
+      MemoryManager().optimizeForDevice(context);
       _memoryOptimized = true;
     }
   }

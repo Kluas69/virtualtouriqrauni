@@ -1,7 +1,6 @@
 import 'webgl_service.dart';
-import 'webgl_service_stub.dart';
-import 'webgl_service_stub.dart'
-    if (dart.library.html) 'webgl_service_web.dart';
+import 'webgl_service_impl.dart'
+    if (dart.library.html) 'webgl_service_impl_web.dart';
 
 /// Factory for creating platform-specific WebGL service instances
 class WebGLFactory {
@@ -17,13 +16,7 @@ class WebGLFactory {
   static WebGLService _createWebGLService() {
     // On web: returns WebGLServiceWeb()
     // On other platforms: returns WebGLServiceStub()
-    return _createWebGLServiceImpl();
-  }
-  
-  /// Platform-specific implementation creation
-  static WebGLService _createWebGLServiceImpl() {
-    // This will resolve to the correct implementation at compile time
-    return WebGLServiceStub();
+    return createWebGLService();
   }
   
   /// Resets the singleton instance (useful for testing)
