@@ -132,7 +132,7 @@ class _LocationCardState extends State<LocationCard>
                   boxShadow: [
                     // Primary colored shadow on hover (Google-style)
                     BoxShadow(
-                      color: primaryColor.withOpacity(_isHovered ? 0.25 : 0.0),
+                      color: primaryColor.withValues(alpha: _isHovered ? 0.25 : 0.0),
                       blurRadius: _elevationAnimation.value * 1.5,
                       spreadRadius: _isHovered ? 1 : 0,
                       offset: Offset(0, _elevationAnimation.value / 2),
@@ -141,8 +141,8 @@ class _LocationCardState extends State<LocationCard>
                     BoxShadow(
                       color:
                           isDark
-                              ? Colors.black.withOpacity(0.6)
-                              : Colors.black.withOpacity(0.12),
+                              ? Colors.black.withValues(alpha: 0.6)
+                              : Colors.black.withValues(alpha: 0.12),
                       blurRadius: _elevationAnimation.value,
                       offset: Offset(0, _elevationAnimation.value / 3),
                     ),
@@ -158,8 +158,8 @@ class _LocationCardState extends State<LocationCard>
                     borderRadius: BorderRadius.circular(
                       widget.isCompact ? 16.0 : (isSmallScreen ? 20.0 : 24.0),
                     ),
-                    splashColor: primaryColor.withOpacity(0.1),
-                    highlightColor: primaryColor.withOpacity(0.05),
+                    splashColor: primaryColor.withValues(alpha: 0.1),
+                    highlightColor: primaryColor.withValues(alpha: 0.05),
                     child: Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(
@@ -170,10 +170,10 @@ class _LocationCardState extends State<LocationCard>
                         border: Border.all(
                           color:
                               _isHovered
-                                  ? primaryColor.withOpacity(0.3)
+                                  ? primaryColor.withValues(alpha: 0.3)
                                   : (isDark
-                                      ? Colors.white.withOpacity(0.05)
-                                      : Colors.black.withOpacity(0.05)),
+                                      ? Colors.white.withValues(alpha: 0.05)
+                                      : Colors.black.withValues(alpha: 0.05)),
                           width: _isHovered ? 2 : 1,
                         ),
                       ),
@@ -199,8 +199,8 @@ class _LocationCardState extends State<LocationCard>
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
                                           colors: [
-                                            primaryColor.withOpacity(0.2),
-                                            primaryColor.withOpacity(0.05),
+                                            primaryColor.withValues(alpha: 0.2),
+                                            primaryColor.withValues(alpha: 0.05),
                                           ],
                                         ),
                                       ),
@@ -210,11 +210,11 @@ class _LocationCardState extends State<LocationCard>
                                           size: 48,
                                           color:
                                               isDark
-                                                  ? Colors.white.withOpacity(
-                                                    0.3,
+                                                  ? Colors.white.withValues(
+                                                    alpha: 0.3,
                                                   )
-                                                  : Colors.black.withOpacity(
-                                                    0.2,
+                                                  : Colors.black.withValues(
+                                                    alpha: 0.2,
                                                   ),
                                         ),
                                       ),
@@ -233,13 +233,13 @@ class _LocationCardState extends State<LocationCard>
                                       _isHovered
                                           ? [
                                             Colors.transparent,
-                                            Colors.black.withOpacity(0.3),
-                                            Colors.black.withOpacity(0.75),
+                                            Colors.black.withValues(alpha: 0.3),
+                                            Colors.black.withValues(alpha: 0.75),
                                           ]
                                           : [
                                             Colors.transparent,
-                                            Colors.black.withOpacity(0.2),
-                                            Colors.black.withOpacity(0.65),
+                                            Colors.black.withValues(alpha: 0.2),
+                                            Colors.black.withValues(alpha: 0.65),
                                           ],
                                   stops: const [0.0, 0.6, 1.0],
                                 ),
@@ -262,21 +262,21 @@ class _LocationCardState extends State<LocationCard>
                                     decoration: BoxDecoration(
                                       color:
                                           isDark
-                                              ? Colors.white.withOpacity(0.15)
-                                              : Colors.white.withOpacity(0.9),
+                                              ? Colors.white.withValues(alpha: 0.15)
+                                              : Colors.white.withValues(alpha: 0.9),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
                                         color:
                                             isDark
-                                                ? Colors.white.withOpacity(0.2)
-                                                : Colors.black.withOpacity(
-                                                  0.08,
+                                                ? Colors.white.withValues(alpha: 0.2)
+                                                : Colors.black.withValues(
+                                                  alpha: 0.08,
                                                 ),
                                         width: 1,
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.15),
+                                          color: Colors.black.withValues(alpha: 0.15),
                                           blurRadius: 8,
                                           offset: const Offset(0, 2),
                                         ),
@@ -315,7 +315,7 @@ class _LocationCardState extends State<LocationCard>
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.transparent,
-                                      Colors.black.withOpacity(0.05),
+                                      Colors.black.withValues(alpha: 0.05),
                                     ],
                                   ),
                                 ),
@@ -338,8 +338,8 @@ class _LocationCardState extends State<LocationCard>
                                         shadows: [
                                           Shadow(
                                             blurRadius: 8,
-                                            color: Colors.black.withOpacity(
-                                              0.5,
+                                            color: Colors.black.withValues(
+                                              alpha: 0.5,
                                             ),
                                             offset: const Offset(0, 2),
                                           ),
@@ -377,7 +377,7 @@ class _LocationCardState extends State<LocationCard>
                                                                   ? 13
                                                                   : 14),
                                                       color: Colors.white
-                                                          .withOpacity(0.9),
+                                                          .withValues(alpha: 0.9),
                                                       height: 1.5,
                                                       letterSpacing: 0.2,
                                                       fontWeight:
@@ -427,16 +427,16 @@ class _LocationCardState extends State<LocationCard>
                                                               colors: [
                                                                 primaryColor,
                                                                 primaryColor
-                                                                    .withOpacity(
-                                                                      0.8,
+                                                                    .withValues(
+                                                                      alpha: 0.8,
                                                                     ),
                                                               ],
                                                             ),
                                                             boxShadow: [
                                                               BoxShadow(
                                                                 color: primaryColor
-                                                                    .withOpacity(
-                                                                      0.4,
+                                                                    .withValues(
+                                                                      alpha: 0.4,
                                                                     ),
                                                                 blurRadius: 12,
                                                                 offset:

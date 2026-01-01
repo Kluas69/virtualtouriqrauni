@@ -17,16 +17,16 @@ class PageCounter extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+        color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.1),
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.1),
         ),
       ),
       child: Text(
         '${currentIndex + 1} / $totalCount',
         style: TextStyle(
-          color: (isDark ? Colors.white : Colors.black).withOpacity(0.7),
+          color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.7),
           fontSize: 13,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.0,

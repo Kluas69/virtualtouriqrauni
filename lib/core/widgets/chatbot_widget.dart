@@ -43,7 +43,8 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
     'Take me on a tour',
   ];
 
-  final String openAiApiKey = '';
+  final String openAiApiKey =
+      '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';
 
   @override
   void initState() {
@@ -269,7 +270,7 @@ Be helpful, concise, and engaging. Encourage exploration!
   Widget _buildChatButton(bool isDark) {
     return Material(
       elevation: 12,
-      shadowColor: Theme.of(context).primaryColor.withOpacity(0.5),
+      shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.5),
       borderRadius: BorderRadius.circular(32),
       child: InkWell(
         onTap: _toggleChat,
@@ -281,7 +282,7 @@ Be helpful, concise, and engaging. Encourage exploration!
             gradient: LinearGradient(
               colors: [
                 Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withOpacity(0.8),
+                Theme.of(context).primaryColor.withValues(alpha: 0.8),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -289,7 +290,7 @@ Be helpful, concise, and engaging. Encourage exploration!
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).primaryColor.withOpacity(0.4),
+                color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -309,7 +310,7 @@ Be helpful, concise, and engaging. Encourage exploration!
     return Material(
       elevation: 20,
       borderRadius: BorderRadius.circular(24),
-      shadowColor: Colors.black.withOpacity(0.3),
+      shadowColor: Colors.black.withValues(alpha: 0.3),
       child: Container(
         width: 380,
         height: 620,
@@ -341,7 +342,7 @@ Be helpful, concise, and engaging. Encourage exploration!
         gradient: LinearGradient(
           colors: [
             Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withOpacity(0.9),
+            Theme.of(context).primaryColor.withValues(alpha: 0.9),
           ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -350,7 +351,7 @@ Be helpful, concise, and engaging. Encourage exploration!
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
             child: const Icon(
               Icons.school_rounded,
               color: Colors.white,
@@ -374,7 +375,7 @@ Be helpful, concise, and engaging. Encourage exploration!
                   'Online • Ready to help',
                   style: GoogleFonts.roboto(
                     fontSize: 12,
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
               ],

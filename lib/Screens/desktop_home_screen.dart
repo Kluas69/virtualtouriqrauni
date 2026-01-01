@@ -1,10 +1,9 @@
 // lib/Screens/desktop_home_screen.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:virtualtouriu/Screens/HomeScreen.dart';
+import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
@@ -12,7 +11,7 @@ import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
-import 'package:virtualtouriu/themes/Themes.dart';
+import 'package:virtualtouriu/themes/themes.dart';
 import 'package:animate_do/animate_do.dart';
 
 class DesktopHomeScreen extends StatefulWidget {
@@ -25,7 +24,7 @@ class DesktopHomeScreen extends StatefulWidget {
 }
 
 class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
-  late final PageController _controller;
+  PageController? _controller;
   late final ScrollController _scrollController;
 
   int _selectedIndex = 0;
@@ -42,22 +41,33 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
     _initializeControllers();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize controller with proper viewport fraction now that context is available
+    if (_controller == null) {
+      _initializePageController();
+    }
+  }
+
   void _initializeControllers() {
     _scrollController = widget.scrollController ?? ScrollController();
     _scrollController.addListener(_handleScroll);
 
     final middleIndex = AppConstants.locationCards.length ~/ 2;
-    final width =
-        WidgetsBinding.instance.window.physicalSize.width /
-        WidgetsBinding.instance.window.devicePixelRatio;
+    _selectedIndex = middleIndex;
+    _updateArrowVisibility();
+  }
+
+  void _initializePageController() {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final middleIndex = AppConstants.locationCards.length ~/ 2;
 
     _controller = PageController(
       viewportFraction: _calculateViewportFraction(width),
       initialPage: middleIndex,
     )..addListener(_onPageScroll);
-
-    _selectedIndex = middleIndex;
-    _updateArrowVisibility();
   }
 
   double _calculateViewportFraction(double width) {
@@ -80,9 +90,9 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
   }
 
   void _onPageScroll() {
-    if (!_controller.hasClients) return;
+    if (_controller == null || !_controller!.hasClients) return;
 
-    final newIndex = _controller.page?.round() ?? _selectedIndex;
+    final newIndex = _controller!.page?.round() ?? _selectedIndex;
     if (newIndex != _selectedIndex) {
       setState(() {
         _selectedIndex = newIndex;
@@ -99,11 +109,13 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
   }
 
   void _navigateToPage(int delta) {
+    if (_controller == null) return;
+    
     final newIndex = (_selectedIndex + delta).clamp(
       0,
       AppConstants.locationCards.length - 1,
     );
-    _controller.animateToPage(
+    _controller!.animateToPage(
       newIndex,
       duration: const Duration(milliseconds: 400),
       curve: Curves.easeInOutCubic,
@@ -179,7 +191,7 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     if (widget.scrollController == null) _scrollController.dispose();
     super.dispose();
   }
@@ -228,14 +240,16 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
   }
 
   Widget _buildBackground(bool isDark) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            isDark ? Colors.black.withOpacity(0.1) : Colors.grey.shade100,
-            isDark ? Colors.black.withOpacity(0.2) : Colors.white,
+            isDark ? Colors.black.withValues(alpha: 0.1) : Colors.grey.shade100,
+            isDark ? Colors.black.withValues(alpha: 0.2) : Colors.white,
           ],
         ),
       ),
@@ -244,8 +258,10 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
           sigmaX: isDark ? 8 : 5,
           sigmaY: isDark ? 8 : 5,
         ),
-        child: Container(
-          color: (isDark ? Colors.black : Colors.white).withOpacity(0.2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.2),
         ),
       ),
     );
@@ -316,16 +332,18 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
             children: [
               SizedBox(
                 height: cardHeight + 40,
-                child: HomeScreen.buildCarousel(
-                  context: context,
-                  cardHeight: cardHeight,
-                  controller: _controller,
-                  selectedIndex: _selectedIndex,
-                  isInteracting: false,
-                  onPageChanged:
-                      (index) => setState(() => _selectedIndex = index),
-                  isDesktop: true,
-                  onTap: (_) {},
+                child: _controller == null 
+                  ? const Center(child: CircularProgressIndicator())
+                  : HomeScreen.buildCarousel(
+                      context: context,
+                      cardHeight: cardHeight,
+                      controller: _controller!,
+                      selectedIndex: _selectedIndex,
+                      isInteracting: false,
+                      onPageChanged:
+                          (index) => setState(() => _selectedIndex = index),
+                      isDesktop: true,
+                      onTap: (_) {},
                   setInteracting: (_) {},
                 ),
               ),
@@ -350,17 +368,18 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
             ],
           ),
           const SizedBox(height: 32),
-          SmoothPageIndicator(
-            controller: _controller,
-            count: AppConstants.locationCards.length,
-            effect: WormEffect(
-              dotWidth: 10,
-              dotHeight: 10,
-              spacing: 12,
-              activeDotColor: theme.primaryColor,
-              dotColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+          if (_controller != null)
+            SmoothPageIndicator(
+              controller: _controller!,
+              count: AppConstants.locationCards.length,
+              effect: WormEffect(
+                dotWidth: 10,
+                dotHeight: 10,
+                spacing: 12,
+                activeDotColor: theme.primaryColor,
+                dotColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+              ),
             ),
-          ),
           const SizedBox(height: 20),
           PageCounter(
             currentIndex: _selectedIndex,

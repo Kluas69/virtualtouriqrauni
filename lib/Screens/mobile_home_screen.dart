@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:virtualtouriu/Screens/HomeScreen.dart';
+import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
@@ -11,7 +11,7 @@ import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
-import 'package:virtualtouriu/themes/Themes.dart';
+import 'package:virtualtouriu/themes/themes.dart';
 
 class MobileHomeScreenOptimized extends StatefulWidget {
   final ScrollController? scrollController;
@@ -200,7 +200,9 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
 
   // Simple background - NO blur filter for performance
   Widget _buildSimpleBackground(bool isDark) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -267,8 +269,8 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.black.withOpacity(0.2),
-                Colors.black.withOpacity(0.7),
+                Colors.black.withValues(alpha: 0.2),
+                Colors.black.withValues(alpha: 0.7),
               ],
             ),
           ),
@@ -288,9 +290,9 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -322,7 +324,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                   letterSpacing: 2.0,
                   shadows: [
                     Shadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -333,7 +335,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
               Text(
                 'Virtual Campus Tour',
                 style: GoogleFonts.roboto(
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                   fontSize: 18,
                   fontWeight: FontWeight.w500,
                   letterSpacing: 1.0,
@@ -358,9 +360,9 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: theme.primaryColor.withOpacity(0.15),
+            color: theme.primaryColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+            border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
           ),
           child: Text(
             '360° VIRTUAL TOUR',
@@ -388,7 +390,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
           style: GoogleFonts.roboto(
             fontSize: 15,
             height: 1.6,
-            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 24),
@@ -445,8 +447,8 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
           decoration: BoxDecoration(
             color:
                 isDark
-                    ? Colors.white.withOpacity(0.1)
-                    : Colors.black.withOpacity(0.05),
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, size: 24),
@@ -541,7 +543,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -561,7 +563,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                    colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
                   ),
                 ),
               ),
@@ -616,9 +618,9 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

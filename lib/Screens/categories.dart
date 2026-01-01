@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:virtualtouriu/themes/Themes.dart';
+import 'package:virtualtouriu/themes/themes.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/glassmorphic_container.dart';
@@ -13,7 +13,8 @@ import 'package:virtualtouriu/core/widgets/empty_state.dart';
 import 'package:virtualtouriu/core/widgets/loading_state.dart';
 import 'package:virtualtouriu/core/widgets/error_state.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
-import 'package:virtualtouriu/core/utils/memory_manager.dart';
+import 'package:virtualtouriu/core/memory/memory_manager.dart';
+import 'package:virtualtouriu/core/logging/app_logger.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -57,8 +58,15 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_memoryOptimized && mounted) {
-      MemoryManager.optimizeForDevice(context);
-      _memoryOptimized = true;
+      // Initialize memory manager instead of optimizeForDevice
+      try {
+        MemoryManager().initialize();
+        _memoryOptimized = true;
+      } catch (e) {
+        AppLogger.warning('Memory manager initialization failed',
+          component: 'CategoriesScreen',
+          error: e);
+      }
     }
   }
 
@@ -234,8 +242,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           bottom: BorderSide(
             color:
                 isDark
-                    ? Colors.white.withOpacity(0.05)
-                    : Colors.black.withOpacity(0.05),
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.05),
             width: 1,
           ),
         ),
@@ -305,14 +313,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       decoration: BoxDecoration(
         color:
             isDark
-                ? Colors.white.withOpacity(0.08)
-                : Colors.black.withOpacity(0.05),
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color:
               isDark
-                  ? Colors.white.withOpacity(0.12)
-                  : Colors.black.withOpacity(0.08),
+                  ? Colors.white.withValues(alpha: 0.12)
+                  : Colors.black.withValues(alpha: 0.08),
         ),
       ),
       child: Material(
@@ -390,7 +398,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               height: 1.7,
               color: Theme.of(
                 context,
-              ).textTheme.bodyLarge?.color?.withOpacity(0.75),
+              ).textTheme.bodyLarge?.color?.withValues(alpha: 0.75),
               letterSpacing: 0.3,
             ),
           ),
@@ -459,30 +467,30 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               decoration: BoxDecoration(
                 color:
                     isDark
-                        ? Colors.white.withOpacity(0.06)
-                        : Colors.white.withOpacity(0.9),
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.white.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(50),
                 border: Border.all(
                   color:
                       _isSearchFocused
-                          ? theme.primaryColor.withOpacity(0.5)
+                          ? theme.primaryColor.withValues(alpha: 0.5)
                           : isDark
-                          ? Colors.white.withOpacity(0.1)
-                          : Colors.black.withOpacity(0.08),
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.08),
                   width: _isSearchFocused ? 2 : 1,
                 ),
                 boxShadow: [
                   if (_isSearchFocused)
                     BoxShadow(
-                      color: theme.primaryColor.withOpacity(0.2),
+                      color: theme.primaryColor.withValues(alpha: 0.2),
                       blurRadius: 24,
                       spreadRadius: 2,
                     ),
                   BoxShadow(
                     color:
                         isDark
-                            ? Colors.black.withOpacity(0.3)
-                            : Colors.black.withOpacity(0.08),
+                            ? Colors.black.withValues(alpha: 0.3)
+                            : Colors.black.withValues(alpha: 0.08),
                     blurRadius: _isSearchFocused ? 32 : 20,
                     offset: Offset(0, _isSearchFocused ? 8 : 4),
                   ),
@@ -508,7 +516,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                           ? 'Search...'
                           : 'Search locations, facilities, buildings...',
                   hintStyle: GoogleFonts.roboto(
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                    color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                     letterSpacing: 0.3,
                     fontWeight: FontWeight.w400,
                   ),
@@ -519,9 +527,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       color:
                           _isSearchFocused
                               ? theme.primaryColor
-                              : theme.textTheme.bodyMedium?.color?.withOpacity(
-                                0.5,
-                              ),
+                              : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.5),
                       size: 24,
                     ),
                   ),
@@ -535,15 +541,16 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                 borderRadius: BorderRadius.circular(20),
                                 onTap: () {
                                   _searchController.clear();
-                                  if (mounted)
+                                  if (mounted) {
                                     setState(() => _searchQuery = '');
+                                  }
                                 },
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
                                   child: Icon(
                                     Icons.close_rounded,
                                     color: theme.textTheme.bodyMedium?.color
-                                        ?.withOpacity(0.5),
+                                        ?.withValues(alpha: 0.5),
                                     size: 20,
                                   ),
                                 ),
@@ -597,16 +604,16 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                             isFirst
                                 ? theme.primaryColor
                                 : isDark
-                                ? Colors.white.withOpacity(0.06)
-                                : Colors.black.withOpacity(0.04),
+                                ? Colors.white.withValues(alpha: 0.06)
+                                : Colors.black.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
                           color:
                               isFirst
                                   ? theme.primaryColor
                                   : isDark
-                                  ? Colors.white.withOpacity(0.1)
-                                  : Colors.black.withOpacity(0.08),
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.08),
                         ),
                       ),
                       child: Text(
@@ -703,7 +710,6 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     bool isMobile,
   ) {
     final isHovered = !isMobile && _hoveredIndex == index && !_isScrolling;
-    final isDark = theme.brightness == Brightness.dark;
     final baseHeight =
         index % 3 == 0
             ? 360.0
@@ -758,15 +764,15 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               isMobile || _isScrolling
                   ? Matrix4.identity()
                   : (Matrix4.identity()
-                    ..translate(0.0, isHovered ? -8.0 : 0.0)),
+                    ..translate(0.0, isHovered ? -8.0 : 0.0, 0.0)),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color:
                     isHovered && !_isScrolling
-                        ? theme.primaryColor.withOpacity(0.4)
-                        : Colors.black.withOpacity(0.12),
+                        ? theme.primaryColor.withValues(alpha: 0.4)
+                        : Colors.black.withValues(alpha: 0.12),
                 blurRadius: isHovered && !_isScrolling ? 32 : 16,
                 spreadRadius: isHovered && !_isScrolling ? 4 : 0,
                 offset: Offset(0, isHovered && !_isScrolling ? 12 : 6),
@@ -792,8 +798,8 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            theme.primaryColor.withOpacity(0.3),
-                            theme.primaryColor.withOpacity(0.1),
+                            theme.primaryColor.withValues(alpha: 0.3),
+                            theme.primaryColor.withValues(alpha: 0.1),
                           ],
                         ),
                       ),
@@ -807,14 +813,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                         cacheWidth: 600,
                         cacheHeight: 600,
                         errorBuilder:
-                            (_, __, ___) => Container(
+                            (context, error, stackTrace) => Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    theme.primaryColor.withOpacity(0.4),
-                                    theme.primaryColor.withOpacity(0.1),
+                                    theme.primaryColor.withValues(alpha: 0.4),
+                                    theme.primaryColor.withValues(alpha: 0.1),
                                   ],
                                 ),
                               ),
@@ -822,7 +828,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                 child: Icon(
                                   Icons.image_not_supported_rounded,
                                   size: 56,
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: Colors.white.withValues(alpha: 0.6),
                                 ),
                               ),
                             ),
@@ -834,13 +840,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.0),
-                        Colors.black.withOpacity(
-                          isHovered && !_isScrolling ? 0.65 : 0.45,
-                        ),
-                        Colors.black.withOpacity(
-                          isHovered && !_isScrolling ? 0.85 : 0.75,
-                        ),
+                        Colors.black.withValues(alpha: 0.0),
+                        Colors.black.withValues(alpha: isHovered && !_isScrolling ? 0.65 : 0.45),
+                        Colors.black.withValues(alpha: isHovered && !_isScrolling ? 0.85 : 0.75),
                       ],
                     ),
                   ),
@@ -882,7 +884,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   gradient: LinearGradient(
                     colors: [
                       theme.primaryColor,
-                      theme.primaryColor.withOpacity(0.8),
+                      theme.primaryColor.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -908,7 +910,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 shadows: [
                   Shadow(
                     blurRadius: 12,
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withValues(alpha: 0.6),
                     offset: const Offset(0, 2),
                   ),
                 ],
@@ -925,9 +927,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.4)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -963,9 +965,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
+          color: Colors.black.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

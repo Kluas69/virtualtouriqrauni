@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
+import '../utils/color_utils.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -41,9 +42,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         elevation: elevation,
         backgroundColor:
             isDark
-                ? Colors.black.withOpacity(0.8)
-                : Colors.white.withOpacity(0.9),
-        shadowColor: theme.primaryColor.withOpacity(0.3),
+                ? ColorUtils.withOpacity(Colors.black, 0.8)
+                : ColorUtils.withOpacity(Colors.white, 0.9),
+        shadowColor: ColorUtils.withOpacity(theme.primaryColor, 0.3),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(10.0)),
         ),

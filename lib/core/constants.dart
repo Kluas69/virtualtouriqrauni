@@ -1,9 +1,7 @@
-// lib/core/constants.dart - FULLY FIXED VERSION (December 30, 2025)
-
 import 'dart:convert';
-import 'dart:ui' as ui;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'platform/platform_utils.dart';
+import 'logging/app_logger.dart';
 
 class LocationCardData {
   final String tag;
@@ -37,15 +35,10 @@ class AppConstants {
   static late Map<String, List<Map<String, dynamic>>> panoramaHotspots;
   static late Map<String, List<Map<String, dynamic>>> locationFeatures;
 
-  // ✅ FIXED: Reliable mobile detection using screen width (works on web)
-  static bool get isMobile {
-    if (!kIsWeb) return false;
-    final double devicePixelRatio = ui.window.devicePixelRatio;
-    final double width = ui.window.physicalSize.width / devicePixelRatio;
-    return width < 768; // Tablets and phones
-  }
+  // MOBILE OPTIMIZATION: Detect platform
+  static bool get isMobile => PlatformUtils.isMobile || PlatformUtils.isMobileScreen;
 
-  // Image cache sizes optimized per device
+  // MOBILE OPTIMIZATION: Image cache sizes based on device
   static int get imageCacheWidth => isMobile ? 400 : 800;
   static int get imageCacheHeight => isMobile ? 300 : 600;
   static int get thumbnailCacheWidth => isMobile ? 200 : 400;
@@ -53,7 +46,10 @@ class AppConstants {
 
   static Future<void> initialize() async {
     try {
-      // Hardcoded location cards (fast & reliable)
+      AppLogger.info('Starting AppConstants initialization', 
+        component: 'AppConstants');
+      
+      // Hardcoded location cards for fast loading
       locationCards = [
         LocationCardData(
           tag: "Discover",
@@ -127,48 +123,99 @@ class AppConstants {
         ),
       ];
 
-      // Load JSON data (with short timeout)
-      final String jsonString = await rootBundle
-          .loadString('assets/app_data.json')
-          .timeout(const Duration(seconds: 5), onTimeout: () => '{}');
+      AppLogger.info('Location cards initialized', 
+        component: 'AppConstants',
+        metadata: {'count': locationCards.length});
 
-      final Map<String, dynamic> json =
-          jsonString.isNotEmpty ? jsonDecode(jsonString) : {};
+      // Load JSON data with shorter timeout and better error handling
+      try {
+        final String jsonString = await rootBundle
+            .loadString('assets/app_data.json')
+            .timeout(const Duration(seconds: 5), onTimeout: () {
+              AppLogger.warning('JSON loading timed out, using defaults', 
+                component: 'AppConstants');
+              return '{}';
+            });
 
-      panoramaImages = Map<String, String>.from(json['panoramaImages'] ?? {});
-      fallbackPanoramaImage = json['fallbackPanoramaImage'] ?? '';
+        AppLogger.info('JSON loaded successfully', 
+          component: 'AppConstants',
+          metadata: {'length': jsonString.length});
 
-      final Map<String, dynamic> hotspotsJson = json['panoramaHotspots'] ?? {};
-      panoramaHotspots = hotspotsJson.map((key, value) {
-        return MapEntry(key, List<Map<String, dynamic>>.from(value));
-      });
+        final Map<String, dynamic> json =
+            jsonString.isNotEmpty ? jsonDecode(jsonString) : {};
 
-      final Map<String, dynamic> featuresJson = json['locationFeatures'] ?? {};
-      locationFeatures = featuresJson.map((key, value) {
-        return MapEntry(key, List<Map<String, dynamic>>.from(value));
-      });
+        panoramaImages = Map<String, String>.from(json['panoramaImages'] ?? {});
+        fallbackPanoramaImage = json['fallbackPanoramaImage'] ?? '';
+
+        final Map<String, dynamic> hotspotsJson = json['panoramaHotspots'] ?? {};
+        panoramaHotspots = hotspotsJson.map((key, value) {
+          return MapEntry(key, List<Map<String, dynamic>>.from(value));
+        });
+
+        final Map<String, dynamic> featuresJson = json['locationFeatures'] ?? {};
+        locationFeatures = featuresJson.map((key, value) {
+          return MapEntry(key, List<Map<String, dynamic>>.from(value));
+        });
+
+        AppLogger.info('JSON data processed successfully', 
+          component: 'AppConstants',
+          metadata: {
+            'panoramaImages': panoramaImages.length,
+            'hotspots': panoramaHotspots.length,
+            'features': locationFeatures.length,
+          });
+      } catch (jsonError) {
+        AppLogger.error('Error loading JSON, using defaults', 
+          component: 'AppConstants',
+          error: jsonError);
+        
+        // Initialize with safe defaults
+        panoramaImages = {};
+        fallbackPanoramaImage = '';
+        panoramaHotspots = {};
+        locationFeatures = {};
+      }
+
+      AppLogger.info('AppConstants initialization completed successfully', 
+        component: 'AppConstants');
     } catch (e) {
-      debugPrint('Error initializing AppConstants: $e');
-      // Safe defaults to prevent crashes
+      AppLogger.error('Error initializing AppConstants', 
+        component: 'AppConstants',
+        error: e,
+        metadata: {'operation': 'initialize'});
+      
+      // Initialize with defaults to prevent crash
+      locationCards = [];
       panoramaImages = {};
       fallbackPanoramaImage = '';
       panoramaHotspots = {};
       locationFeatures = {};
+      
+      // Re-throw to let caller handle
+      rethrow;
     }
   }
 
-  // ✅ CRITICAL FIX: Force panorama everywhere → Eliminates stuck loading
-  // The external WebGL URL[](https://virtual-tour-iu.web.app) lacks proper Brotli headers,
-  // causing permanent hang on both desktop & mobile.
-  // This change uses reliable 360° panoramas for ALL locations.
+  // Create initialization future lazily to avoid immediate execution
+  static Future<void>? _initializationFuture;
+  static Future<void> get initializationFuture {
+    _initializationFuture ??= initialize();
+    return _initializationFuture!;
+  }
+
   static String viewTypeFor(String locationName) {
+    // FIXED: Removed mobile fallback for WebGL – now loads on mobile too (with warning in WebGlRoomScreen)
+    if (locationName == 'Class Rooms') {
+      return 'webgl';
+    }
     return 'panorama';
   }
 
   static String? webglUrlFor(String locationName) {
-    return null; // Disabled until the Unity build is hosted with correct headers
+    // FIXED: Removed mobile check – return URL on all devices
+    if (locationName == 'Class Rooms') {
+      return 'assets/models/classroom.glb';
+    }
+    return null;
   }
-
-  // Pre-initialize for faster startup
-  static final Future<void> initializationFuture = initialize();
 }

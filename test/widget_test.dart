@@ -1,9 +1,4 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// This is a basic Flutter widget test for the Virtual Tour app.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,20 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:virtualtouriu/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('App instantiates without platform import errors', (WidgetTester tester) async {
+    // This test verifies that the app can be created without dart:html import errors
+    // which was the main issue we were fixing with platform abstraction
+    
+    // Build our app - this will fail if there are platform-specific import issues
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the app loads without throwing platform import errors
+    expect(find.byType(MaterialApp), findsOneWidget);
+    
+    // If we get here, the platform abstraction is working correctly
+    // and there are no more dart:html import errors on non-web platforms
   });
 }

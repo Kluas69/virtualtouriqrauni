@@ -2,14 +2,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:virtualtouriu/Screens/HomeScreen.dart';
+import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
-import 'package:virtualtouriu/themes/Themes.dart';
+import 'package:virtualtouriu/themes/themes.dart';
 import 'package:animate_do/animate_do.dart';
 
 class TabletHomeScreen extends StatefulWidget {
@@ -37,11 +37,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
 
     final middleIndex = AppConstants.locationCards.length ~/ 2;
 
-    final double width =
-        WidgetsBinding.instance.window.physicalSize.width /
-        WidgetsBinding.instance.window.devicePixelRatio;
-
-    final double viewportFraction = _calculateViewportFraction(width);
+    // Use MediaQuery in build method instead of window
+    final double viewportFraction = 0.35; // Default value, will be updated in build
 
     _controller = PageController(
       viewportFraction: viewportFraction,
@@ -63,14 +60,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
     });
 
     _updateArrowVisibility();
-  }
-
-  double _calculateViewportFraction(double width) {
-    if (width > 1400) return 0.32;
-    if (width > 1200) return 0.35;
-    if (width > 1000) return 0.38;
-    if (width > 900) return 0.42;
-    return 0.46;
   }
 
   void _handleScroll() {
@@ -296,16 +285,18 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
 
         return Stack(
           children: [
-            Container(
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     isDark
-                        ? Colors.black.withOpacity(0.1)
+                        ? Colors.black.withValues(alpha: 0.1)
                         : Colors.grey.shade100,
-                    isDark ? Colors.black.withOpacity(0.2) : Colors.white,
+                    isDark ? Colors.black.withValues(alpha: 0.2) : Colors.white,
                   ],
                 ),
               ),
@@ -315,11 +306,13 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                     sigmaX: isDark ? 8.0 : 5.0,
                     sigmaY: isDark ? 8.0 : 5.0,
                   ),
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
                     color:
                         isDark
-                            ? Colors.black.withOpacity(0.2)
-                            : Colors.white.withOpacity(0.2),
+                            ? Colors.black.withValues(alpha: 0.2)
+                            : Colors.white.withValues(alpha: 0.2),
                   ),
                 ),
               ),

@@ -3,14 +3,36 @@ import 'package:google_fonts/google_fonts.dart';
 
 class ThemeProvider with ChangeNotifier {
   bool _isDark = false;
+  bool _isAnimating = false;
 
   bool get isDark => _isDark;
+  bool get isAnimating => _isAnimating;
 
   ThemeData get theme => _isDark ? _darkTheme : _lightTheme;
 
-  void toggleTheme() {
+  void toggleTheme() async {
+    if (_isAnimating) return; // Prevent multiple rapid toggles
+    
+    _isAnimating = true;
+    notifyListeners();
+    
+    // Small delay to allow UI to show animation state
+    await Future.delayed(const Duration(milliseconds: 50));
+    
     _isDark = !_isDark;
     notifyListeners();
+    
+    // Reset animation state after theme transition
+    await Future.delayed(const Duration(milliseconds: 300));
+    _isAnimating = false;
+    notifyListeners();
+  }
+  
+  void setTheme(bool isDark) {
+    if (_isDark != isDark) {
+      _isDark = isDark;
+      notifyListeners();
+    }
   }
 }
 
@@ -61,7 +83,7 @@ final ThemeData _lightTheme = ThemeData(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
-      shadowColor: const Color(0xFF3F51B5).withOpacity(0.3),
+      shadowColor: const Color(0xFF3F51B5).withValues(alpha: 0.3),
       textStyle: GoogleFonts.poppins(
         fontSize: 16.0,
         fontWeight: FontWeight.w600,
@@ -94,7 +116,7 @@ final ThemeData _lightTheme = ThemeData(
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: Colors.white.withOpacity(0.8),
+    fillColor: Colors.white.withValues(alpha: 0.8),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
@@ -169,7 +191,7 @@ final ThemeData _darkTheme = ThemeData(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
-      shadowColor: const Color(0xFF5C6BC0).withOpacity(0.3),
+      shadowColor: const Color(0xFF5C6BC0).withValues(alpha: 0.3),
       textStyle: GoogleFonts.poppins(
         fontSize: 16.0,
         fontWeight: FontWeight.w600,
@@ -202,7 +224,7 @@ final ThemeData _darkTheme = ThemeData(
   ),
   inputDecorationTheme: InputDecorationTheme(
     filled: true,
-    fillColor: const Color(0xFF1E1E1E).withOpacity(0.8),
+    fillColor: const Color(0xFF1E1E1E).withValues(alpha: 0.8),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

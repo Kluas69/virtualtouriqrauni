@@ -3,7 +3,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:virtualtouriu/Screens/PanoramaScreen.dart';
+import 'package:virtualtouriu/Screens/panorama_screen.dart';
 import 'package:virtualtouriu/Screens/webgl_room_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/custom_button.dart';
@@ -11,7 +11,7 @@ import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
 import 'package:virtualtouriu/core/utils/memory_manager.dart';
-import 'package:virtualtouriu/themes/Themes.dart';
+import 'package:virtualtouriu/themes/themes.dart';
 
 class LocationDetailScreen extends StatefulWidget {
   final String locationName;
@@ -120,7 +120,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
         PageRouteBuilder(
           pageBuilder:
               (_, __, ___) =>
-                  WebGlRoomScreen(title: widget.locationData.name, url: url),
+                  WebGLRoomScreen(title: widget.locationData.name, url: url),
           transitionsBuilder:
               (_, animation, __, child) =>
                   FadeTransition(opacity: animation, child: child),
@@ -200,7 +200,9 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
   }
 
   Widget _buildBackground(bool isDark) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -221,20 +223,20 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
       elevation: 0,
       backgroundColor:
           isDark
-              ? const Color(0xFF1A1A1A).withOpacity(_isScrolled ? 0.95 : 0)
-              : Colors.white.withOpacity(_isScrolled ? 0.95 : 0),
+              ? const Color(0xFF1A1A1A).withValues(alpha: _isScrolled ? 0.95 : 0)
+              : Colors.white.withValues(alpha: _isScrolled ? 0.95 : 0),
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(
             color:
                 isDark
-                    ? Colors.black.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.9),
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : Colors.white.withValues(alpha: 0.9),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -280,7 +282,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.7)],
                 ),
               ),
             ),
@@ -309,7 +311,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                       shadows: [
                         Shadow(
                           blurRadius: 20,
-                          color: Colors.black.withOpacity(0.4),
+                          color: Colors.black.withValues(alpha: 0.4),
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -389,7 +391,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           style: GoogleFonts.roboto(
             fontSize: isMobile ? 15 : 18,
             height: 1.7,
-            color: theme.textTheme.bodyLarge?.color?.withOpacity(0.8),
+            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
             letterSpacing: 0.2,
           ),
         ),
@@ -421,7 +423,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           'What makes this location special',
           style: GoogleFonts.roboto(
             fontSize: isMobile ? 14 : 16,
-            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.6),
+            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
           ),
         ),
         SizedBox(height: isMobile ? 24 : 32),
@@ -468,18 +470,18 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                     decoration: BoxDecoration(
                       color:
                           isDark
-                              ? Colors.white.withOpacity(0.05)
+                              ? Colors.white.withValues(alpha: 0.05)
                               : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color:
                             isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.black.withOpacity(0.05),
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.black.withValues(alpha: 0.05),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
                           blurRadius: 20,
                           offset: const Offset(0, 4),
                         ),
@@ -491,7 +493,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.primaryColor.withOpacity(0.1),
+                            color: theme.primaryColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -516,7 +518,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                             fontSize: isMobile ? 13 : 14,
                             height: 1.5,
                             color: theme.textTheme.bodyMedium?.color
-                                ?.withOpacity(0.7),
+                                ?.withValues(alpha: 0.7),
                           ),
                         ),
                       ],

@@ -30,23 +30,23 @@ class NavigationArrow extends StatelessWidget {
               shape: BoxShape.circle,
               color:
                   isDark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.white.withOpacity(0.95),
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.95),
               border: Border.all(
                 color:
                     isDark
-                        ? Colors.white.withOpacity(0.2)
-                        : Colors.black.withOpacity(0.08),
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.black.withValues(alpha: 0.08),
                 width: 1.5,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
                 BoxShadow(
-                  color: theme.primaryColor.withOpacity(0.1),
+                  color: theme.primaryColor.withValues(alpha: 0.1),
                   blurRadius: 30,
                   offset: const Offset(0, 8),
                 ),
