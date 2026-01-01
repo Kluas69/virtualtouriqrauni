@@ -160,13 +160,6 @@ class FuturisticUIState extends ChangeNotifier {
         route: '/tour',
       ),
       SearchSuggestion(
-        title: 'Campus Map',
-        subtitle: 'Interactive navigation and directions',
-        icon: Icons.map_rounded,
-        type: SearchType.action,
-        route: '/map',
-      ),
-      SearchSuggestion(
         title: 'Admissions',
         subtitle: 'Application process and requirements',
         icon: Icons.assignment_rounded,

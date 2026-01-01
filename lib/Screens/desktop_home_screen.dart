@@ -11,6 +11,8 @@ import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/core/widgets/language_selector.dart';
 import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';
+import 'package:virtualtouriu/core/widgets/enhanced_explore_section.dart';
+import 'package:virtualtouriu/core/widgets/google_style_page_indicator.dart';
 import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
 import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/themes/themes.dart';
@@ -134,9 +136,9 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
     if (index != -1) {
       final locationData = AppConstants.locationCards[index];
       Navigator.push(context, _buildPageRoute(locationData));
-      _showSnackBar('Opening ${locationData.title}', Colors.green);
+      // Removed snackbar feedback for cleaner UX
     } else {
-      _showSnackBar('Location "$location" not found', Colors.orange);
+      // Location not found - removed snackbar feedback for cleaner UX
     }
   }
 
@@ -147,41 +149,7 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
     // Save language preference
     LanguagePreferences.saveLanguage(language.code);
     
-    // Show language change confirmation with proper RTL support
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Directionality(
-          textDirection: RTLHelper.getTextDirection(language),
-          child: Row(
-            children: [
-              Text(language.flag, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  language.isRTL 
-                      ? 'تم تغيير اللغة إلى ${language.name}'
-                      : 'Language changed to ${language.name}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
-            ],
-          ),
-        ),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.green,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        action: SnackBarAction(
-          label: language.isRTL ? 'تراجع' : 'Undo',
-          textColor: Colors.white,
-          onPressed: () {
-            // Revert to previous language (English as default)
-            _futuristicUIState.setCurrentLanguage(Language.english);
-            LanguagePreferences.saveLanguage(Language.english.code);
-          },
-        ),
-      ),
-    );
+    // Language changed - removed snackbar feedback for cleaner UX
     
     // Apply RTL layout if needed
     if (language.isRTL) {
@@ -192,7 +160,7 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
 
   void _handleQuickAction(QuickAction action) {
     // Handle quick action tap - search functionality now accessed through actions
-    _showSnackBar('Quick action: ${action.title}', Colors.blue);
+    // Removed snackbar feedback for cleaner UX
     // The action's onTap will be called automatically
   }
 
@@ -230,26 +198,7 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
     );
   }
 
-  void _showSnackBar(String message, Color color) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              color == Colors.green ? Icons.check_circle : Icons.info_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: color,
-        duration: Duration(seconds: color == Colors.green ? 2 : 4),
-      ),
-    );
-  }
+  // Removed _showSnackBar method for cleaner UX
 
   @override
   void dispose() {
@@ -267,81 +216,32 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
 
     return ChangeNotifierProvider.value(
       value: _futuristicUIState,
-      child: FutureBuilder<void>(
-        future: _initFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.red, fontSize: 16),
-              ),
-            );
-          }
-
-          final heroHeight = (size.height * 0.52).clamp(500.0, 650.0);
-          final cardHeight = (size.width * 0.20).clamp(420.0, 520.0);
-
-          return Stack(
+      child: Stack(
+        children: [
+          // Main content without floating shapes
+          Stack(
             children: [
-              // Main content without floating shapes
-              Stack(
-                children: [
-                  _buildBackground(isDark),
-                  _buildScrollableContent(
-                    size,
-                    heroHeight,
-                    cardHeight,
-                    isDark,
-                    theme,
-                  ),
-                ],
+              _buildBackground(isDark),
+              _buildScrollableContent(
+                size,
+                (size.height * 0.52).clamp(500.0, 650.0),
+                (size.width * 0.20).clamp(420.0, 520.0),
+                isDark,
+                theme,
               ),
-              _buildAnimatedHeader(isDark, theme),
-              ChatbotWidget(onNavigate: _handleChatbotNavigation),
             ],
-          );
-        },
+          ),
+          _buildAnimatedHeader(isDark, theme),
+          ChatbotWidget(onNavigate: _handleChatbotNavigation),
+        ],
       ),
     );
   }
 
   Widget _buildBackground(bool isDark) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: _buildSimpleBackgroundGradient(isDark),
-      ),
+      color: isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
     );
-  }
-
-  LinearGradient _buildSimpleBackgroundGradient(bool isDark) {
-    if (isDark) {
-      return const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFF0D1117),
-          Color(0xFF161B22),
-          Color(0xFF0D1117),
-        ],
-        stops: [0.0, 0.5, 1.0],
-      );
-    } else {
-      return const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFFFAFAFA),
-          Color(0xFFFFFFFF),
-          Color(0xFFF5F5F5),
-        ],
-        stops: [0.0, 0.5, 1.0],
-      );
-    }
   }
 
   Widget _buildScrollableContent(
@@ -370,12 +270,9 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
           SizedBox(height: AppSpacing.getSectionSpacing(size) * 0.6),
           FadeInUp(
             duration: const Duration(milliseconds: 700),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: size.width * 0.08),
-              child: HomeScreen.buildInfoSection(
-                context: context,
-                isMobile: false,
-              ),
+            child: EnhancedExploreSection(
+              isMobile: false,
+              onTourPressed: () => HomeScreen.navigateToCategories(context),
             ),
           ),
           SizedBox(height: AppSpacing.getSectionSpacing(size)),
@@ -531,58 +428,19 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
           
           SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 20 : 32),
           
-          // Responsive Page Indicators
+          // Enhanced Google-style Page Indicators
           if (_controller != null)
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: size.width < AppSpacing.mobileBreakpoint ? 16 : 24,
-                vertical: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
-              ),
-              decoration: BoxDecoration(
-                color: isDark 
-                    ? Colors.black.withValues(alpha: 0.4)
-                    : Colors.white.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(
-                  size.width < AppSpacing.mobileBreakpoint ? 20 : 30,
-                ),
-                border: Border.all(
-                  color: isDark 
-                      ? Colors.grey.withValues(alpha: 0.2)
-                      : Colors.black.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SmoothPageIndicator(
-                    controller: _controller!,
-                    count: AppConstants.locationCards.length,
-                    effect: WormEffect(
-                      dotWidth: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
-                      dotHeight: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
-                      spacing: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
-                      activeDotColor: theme.primaryColor,
-                      dotColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                    ),
-                  ),
-                  if (size.width > AppSpacing.mobileBreakpoint) ...[
-                    const SizedBox(width: 20),
-                    Container(
-                      width: 1,
-                      height: 20,
-                      color: isDark 
-                          ? Colors.grey.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.2),
-                    ),
-                    const SizedBox(width: 20),
-                    PageCounter(
-                      currentIndex: _selectedIndex,
-                      totalCount: AppConstants.locationCards.length,
-                      isDark: isDark,
-                    ),
-                  ],
-                ],
-              ),
+            GoogleStylePageIndicator(
+              controller: _controller!,
+              count: AppConstants.locationCards.length,
+              currentIndex: _selectedIndex,
+              isDark: isDark,
+              isMobile: size.width < AppSpacing.mobileBreakpoint,
+              primaryColor: theme.primaryColor,
+              showCounter: size.width > AppSpacing.mobileBreakpoint,
+              showArrows: size.width > AppSpacing.tabletBreakpoint,
+              onPrevious: _showLeftArrow ? () => _navigateToPage(-1) : null,
+              onNext: _showRightArrow ? () => _navigateToPage(1) : null,
             ),
         ],
       ),

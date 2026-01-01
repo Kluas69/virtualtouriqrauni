@@ -100,35 +100,20 @@ class _PanoramaScreenState extends State<PanoramaScreen>
 
   void _zoomIn() {
     setState(() => _zoomLevel = (_zoomLevel * 0.9).clamp(0.5, 3.0));
-    _showSnackBar('Zoomed In');
+    // Removed snackbar feedback for cleaner UX
   }
 
   void _zoomOut() {
     setState(() => _zoomLevel = (_zoomLevel * 1.1).clamp(0.5, 3.0));
-    _showSnackBar('Zoomed Out');
+    // Removed snackbar feedback for cleaner UX
   }
 
   void _resetView() {
     setState(() => _zoomLevel = 1.0);
-    _showSnackBar('View Reset');
+    // Removed snackbar feedback for cleaner UX
   }
 
-  void _showSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.roboto(fontSize: 15, fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Theme.of(context).primaryColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  // Removed _showSnackBar method for cleaner UX
 
   void _toggleInfoOverlay() {
     setState(() => _showInfoOverlay = !_showInfoOverlay);
@@ -143,7 +128,7 @@ class _PanoramaScreenState extends State<PanoramaScreen>
     final String targetImage = imagePath ?? AppConstants.fallbackPanoramaImage;
 
     if (targetImage.isEmpty) {
-      _showSnackBar('No panorama available for $locationName');
+      // No panorama available - removed snackbar feedback for cleaner UX
       return;
     }
 
@@ -159,7 +144,7 @@ class _PanoramaScreenState extends State<PanoramaScreen>
     if (viewType == 'webgl') {
       final url = AppConstants.webglUrlFor(targetLocation);
       if (url == null || url.isEmpty) {
-        _showSnackBar('WebGL tour not available for $targetLocation');
+        // WebGL tour not available - removed snackbar feedback for cleaner UX
         return;
       }
 
@@ -180,7 +165,7 @@ class _PanoramaScreenState extends State<PanoramaScreen>
     if (AppConstants.panoramaImages.containsKey(targetLocation)) {
       _loadPanorama(targetLocation);
     } else {
-      _showSnackBar('Location not available: $targetLocation');
+      // Location not available - removed snackbar feedback for cleaner UX
     }
   }
 
@@ -204,7 +189,7 @@ class _PanoramaScreenState extends State<PanoramaScreen>
             if (type == 'scene' && target != null) {
               _openLocationFromHotspot(target);
             } else if (type == 'info') {
-              _showSnackBar(text);
+              // Info hotspot - removed snackbar feedback for cleaner UX
             }
           },
           child: Container(

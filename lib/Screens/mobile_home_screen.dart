@@ -10,10 +10,12 @@ import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
+import 'package:virtualtouriu/core/widgets/google_style_page_indicator.dart';
 import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';
 import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
+import 'package:virtualtouriu/core/navigation/safe_navigation.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 
 class MobileHomeScreenOptimized extends StatefulWidget {
@@ -63,7 +65,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
 
     final middleIndex = AppConstants.locationCards.length ~/ 2;
     _controller = PageController(
-      viewportFraction: 0.85,
+      viewportFraction: 0.82, // Reduced from 0.85 to prevent overlapping
       initialPage: middleIndex,
     )..addListener(_onPageScroll);
 
@@ -118,36 +120,16 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
         });
       }
 
-      _showSnackBar('Taking you to ${cards[index].title}', true);
+      // Removed snackbar feedback for cleaner UX
     } else {
-      _showSnackBar('Location "$location" not found', false);
+      // Location not found - removed snackbar feedback for cleaner UX
     }
   }
 
-  void _showSnackBar(String message, bool isSuccess) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isSuccess ? Icons.check_circle : Icons.info_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: isSuccess ? Colors.green : Colors.orange,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  // Removed _showSnackBar method for cleaner UX
 
   void _handleQuickAction(QuickAction action) {
-    // Handle quick action tap
-    _showSnackBar('Quick action: ${action.title}', true);
+    // Handle quick action tap - removed snackbar feedback for cleaner UX
   }
 
   @override
@@ -214,21 +196,10 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
     );
   }
 
-  // Simple background - NO blur filter for performance
+  // Simple background - Google Material Design 3 colors
   Widget _buildSimpleBackground(bool isDark) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF5F5F5),
-            isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF),
-          ],
-        ),
-      ),
+    return Container(
+      color: isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
     );
   }
 
@@ -514,8 +485,8 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
         
         const SizedBox(height: 16),
         
-        // Carousel
-        SizedBox(
+        // Carousel with better spacing
+        Container(
           height: cardHeight,
           child: PageView.builder(
             controller: _controller,
@@ -535,8 +506,8 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                     scale: scale,
                     child: Opacity(
                       opacity: isSelected ? 1.0 : 0.6,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 12), // Increased margin
                         child: _buildMobileCard(card, theme, isDark),
                       ),
                     ),
@@ -546,19 +517,19 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
             },
           ),
         ),
-        const SizedBox(height: 20),
-        SmoothPageIndicator(
+        const SizedBox(height: 24),
+        // Enhanced Google-style Page Indicator
+        GoogleStylePageIndicator(
           controller: _controller,
           count: AppConstants.locationCards.length,
-          effect: WormEffect(
-            dotWidth: 8,
-            dotHeight: 8,
-            spacing: 10,
-            activeDotColor: theme.primaryColor,
-            dotColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
-          ),
+          currentIndex: _selectedIndex,
+          isDark: isDark,
+          isMobile: true,
+          primaryColor: theme.primaryColor,
+          showCounter: false, // Mobile shows counter separately
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
+        // Mobile Page Counter
         PageCounter(
           currentIndex: _selectedIndex,
           totalCount: AppConstants.locationCards.length,
@@ -570,17 +541,19 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
 
   Widget _buildMobileCard(LocationCardData card, ThemeData theme, bool isDark) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder:
-                (context) => LocationDetailScreen(
-                  locationName: card.title,
-                  imagePath: card.imagePath,
-                  locationData: card,
-                ),
+      onTap: () async {
+        // Use SafeNavigation for mobile location detail navigation
+        await SafeNavigation.navigateToScreen(
+          context: context,
+          screen: LocationDetailScreen(
+            locationName: card.title,
+            imagePath: card.imagePath,
+            locationData: card,
           ),
+          screenName: 'location_detail',
+          routeName: '/location_detail',
+          showLoadingDialog: true,
+          minLoadingTime: Duration(milliseconds: 2500), // 2.5 seconds for location details
         );
       },
       child: Container(

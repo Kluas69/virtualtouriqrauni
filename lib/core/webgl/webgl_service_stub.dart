@@ -8,11 +8,71 @@ class WebGLServiceStub implements WebGLService {
   factory WebGLServiceStub() => _instance;
   WebGLServiceStub._internal();
   
+  QualityLevel _currentQuality = QualityLevel.medium;
+  
   @override
   Future<bool> isSupported() async {
     // WebGL is not supported on non-web platforms
     return false;
   }
+  
+  @override
+  Future<WebGLCapabilities> detectCapabilities() async {
+    // Return empty capabilities for non-web platforms
+    return const WebGLCapabilities(
+      webgl2Support: false,
+      webgl1Support: false,
+      supportedExtensions: [],
+      maxTextureSize: 0,
+      maxVertexAttributes: 0,
+      renderer: 'None (Non-web platform)',
+      vendor: 'None',
+      instancingSupport: false,
+      floatTextureSupport: false,
+      compressedTextureSupport: false,
+    );
+  }
+  
+  @override
+  Future<bool> canRenderGLB() async {
+    // GLB rendering not supported on non-web platforms
+    return false;
+  }
+  
+  @override
+  Future<bool> supportsExtension(String extension) async {
+    // No extensions supported on non-web platforms
+    return false;
+  }
+  
+  @override
+  Future<void> handleContextLoss() async {
+    // No-op on non-web platforms
+    AppLogger.debug('WebGL context loss handling skipped (non-web platform)',
+      component: 'WebGLService');
+  }
+  
+  @override
+  Future<bool> attemptContextRecovery() async {
+    // Always return false on non-web platforms
+    return false;
+  }
+  
+  @override
+  Stream<WebGLPerformanceMetrics> get performanceStream {
+    // Return empty stream on non-web platforms
+    return Stream.empty();
+  }
+  
+  @override
+  void setQualityLevel(QualityLevel level) {
+    _currentQuality = level;
+    AppLogger.debug('Quality level set to ${level.displayName} (stub mode)',
+      component: 'WebGLService');
+  }
+  
+  @override
+  QualityLevel get currentQuality => _currentQuality;
   
   @override
   Widget createViewer({

@@ -10,6 +10,8 @@ import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';
+import 'package:virtualtouriu/core/widgets/enhanced_explore_section.dart';
+import 'package:virtualtouriu/core/widgets/google_style_page_indicator.dart';
 import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
 import 'package:virtualtouriu/themes/themes.dart';
@@ -206,74 +208,14 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
         }
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Taking you to ${AppConstants.locationCards[locationIndex].title}',
-                ),
-              ),
-            ],
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      // Removed snackbar feedback for cleaner UX
     } else {
-      final availableLocations = AppConstants.locationCards
-          .map((card) => card.title)
-          .take(5)
-          .join(', ');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text('Location "$location" not found')),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Try: $availableLocations...',
-                style: const TextStyle(fontSize: 12, color: Colors.white70),
-              ),
-            ],
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      // Location not found - removed snackbar feedback for cleaner UX
     }
   }
 
   void _handleQuickAction(QuickAction action) {
-    // Handle quick action tap
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.info_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text('Quick action: ${action.title}')),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Handle quick action tap - removed snackbar feedback for cleaner UX
   }
 
   Widget _buildEnhancedCarouselSection(
@@ -387,57 +329,16 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
           
           SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 20 : 32),
           
-          // Responsive Page Indicators
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: size.width < AppSpacing.mobileBreakpoint ? 16 : 24,
-              vertical: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
-            ),
-            decoration: BoxDecoration(
-              color: isDark 
-                  ? Colors.black.withValues(alpha: 0.4)
-                  : Colors.white.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(
-                size.width < AppSpacing.mobileBreakpoint ? 20 : 30,
-              ),
-              border: Border.all(
-                color: isDark 
-                    ? Colors.grey.withValues(alpha: 0.2)
-                    : Colors.black.withValues(alpha: 0.1),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SmoothPageIndicator(
-                  controller: _controller,
-                  count: AppConstants.locationCards.length,
-                  effect: WormEffect(
-                    dotWidth: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
-                    dotHeight: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
-                    spacing: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
-                    activeDotColor: theme.primaryColor,
-                    dotColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
-                  ),
-                ),
-                if (size.width > AppSpacing.mobileBreakpoint) ...[
-                  const SizedBox(width: 20),
-                  Container(
-                    width: 1,
-                    height: 20,
-                    color: isDark 
-                        ? Colors.grey.withValues(alpha: 0.3)
-                        : Colors.black.withValues(alpha: 0.2),
-                  ),
-                  const SizedBox(width: 20),
-                  PageCounter(
-                    currentIndex: _selectedIndex,
-                    totalCount: AppConstants.locationCards.length,
-                    isDark: isDark,
-                  ),
-                ],
-              ],
-            ),
+          // Enhanced Google-style Page Indicators
+          GoogleStylePageIndicator(
+            controller: _controller,
+            count: AppConstants.locationCards.length,
+            currentIndex: _selectedIndex,
+            isDark: isDark,
+            isMobile: size.width < AppSpacing.mobileBreakpoint,
+            primaryColor: theme.primaryColor,
+            showCounter: size.width > AppSpacing.mobileBreakpoint,
+            showArrows: false, // Tablet uses separate navigation arrows
           ),
         ],
       ),
@@ -459,112 +360,79 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
-    return FutureBuilder<void>(
-      future: AppConstants.initializationFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Error: ${snapshot.error}',
-              style: const TextStyle(color: Colors.red, fontSize: 16),
-            ),
-          );
-        }
+    final double heroHeight = (size.height * 0.55).clamp(480.0, 620.0);
+    final double cardHeight = (size.width * 0.22).clamp(420.0, 520.0);
 
-        final double heroHeight = (size.height * 0.55).clamp(480.0, 620.0);
-        final double cardHeight = (size.width * 0.22).clamp(420.0, 520.0);
-
-        return ChangeNotifierProvider.value(
-          value: _futuristicUIState,
-          child: Stack(
-            children: [
-              // Simple background without blur for better performance
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      isDark ? const Color(0xFF0D1117) : const Color(0xFFFAFAFA),
-                      isDark ? const Color(0xFF161B22) : const Color(0xFFFFFFFF),
-                      isDark ? const Color(0xFF0D1117) : const Color(0xFFF5F5F5),
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
+    return ChangeNotifierProvider.value(
+      value: _futuristicUIState,
+      child: Stack(
+        children: [
+          // Simple Google Material Design 3 background
+          Container(
+            color: isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
+          ),
+          SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                FadeInDown(
+                  duration: const Duration(milliseconds: 600),
+                  child: SizedBox(
+                    height: heroHeight,
+                    width: double.infinity,
+                    child: HomeScreen.buildHeroSection(
+                      context: context,
+                      fontSize: (size.width * 0.065).clamp(38.0, 56.0),
+                      heightFactor: 1.0,
+                    ),
                   ),
                 ),
-              ),
-              SingleChildScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    FadeInDown(
-                      duration: const Duration(milliseconds: 600),
-                      child: SizedBox(
-                        height: heroHeight,
-                        width: double.infinity,
-                        child: HomeScreen.buildHeroSection(
-                          context: context,
-                          fontSize: (size.width * 0.065).clamp(38.0, 56.0),
-                          heightFactor: 1.0,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: AppSpacing.getSectionSpacing(size) * 0.6),
-                    FadeInUp(
-                      duration: const Duration(milliseconds: 700),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: size.width * 0.08,
-                        ),
-                        child: HomeScreen.buildInfoSection(
-                          context: context,
-                          isMobile: false,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: AppSpacing.getSectionSpacing(size)),
-                    
-                    // Quick Actions Grid
-                    FadeInUp(
-                      duration: const Duration(milliseconds: 800),
-                      delay: const Duration(milliseconds: 100),
-                      child: QuickActionsGrid(
-                        isDark: isDark,
-                        onActionTapped: _handleQuickAction,
-                      ),
-                    ),
-                    
-                    // Section Divider
-                    FadeInUp(
-                      duration: const Duration(milliseconds: 900),
-                      delay: const Duration(milliseconds: 150),
-                      child: SectionDivider(
-                        isDark: isDark,
-                        subtitle: "Explore our beautiful campus locations",
-                        height: AppSpacing.getSectionSpacing(size) * 0.8,
-                        accentColor: theme.primaryColor,
-                      ),
-                    ),
-                    // Enhanced Carousel Section
-                    FadeInUp(
-                      duration: const Duration(milliseconds: 1000),
-                      delay: const Duration(milliseconds: 200),
-                      child: _buildEnhancedCarouselSection(size, cardHeight, isDark, theme),
-                    ),
-                    SizedBox(height: AppSpacing.getSectionSpacing(size)),
-                  ],
+                SizedBox(height: AppSpacing.getSectionSpacing(size) * 0.6),
+                FadeInUp(
+                  duration: const Duration(milliseconds: 700),
+                  child: EnhancedExploreSection(
+                    isMobile: false,
+                    onTourPressed: () => HomeScreen.navigateToCategories(context),
+                  ),
                 ),
-              ),
-              _buildAnimatedHeader(context, isDark, theme),
-              ChatbotWidget(onNavigate: _handleChatbotNavigation),
-            ],
+                SizedBox(height: AppSpacing.getSectionSpacing(size)),
+                
+                // Quick Actions Grid
+                FadeInUp(
+                  duration: const Duration(milliseconds: 800),
+                  delay: const Duration(milliseconds: 100),
+                  child: QuickActionsGrid(
+                    isDark: isDark,
+                    onActionTapped: _handleQuickAction,
+                  ),
+                ),
+                
+                // Section Divider
+                FadeInUp(
+                  duration: const Duration(milliseconds: 900),
+                  delay: const Duration(milliseconds: 150),
+                  child: SectionDivider(
+                    isDark: isDark,
+                    subtitle: "Explore our beautiful campus locations",
+                    height: AppSpacing.getSectionSpacing(size) * 0.8,
+                    accentColor: theme.primaryColor,
+                  ),
+                ),
+                // Enhanced Carousel Section
+                FadeInUp(
+                  duration: const Duration(milliseconds: 1000),
+                  delay: const Duration(milliseconds: 200),
+                  child: _buildEnhancedCarouselSection(size, cardHeight, isDark, theme),
+                ),
+                SizedBox(height: AppSpacing.getSectionSpacing(size)),
+              ],
+            ),
           ),
-        );
-      },
+          _buildAnimatedHeader(context, isDark, theme),
+          ChatbotWidget(onNavigate: _handleChatbotNavigation),
+        ],
+      ),
     );
   }
 

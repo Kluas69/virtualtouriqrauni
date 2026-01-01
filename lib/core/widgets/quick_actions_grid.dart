@@ -7,7 +7,6 @@ import '../design/app_spacing.dart';
 import '../navigation/safe_navigation.dart';
 import '../../Screens/categories.dart';
 import '../../Screens/about_university_screen.dart';
-import '../../Screens/campus_map_screen.dart';
 
 
 /// Quick action model for grid items
@@ -106,7 +105,7 @@ class QuickActionsGrid extends StatelessWidget {
   }
 
   Widget _buildResponsiveGrid(BuildContext context, List<QuickAction> actions, Size size) {
-    // Google-style responsive design with better proportions
+    // Google-style responsive design optimized for 3 cards
     int crossAxisCount;
     double childAspectRatio;
     double spacing;
@@ -119,23 +118,23 @@ class QuickActionsGrid extends StatelessWidget {
       spacing = 12.0;
       maxWidth = double.infinity;
     } else if (size.width < AppSpacing.tabletBreakpoint) {
-      // Tablet: 2x2 grid with better proportions
-      crossAxisCount = 2;
-      childAspectRatio = 2.2; // More rectangular, Google-style
+      // Tablet: 3 cards in a row or 2x2 layout depending on space
+      crossAxisCount = size.width > 700 ? 3 : 2;
+      childAspectRatio = size.width > 700 ? 2.0 : 2.2; // Adjust ratio based on layout
       spacing = 16.0;
-      maxWidth = 600; // Constrain width for better appearance
+      maxWidth = 700; // Constrain width for better appearance
     } else if (size.width < 1200) {
-      // Small desktop: 2x2 grid (not too wide)
-      crossAxisCount = 2;
-      childAspectRatio = 2.8; // Wider cards for desktop
+      // Small desktop: 3 cards in a row
+      crossAxisCount = 3;
+      childAspectRatio = 2.5; // Balanced cards for desktop
       spacing = 20.0;
-      maxWidth = 800; // Constrain width
+      maxWidth = 900; // Constrain width
     } else {
-      // Large desktop: 2x2 grid with maximum width constraint
-      crossAxisCount = 2;
-      childAspectRatio = 3.2; // Even wider for large screens
+      // Large desktop: 3 cards in a row with maximum width constraint
+      crossAxisCount = 3;
+      childAspectRatio = 2.8; // Wider cards for large screens
       spacing = 24.0;
-      maxWidth = 900; // Maximum width for better UX
+      maxWidth = 1000; // Maximum width for better UX
     }
     
     return Center(
@@ -209,17 +208,6 @@ class QuickActionsGrid extends StatelessWidget {
         },
       ),
       QuickAction(
-        title: 'Interactive Map',
-        subtitle: 'Campus navigation',
-        icon: Icons.map_rounded,
-        color: const Color(0xFF9C27B0), // Material Purple
-        tooltip: 'View detailed campus map with clickable locations',
-        onTap: () {
-          // Navigate to campus map
-          _showLoadingAndNavigate(context, CampusMapScreen(), 'campus_map');
-        },
-      ),
-      QuickAction(
         title: 'About IQRA',
         subtitle: 'University information',
         icon: Icons.school_rounded,
@@ -233,19 +221,31 @@ class QuickActionsGrid extends StatelessWidget {
     ];
   }
 
-  // Safe navigation with proper preloading to prevent mobile crashes
+  // Safe navigation with loading only for mobile to prevent crashes
   static Future<void> _showLoadingAndNavigate(BuildContext context, Widget screen, String screenName) async {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 600;
     
-    await SafeNavigation.navigateToScreen(
-      context: context,
-      screen: screen,
-      screenName: screenName,
-      routeName: '/$screenName',
-      showLoadingDialog: true,
-      minLoadingTime: Duration(milliseconds: isMobile ? 3000 : 2000), // Longer for mobile
-    );
+    if (isMobile) {
+      // Mobile: Use SafeNavigation with loading dialog and proper preloading
+      await SafeNavigation.navigateToScreen(
+        context: context,
+        screen: screen,
+        screenName: screenName,
+        routeName: '/$screenName',
+        showLoadingDialog: true,
+        minLoadingTime: Duration(milliseconds: 3000), // 3 seconds for mobile stability
+      );
+    } else {
+      // Desktop/Tablet: Direct navigation without loading dialog
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => screen,
+          settings: RouteSettings(name: '/$screenName'),
+        ),
+      );
+    }
   }
 }
 
@@ -327,7 +327,9 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
               onTapUp: _handleTapUp,
               onTapCancel: _handleTapCancel,
               child: Container(
-                height: _getCardHeight(size),
+                constraints: BoxConstraints(
+                  minHeight: _getCardHeight(size),
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(
                     size.width < AppSpacing.mobileBreakpoint ? 16 : 
@@ -344,7 +346,7 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
                   color: Colors.transparent,
                   child: Container(
                     padding: EdgeInsets.all(
-                      size.width < AppSpacing.mobileBreakpoint ? 16 : 
+                      size.width < AppSpacing.mobileBreakpoint ? 14 : 
                       size.width < AppSpacing.tabletBreakpoint ? 20 : 24,
                     ),
                     decoration: BoxDecoration(
@@ -368,7 +370,7 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
 
   double _getCardHeight(Size size) {
     if (size.width < AppSpacing.mobileBreakpoint) {
-      return 72; // Google-style compact mobile cards
+      return 68; // Reduced height for mobile to prevent overflow
     } else if (size.width < AppSpacing.tabletBreakpoint) {
       return 100; // Smaller, more elegant tablet cards
     } else if (size.width < 1200) {
@@ -514,50 +516,55 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
         children: [
           // Icon container with Google-style design
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: widget.action.color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               widget.action.icon,
-              size: 24,
+              size: 22,
               color: widget.action.color,
             ),
           ),
           
-          const SizedBox(width: 16),
+          const SizedBox(width: 14),
           
           // Text content - Google-style typography
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  widget.action.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                    letterSpacing: -0.1,
-                    height: 1.2,
-                    color: widget.isDark ? Colors.white : Colors.black87,
+                Flexible(
+                  child: Text(
+                    widget.action.title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      letterSpacing: -0.1,
+                      height: 1.1,
+                      color: widget.isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  widget.action.subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.3,
-                    letterSpacing: 0.0,
-                    color: widget.isDark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.6),
+                const SizedBox(height: 1),
+                Flexible(
+                  child: Text(
+                    widget.action.subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.2,
+                      letterSpacing: 0.0,
+                      color: widget.isDark ? Colors.white.withValues(alpha: 0.7) : Colors.black.withValues(alpha: 0.6),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

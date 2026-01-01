@@ -212,53 +212,136 @@
                 stencil: false, // Disable stencil buffer for performance
             };
             
-            try {
-                // Try to create renderer with WebGL 2.0 context
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('webgl2', rendererOptions);
-                if (context) {
-                    const renderer = new THREE.WebGLRenderer({ 
-                        canvas: canvas,
-                        context: context,
-                        ...rendererOptions
-                    });
-                    console.log('WebGL 2.0 renderer created successfully');
-                    setupRenderer(renderer);
-                    return renderer;
+            // Progressive fallback strategy
+            const fallbackStrategies = [
+                // Strategy 1: WebGL 2.0 with full options
+                () => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('webgl2', rendererOptions);
+                    if (context) {
+                        const renderer = new THREE.WebGLRenderer({ 
+                            canvas: canvas,
+                            context: context,
+                            ...rendererOptions
+                        });
+                        console.log('WebGL 2.0 renderer created successfully');
+                        return renderer;
+                    }
+                    return null;
+                },
+                
+                // Strategy 2: WebGL 1.0 with full options
+                () => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('webgl', rendererOptions) || 
+                                   canvas.getContext('experimental-webgl', rendererOptions);
+                    if (context) {
+                        const renderer = new THREE.WebGLRenderer({ 
+                            canvas: canvas,
+                            context: context,
+                            ...rendererOptions
+                        });
+                        console.log('WebGL 1.0 renderer created successfully');
+                        return renderer;
+                    }
+                    return null;
+                },
+                
+                // Strategy 3: WebGL 2.0 with reduced options
+                () => {
+                    const reducedOptions = {
+                        ...rendererOptions,
+                        antialias: false,
+                        powerPreference: "low-power",
+                    };
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('webgl2', reducedOptions);
+                    if (context) {
+                        const renderer = new THREE.WebGLRenderer({ 
+                            canvas: canvas,
+                            context: context,
+                            ...reducedOptions
+                        });
+                        console.log('WebGL 2.0 renderer created with reduced options');
+                        return renderer;
+                    }
+                    return null;
+                },
+                
+                // Strategy 4: WebGL 1.0 with reduced options
+                () => {
+                    const reducedOptions = {
+                        ...rendererOptions,
+                        antialias: false,
+                        powerPreference: "low-power",
+                        alpha: false,
+                    };
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('webgl', reducedOptions) || 
+                                   canvas.getContext('experimental-webgl', reducedOptions);
+                    if (context) {
+                        const renderer = new THREE.WebGLRenderer({ 
+                            canvas: canvas,
+                            context: context,
+                            ...reducedOptions
+                        });
+                        console.log('WebGL 1.0 renderer created with reduced options');
+                        return renderer;
+                    }
+                    return null;
+                },
+                
+                // Strategy 5: Let Three.js handle context creation (last resort)
+                () => {
+                    try {
+                        const minimalOptions = {
+                            antialias: false,
+                            alpha: false,
+                            powerPreference: "low-power",
+                            failIfMajorPerformanceCaveat: false,
+                        };
+                        const renderer = new THREE.WebGLRenderer(minimalOptions);
+                        console.log('Three.js managed WebGL renderer created (minimal options)');
+                        return renderer;
+                    } catch (e) {
+                        console.error('Three.js managed renderer creation failed:', e);
+                        return null;
+                    }
                 }
-            } catch (e) {
-                console.warn('WebGL 2.0 renderer creation failed:', e);
+            ];
+            
+            // Try each fallback strategy
+            for (let i = 0; i < fallbackStrategies.length; i++) {
+                try {
+                    const renderer = fallbackStrategies[i]();
+                    if (renderer) {
+                        setupRenderer(renderer);
+                        
+                        // Notify Flutter about successful renderer creation
+                        window.parent.postMessage({
+                            type: 'rendererCreated',
+                            strategy: i + 1,
+                            totalStrategies: fallbackStrategies.length,
+                            timestamp: Date.now()
+                        }, '*');
+                        
+                        return renderer;
+                    }
+                } catch (e) {
+                    console.warn(`Renderer creation strategy ${i + 1} failed:`, e);
+                }
             }
             
-            try {
-                // Fallback to WebGL 1.0
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('webgl', rendererOptions) || 
-                               canvas.getContext('experimental-webgl', rendererOptions);
-                if (context) {
-                    const renderer = new THREE.WebGLRenderer({ 
-                        canvas: canvas,
-                        context: context,
-                        ...rendererOptions
-                    });
-                    console.log('WebGL 1.0 renderer created successfully');
-                    setupRenderer(renderer);
-                    return renderer;
-                }
-            } catch (e) {
-                console.warn('WebGL 1.0 renderer creation failed:', e);
-            }
+            console.error('All WebGL renderer creation strategies failed');
             
-            try {
-                // Last resort: let Three.js handle WebGL context creation
-                const renderer = new THREE.WebGLRenderer(rendererOptions);
-                console.log('Three.js managed WebGL renderer created');
-                setupRenderer(renderer);
-                return renderer;
-            } catch (e) {
-                console.error('All WebGL renderer creation attempts failed:', e);
-                return null;
-            }
+            // Notify Flutter about renderer creation failure
+            window.parent.postMessage({
+                type: 'rendererCreationFailed',
+                timestamp: Date.now(),
+                reason: 'All fallback strategies exhausted'
+            }, '*');
+            
+            return null;
         }
         
         function setupRenderer(renderer) {
@@ -737,6 +820,42 @@
                         optimizeModelForMobile(model);
                     }
                 }
+            } else if (data.type === 'contextLoss') {
+                // Handle context loss notification from Flutter
+                console.log('Context loss notification received from Flutter');
+                if (renderer && renderer.domElement) {
+                    // Simulate context loss event for testing
+                    const event = new Event('webglcontextlost');
+                    renderer.domElement.dispatchEvent(event);
+                }
+            } else if (data.type === 'contextRecovered') {
+                // Handle context recovery notification from Flutter
+                console.log('Context recovery notification received from Flutter:', data.capabilities);
+                
+                // Update performance settings based on recovered capabilities
+                if (data.capabilities && data.capabilities.webgl2Support) {
+                    console.log('WebGL 2.0 support confirmed after recovery');
+                } else if (data.capabilities && data.capabilities.webgl1Support) {
+                    console.log('WebGL 1.0 support confirmed after recovery');
+                }
+            } else if (data.type === 'qualityChange') {
+                // Handle quality level changes from Flutter
+                console.log('Quality change requested:', data.level, 'multiplier:', data.multiplier);
+                
+                if (renderer) {
+                    // Adjust pixel ratio based on quality
+                    const basePixelRatio = window.devicePixelRatio;
+                    const adjustedPixelRatio = Math.min(basePixelRatio * data.multiplier, basePixelRatio);
+                    renderer.setPixelRatio(adjustedPixelRatio);
+                    
+                    // Adjust other quality settings
+                    if (data.multiplier < 0.5) {
+                        // Low quality mode
+                        if (model) {
+                            optimizeModelForMobile(model);
+                        }
+                    }
+                }
             }
         });
         
@@ -833,13 +952,44 @@
             renderer.domElement.addEventListener('webglcontextlost', (event) => {
                 event.preventDefault();
                 console.error('WebGL context lost');
-                showError('3D rendering context was lost. This may happen on mobile devices with limited memory. Please refresh the page.');
+                
+                // Notify Flutter about context loss
+                window.parent.postMessage({
+                    type: 'webglContextLost',
+                    timestamp: Date.now(),
+                    reason: 'Context lost - likely due to memory pressure or driver issues'
+                }, '*');
+                
+                showError('3D rendering context was lost. This may happen on mobile devices with limited memory. Attempting recovery...');
             });
             
             renderer.domElement.addEventListener('webglcontextrestored', () => {
                 console.log('WebGL context restored');
-                // Reinitialize if needed
-                init();
+                
+                // Notify Flutter about context restoration
+                window.parent.postMessage({
+                    type: 'webglContextRestored',
+                    timestamp: Date.now()
+                }, '*');
+                
+                // Attempt to reinitialize
+                try {
+                    // Hide error screen if visible
+                    const errorScreen = document.getElementById('error-screen');
+                    errorScreen.classList.remove('visible');
+                    
+                    // Show loading screen
+                    const loadingScreen = document.getElementById('loading-screen');
+                    loadingScreen.classList.remove('hidden');
+                    
+                    // Reinitialize the scene
+                    setTimeout(() => {
+                        init();
+                    }, 1000);
+                } catch (e) {
+                    console.error('Failed to reinitialize after context restoration:', e);
+                    showError('Failed to recover from context loss. Please refresh the page.');
+                }
             });
         }
         

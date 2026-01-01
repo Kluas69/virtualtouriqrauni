@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../logging/app_logger.dart';
+import '../design/app_spacing.dart';
 
 class ChatbotWidget extends StatefulWidget {
   final Function(String)? onNavigate;
@@ -22,6 +24,8 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   // Exact location titles from your app_data.json
   final List<String> _locations = [
@@ -54,10 +58,29 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    
     _scaleAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOutBack,
     );
+    
+    // Keep fade animation for smooth appearance
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+    
+    // Slide animation (minimal for subtle effect)
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0.1, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
 
     // Welcome message
     _messages.add(
@@ -250,12 +273,17 @@ Be helpful, concise, and engaging. Encourage exploration!
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final size = MediaQuery.of(context).size;
 
     return Stack(
       children: [
         // Floating Chat Button
         if (!_isOpen)
-          Positioned(bottom: 24, right: 24, child: _buildChatButton(isDark)),
+          Positioned(
+            bottom: 24,
+            right: 24,
+            child: _buildChatButton(isDark, size),
+          ),
 
         // Chat Window
         if (_isOpen)
@@ -264,105 +292,199 @@ Be helpful, concise, and engaging. Encourage exploration!
             right: 24,
             child: ScaleTransition(
               scale: _scaleAnimation,
-              child: _buildChatWindow(isDark),
+              child: _buildChatWindow(isDark, size),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildChatButton(bool isDark) {
+  Widget _buildChatButton(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    final buttonSize = isMobile ? 56.0 : 64.0;
+    final iconSize = isMobile ? 28.0 : 32.0;
+    
     return Material(
-      elevation: 12,
-      shadowColor: Theme.of(context).primaryColor.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(32),
-      child: InkWell(
-        onTap: _toggleChat,
-        borderRadius: BorderRadius.circular(32),
-        child: Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Theme.of(context).primaryColor,
-                Theme.of(context).primaryColor.withValues(alpha: 0.8),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
+      elevation: 0,
+      borderRadius: BorderRadius.circular(buttonSize / 2),
+      color: Colors.transparent,
+      child: Container(
+        width: buttonSize,
+        height: buttonSize,
+        decoration: BoxDecoration(
+          // Material Design 3 primary color
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF4285F4), // Google Blue
+              const Color(0xFF4285F4).withValues(alpha: 0.9),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: const Icon(
-            Icons.chat_bubble_rounded,
-            color: Colors.white,
-            size: 32,
+          borderRadius: BorderRadius.circular(buttonSize / 2),
+          // Material Design 3 shadows
+          boxShadow: [
+            BoxShadow(
+              color: isDark 
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.15),
+              blurRadius: isMobile ? 8 : 12,
+              offset: Offset(0, isMobile ? 4 : 6),
+            ),
+            BoxShadow(
+              color: const Color(0xFF4285F4).withValues(alpha: 0.2),
+              blurRadius: isMobile ? 12 : 16,
+              spreadRadius: 0,
+              offset: Offset(0, isMobile ? 2 : 3),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(buttonSize / 2),
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              _toggleChat();
+            },
+            borderRadius: BorderRadius.circular(buttonSize / 2),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(buttonSize / 2),
+              ),
+              child: Icon(
+                Icons.chat_bubble_rounded,
+                color: Colors.white,
+                size: iconSize,
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildChatWindow(bool isDark) {
+  Widget _buildChatWindow(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    final isTablet = size.width < AppSpacing.tabletBreakpoint;
+    final isSmallMobile = size.width < 360;
+    
+    // Responsive dimensions similar to your reference but with better mobile support
+    double windowWidth;
+    double windowHeight;
+    double borderRadius;
+    
+    if (isSmallMobile) {
+      // Very small mobile: Compact size
+      windowWidth = size.width - 48;
+      windowHeight = size.height * 0.7;
+      borderRadius = 20;
+    } else if (isMobile) {
+      // Mobile: Medium size
+      windowWidth = (size.width - 48).clamp(300, 380);
+      windowHeight = (size.height * 0.75).clamp(400, 600);
+      borderRadius = 24;
+    } else if (isTablet) {
+      // Tablet: Similar to reference
+      windowWidth = 400;
+      windowHeight = 620;
+      borderRadius = 24;
+    } else {
+      // Desktop: Exact reference size
+      windowWidth = 380;
+      windowHeight = 620;
+      borderRadius = 24;
+    }
+    
     return Material(
-      elevation: 20,
-      borderRadius: BorderRadius.circular(24),
-      shadowColor: Colors.black.withValues(alpha: 0.3),
+      elevation: 0,
+      borderRadius: BorderRadius.circular(borderRadius),
+      color: Colors.transparent,
       child: Container(
-        width: 380,
-        height: 620,
+        width: windowWidth,
+        height: windowHeight,
         decoration: BoxDecoration(
-          color: isDark ? Colors.grey.shade900 : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          // Material Design 3 surface colors
+          color: isDark 
+              ? const Color(0xFF1C1B1F) // Material Design 3 dark surface
+              : const Color(0xFFFFFBFE), // Material Design 3 light surface
+          borderRadius: BorderRadius.circular(borderRadius),
+          // Material Design 3 shadows
+          boxShadow: [
+            BoxShadow(
+              color: isDark 
+                  ? Colors.black.withValues(alpha: 0.4)
+                  : Colors.black.withValues(alpha: 0.15),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+            BoxShadow(
+              color: isDark 
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.08),
+              blurRadius: 48,
+              offset: const Offset(0, 24),
+            ),
+          ],
+          // Material Design 3 border
           border: Border.all(
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+            color: isDark 
+                ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                : const Color(0xFF79747E).withValues(alpha: 0.12),
             width: 1,
           ),
         ),
         child: Column(
           children: [
-            _buildHeader(isDark),
-            Expanded(child: _buildMessageList(isDark)),
-            if (_messages.length <= 1) _buildQuickActions(isDark),
-            if (_isLoading) _buildTypingIndicator(isDark),
-            _buildInputArea(isDark),
+            _buildHeader(isDark, size),
+            Expanded(child: _buildMessageList(isDark, size)),
+            if (_messages.length <= 1) _buildQuickActions(isDark, size),
+            if (_isLoading) _buildTypingIndicator(isDark, size),
+            _buildInputArea(isDark, size),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    final borderRadius = isMobile ? 20.0 : size.width < AppSpacing.tabletBreakpoint ? 24.0 : 28.0;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
       decoration: BoxDecoration(
+        // Material Design 3 primary container
         gradient: LinearGradient(
           colors: [
-            Theme.of(context).primaryColor,
-            Theme.of(context).primaryColor.withValues(alpha: 0.9),
+            const Color(0xFF4285F4), // Google Blue
+            const Color(0xFF4285F4).withValues(alpha: 0.95),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: Colors.white.withValues(alpha: 0.2),
-            child: const Icon(
+          Container(
+            width: isMobile ? 36 : 40,
+            height: isMobile ? 36 : 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(isMobile ? 18 : 20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Icon(
               Icons.school_rounded,
               color: Colors.white,
-              size: 24,
+              size: isMobile ? 20 : 24,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isMobile ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,34 +492,73 @@ Be helpful, concise, and engaging. Encourage exploration!
                 Text(
                   'IQRA Virtual Guide',
                   style: GoogleFonts.roboto(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 16 : 18,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                Text(
-                  'Online • Ready to help',
-                  style: GoogleFonts.roboto(
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.8),
-                  ),
+                SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF34A853), // Google Green
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Online • Ready to help',
+                      style: GoogleFonts.roboto(
+                        fontSize: isMobile ? 12 : 13,
+                        color: Colors.white.withValues(alpha: 0.9),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close_rounded, color: Colors.white),
-            onPressed: _toggleChat,
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _toggleChat();
+              },
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMessageList(bool isDark) {
+  Widget _buildMessageList(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    final isSmallMobile = size.width < 360;
+    
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isSmallMobile ? 8 : (isMobile ? 12 : 16)),
       itemCount: _messages.length,
       itemBuilder: (context, index) {
         final message = _messages[index];
@@ -405,30 +566,59 @@ Be helpful, concise, and engaging. Encourage exploration!
           alignment:
               message.isUser ? Alignment.centerRight : Alignment.centerLeft,
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 6),
+            margin: EdgeInsets.symmetric(vertical: isSmallMobile ? 3 : (isMobile ? 4 : 6)),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (!message.isUser)
-                  const CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Colors.blueAccent,
-                    child: Icon(Icons.smart_toy, size: 16, color: Colors.white),
+                if (!message.isUser) ...[
+                  Container(
+                    width: isSmallMobile ? 24 : (isMobile ? 28 : 32),
+                    height: isSmallMobile ? 24 : (isMobile ? 28 : 32),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4285F4), Color(0xFF34A853)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(isSmallMobile ? 12 : (isMobile ? 14 : 16)),
+                    ),
+                    child: Icon(
+                      Icons.smart_toy_rounded,
+                      size: isSmallMobile ? 14 : (isMobile ? 16 : 18),
+                      color: Colors.white,
+                    ),
                   ),
-                if (!message.isUser) const SizedBox(width: 8),
+                  SizedBox(width: isSmallMobile ? 6 : (isMobile ? 8 : 12)),
+                ],
                 Flexible(
                   child: Container(
-                    padding: const EdgeInsets.all(14),
-                    constraints: const BoxConstraints(maxWidth: 280),
+                    padding: EdgeInsets.all(isSmallMobile ? 10 : (isMobile ? 12 : 16)),
+                    constraints: BoxConstraints(
+                      maxWidth: isSmallMobile 
+                          ? size.width * 0.75 
+                          : isMobile 
+                              ? size.width * 0.7 
+                              : 280,
+                      minWidth: isSmallMobile ? 80 : 100,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          message.isUser
-                              ? Theme.of(context).primaryColor
-                              : (isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade100),
-                      borderRadius: BorderRadius.circular(18),
+                      color: message.isUser
+                          ? const Color(0xFF4285F4) // Google Blue for user messages
+                          : (isDark
+                              ? const Color(0xFF2D2D30) // Dark surface variant
+                              : const Color(0xFFF7F2FA)), // Light surface variant
+                      borderRadius: BorderRadius.circular(isSmallMobile ? 14 : (isMobile ? 16 : 20)),
+                      // Material Design 3 subtle shadows for message bubbles
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark 
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,39 +626,71 @@ Be helpful, concise, and engaging. Encourage exploration!
                         Text(
                           message.text,
                           style: GoogleFonts.roboto(
-                            color: message.isUser ? Colors.white : null,
-                            fontSize: 15,
+                            color: message.isUser 
+                                ? Colors.white 
+                                : (isDark 
+                                    ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                                    : const Color(0xFF1C1B1F)),
+                            fontSize: isSmallMobile ? 13 : (isMobile ? 14 : 15),
+                            height: 1.4,
+                            letterSpacing: 0.1,
                           ),
                         ),
                         if (message.navigationButtons.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          SizedBox(height: isSmallMobile ? 6 : (isMobile ? 8 : 12)),
                           Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children:
-                                message.navigationButtons.map((location) {
-                                  return ElevatedButton.icon(
-                                    onPressed:
-                                        () => _handleNavigation(location),
-                                    icon: const Icon(
-                                      Icons.arrow_forward,
-                                      size: 16,
+                            spacing: isSmallMobile ? 4 : (isMobile ? 6 : 8),
+                            runSpacing: isSmallMobile ? 4 : (isMobile ? 6 : 8),
+                            children: message.navigationButtons.map((location) {
+                              return Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(16),
+                                child: InkWell(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    _handleNavigation(location);
+                                  },
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isSmallMobile ? 8 : (isMobile ? 12 : 16),
+                                      vertical: isSmallMobile ? 4 : (isMobile ? 6 : 8),
                                     ),
-                                    label: Text(location),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          Theme.of(context).primaryColor,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 8,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF34A853), // Google Green
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF34A853).withValues(alpha: 0.3),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                }).toList(),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.navigation_rounded,
+                                          size: isSmallMobile ? 12 : (isMobile ? 14 : 16),
+                                          color: Colors.white,
+                                        ),
+                                        SizedBox(width: isSmallMobile ? 3 : (isMobile ? 4 : 6)),
+                                        Text(
+                                          location,
+                                          style: GoogleFonts.roboto(
+                                            color: Colors.white,
+                                            fontSize: isSmallMobile ? 11 : (isMobile ? 12 : 13),
+                                            fontWeight: FontWeight.w500,
+                                            letterSpacing: 0.1,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ],
                       ],
@@ -483,14 +705,24 @@ Be helpful, concise, and engaging. Encourage exploration!
     );
   }
 
-  Widget _buildQuickActions(bool isDark) {
+  Widget _buildQuickActions(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 16,
+        vertical: isMobile ? 8 : 12,
+      ),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade800 : Colors.grey.shade50,
+        color: isDark 
+            ? const Color(0xFF2D2D30) // Dark surface variant
+            : const Color(0xFFF7F2FA), // Light surface variant
         border: Border(
           top: BorderSide(
-            color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+            color: isDark 
+                ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                : const Color(0xFF79747E).withValues(alpha: 0.12),
+            width: 1,
           ),
         ),
       ),
@@ -498,70 +730,134 @@ Be helpful, concise, and engaging. Encourage exploration!
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            padding: EdgeInsets.only(left: isMobile ? 4 : 8, bottom: isMobile ? 6 : 8),
             child: Text(
               'Quick Actions',
               style: GoogleFonts.roboto(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white70 : Colors.black54,
+                fontSize: isMobile ? 11 : 12,
+                fontWeight: FontWeight.w600,
+                color: isDark 
+                    ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                    : const Color(0xFF49454F),
+                letterSpacing: 0.4,
               ),
             ),
           ),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children:
-                _quickActions.map((action) {
-                  return ActionChip(
-                    label: Text(
-                      action,
-                      style: GoogleFonts.roboto(fontSize: 13),
+            spacing: isMobile ? 6 : 8,
+            runSpacing: isMobile ? 6 : 8,
+            children: _quickActions.map((action) {
+              return Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _sendMessage(action);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 10 : 12,
+                      vertical: isMobile ? 6 : 8,
                     ),
-                    backgroundColor:
-                        isDark ? Colors.grey.shade700 : Colors.grey.shade200,
-                    onPressed: () => _sendMessage(action),
-                  );
-                }).toList(),
+                    decoration: BoxDecoration(
+                      color: isDark 
+                          ? const Color(0xFF49454F).withValues(alpha: 0.08)
+                          : const Color(0xFF79747E).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark 
+                            ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                            : const Color(0xFF79747E).withValues(alpha: 0.12),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      action,
+                      style: GoogleFonts.roboto(
+                        fontSize: isMobile ? 12 : 13,
+                        color: isDark 
+                            ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                            : const Color(0xFF1C1B1F),
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isMobile ? 4 : 8),
         ],
       ),
     );
   }
 
-  Widget _buildTypingIndicator(bool isDark) {
+  Widget _buildTypingIndicator(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       child: Row(
         children: [
-          const CircleAvatar(
-            radius: 14,
-            backgroundColor: Colors.blueAccent,
-            child: Icon(Icons.smart_toy, size: 16, color: Colors.white),
-          ),
-          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.all(14),
+            width: isMobile ? 28 : 32,
+            height: isMobile ? 28 : 32,
             decoration: BoxDecoration(
-              color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF4285F4), Color(0xFF34A853)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(isMobile ? 14 : 16),
+            ),
+            child: Icon(
+              Icons.smart_toy_rounded,
+              size: isMobile ? 16 : 18,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(width: isMobile ? 8 : 12),
+          Container(
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
+            decoration: BoxDecoration(
+              color: isDark 
+                  ? const Color(0xFF2D2D30) // Dark surface variant
+                  : const Color(0xFFF7F2FA), // Light surface variant
+              borderRadius: BorderRadius.circular(isMobile ? 16 : 20),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark 
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: isMobile ? 14 : 16,
+                  height: isMobile ? 14 : 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(
-                      Theme.of(context).primaryColor,
-                    ),
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF4285F4)),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Text('Thinking...', style: GoogleFonts.roboto(fontSize: 14)),
+                SizedBox(width: isMobile ? 8 : 10),
+                Text(
+                  'Thinking...',
+                  style: GoogleFonts.roboto(
+                    fontSize: isMobile ? 13 : 14,
+                    color: isDark 
+                        ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                        : const Color(0xFF1C1B1F),
+                    letterSpacing: 0.1,
+                  ),
+                ),
               ],
             ),
           ),
@@ -570,53 +866,103 @@ Be helpful, concise, and engaging. Encourage exploration!
     );
   }
 
-  Widget _buildInputArea(bool isDark) {
+  Widget _buildInputArea(bool isDark, Size size) {
+    final isMobile = size.width < AppSpacing.mobileBreakpoint;
+    
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade900 : Colors.white,
+        color: isDark 
+            ? const Color(0xFF1C1B1F) // Material Design 3 dark surface
+            : const Color(0xFFFFFBFE), // Material Design 3 light surface
         border: Border(
           top: BorderSide(
-            color: isDark ? Colors.grey.shade700 : Colors.grey.shade200,
+            color: isDark 
+                ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                : const Color(0xFF79747E).withValues(alpha: 0.12),
+            width: 1,
           ),
         ),
       ),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _controller,
-              style: GoogleFonts.roboto(fontSize: 15),
-              decoration: InputDecoration(
-                hintText: 'Ask about campus facilities...',
-                hintStyle: GoogleFonts.roboto(
-                  color: isDark ? Colors.white54 : Colors.black45,
-                ),
-                filled: true,
-                fillColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark 
+                    ? const Color(0xFF2D2D30) // Dark surface variant
+                    : const Color(0xFFF7F2FA), // Light surface variant
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark 
+                      ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                      : const Color(0xFF79747E).withValues(alpha: 0.12),
+                  width: 1,
                 ),
               ),
-              onSubmitted: (_) => _sendMessage(_controller.text),
-              maxLines: null,
+              child: TextField(
+                controller: _controller,
+                style: GoogleFonts.roboto(
+                  fontSize: isMobile ? 14 : 15,
+                  color: isDark 
+                      ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                      : const Color(0xFF1C1B1F),
+                  letterSpacing: 0.1,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Ask about campus facilities...',
+                  hintStyle: GoogleFonts.roboto(
+                    color: isDark 
+                        ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                        : const Color(0xFF49454F),
+                    fontSize: isMobile ? 14 : 15,
+                    letterSpacing: 0.1,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 16 : 20,
+                    vertical: isMobile ? 12 : 14,
+                  ),
+                ),
+                onSubmitted: (_) => _sendMessage(_controller.text),
+                maxLines: null,
+                textInputAction: TextInputAction.send,
+              ),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: isMobile ? 8 : 12),
           Material(
-            color: Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(30),
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
             child: InkWell(
-              onTap: () => _sendMessage(_controller.text),
-              borderRadius: BorderRadius.circular(30),
-              child: const Padding(
-                padding: EdgeInsets.all(14),
-                child: Icon(Icons.send_rounded, color: Colors.white, size: 24),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _sendMessage(_controller.text);
+              },
+              borderRadius: BorderRadius.circular(24),
+              child: Container(
+                width: isMobile ? 44 : 48,
+                height: isMobile ? 44 : 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF4285F4), Color(0xFF4285F4)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4285F4).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: isMobile ? 20 : 24,
+                ),
               ),
             ),
           ),

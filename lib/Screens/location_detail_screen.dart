@@ -108,10 +108,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     if (viewType == 'webgl') {
       final url = AppConstants.webglUrlFor(widget.locationData.name);
       if (url == null || url.isEmpty) {
-        _showSnackBar(
-          'Virtual tour is not available for this location',
-          isError: true,
-        );
+        // Virtual tour not available - removed snackbar feedback for cleaner UX
         return;
       }
 
@@ -144,32 +141,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     );
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(message, style: GoogleFonts.roboto(fontSize: 14)),
-            ),
-          ],
-        ),
-        backgroundColor:
-            isError ? Colors.red.shade400 : Theme.of(context).primaryColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
+  // Removed _showSnackBar method for cleaner UX
 
   @override
   Widget build(BuildContext context) {
@@ -205,11 +177,12 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: [
-            isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-            isDark ? const Color(0xFF1A1A1A) : const Color(0xFFFFFFFF),
+            // Material Design 3 surface colors matching chatbot
+            isDark ? const Color(0xFF000000) : const Color(0xFFFFFBFE),
+            isDark ? const Color(0xFF000000) : const Color(0xFFFFFBFE),
           ],
         ),
       ),
@@ -223,29 +196,42 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
       elevation: 0,
       backgroundColor:
           isDark
-              ? const Color(0xFF1A1A1A).withValues(alpha: _isScrolled ? 0.95 : 0)
-              : Colors.white.withValues(alpha: _isScrolled ? 0.95 : 0),
+              ? const Color(0xFF000000).withValues(alpha: _isScrolled ? 0.95 : 0) // Material Design 3 dark surface
+              : const Color(0xFFFFFBFE).withValues(alpha: _isScrolled ? 0.95 : 0), // Material Design 3 light surface
       leading: Padding(
         padding: const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(
+            // Material Design 3 surface container colors
             color:
                 isDark
-                    ? Colors.black.withValues(alpha: 0.3)
-                    : Colors.white.withValues(alpha: 0.9),
+                    ? const Color(0xFF2D2D30).withValues(alpha: 0.8) // Dark surface variant
+                    : const Color(0xFFFFFBFE).withValues(alpha: 0.95), // Light surface
             shape: BoxShape.circle,
+            // Material Design 3 shadows
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: isDark 
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
+            // Material Design 3 border
+            border: Border.all(
+              color: isDark 
+                  ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                  : const Color(0xFF79747E).withValues(alpha: 0.12),
+              width: 1,
+            ),
           ),
           child: IconButton(
             icon: Icon(
               Icons.arrow_back_ios_new_rounded,
-              color: isDark ? Colors.white : Colors.black87,
+              color: isDark 
+                  ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                  : const Color(0xFF1C1B1F),
               size: 20,
             ),
             onPressed: () => mounted ? Navigator.pop(context) : null,
@@ -363,7 +349,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             FadeInUp(
               duration: const Duration(milliseconds: 700),
               delay: const Duration(milliseconds: 100),
-              child: _buildAboutSection(theme, isMobile),
+              child: _buildAboutSection(theme, isMobile, isDark),
             ),
             SizedBox(height: isMobile ? 48 : 56),
             FadeInUp(
@@ -378,7 +364,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     );
   }
 
-  Widget _buildAboutSection(ThemeData theme, bool isMobile) {
+  Widget _buildAboutSection(ThemeData theme, bool isMobile, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -391,7 +377,9 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           style: GoogleFonts.roboto(
             fontSize: isMobile ? 15 : 18,
             height: 1.7,
-            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
+            color: isDark 
+                ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                : const Color(0xFF49454F),
             letterSpacing: 0.2,
           ),
         ),
@@ -413,7 +401,9 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           style: GoogleFonts.roboto(
             fontSize: isMobile ? 24 : 36,
             fontWeight: FontWeight.w900,
-            color: theme.textTheme.headlineMedium?.color,
+            color: isDark 
+                ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                : const Color(0xFF1C1B1F),
             height: 1.2,
             letterSpacing: -0.5,
           ),
@@ -423,7 +413,10 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           'What makes this location special',
           style: GoogleFonts.roboto(
             fontSize: isMobile ? 14 : 16,
-            color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+            color: isDark 
+                ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                : const Color(0xFF49454F),
+            letterSpacing: 0.1,
           ),
         ),
         SizedBox(height: isMobile ? 24 : 32),
@@ -468,22 +461,28 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                                 crossAxisCount,
                     padding: EdgeInsets.all(isMobile ? 20 : 24),
                     decoration: BoxDecoration(
+                      // Material Design 3 surface container colors
                       color:
                           isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.white,
+                              ? const Color(0xFF2D2D30) // Dark surface variant
+                              : const Color(0xFFF7F2FA), // Light surface variant
                       borderRadius: BorderRadius.circular(20),
+                      // Material Design 3 border
                       border: Border.all(
                         color:
                             isDark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.black.withValues(alpha: 0.05),
+                                ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                                : const Color(0xFF79747E).withValues(alpha: 0.12),
+                        width: 1,
                       ),
+                      // Material Design 3 shadows
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 4),
+                          color: isDark 
+                              ? Colors.black.withValues(alpha: 0.2)
+                              : Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -493,12 +492,12 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: theme.primaryColor.withValues(alpha: 0.1),
+                            color: const Color(0xFF4285F4).withValues(alpha: 0.1), // Google Blue matching chatbot
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
                             feature['icon'] ?? Icons.star_outline,
-                            color: theme.primaryColor,
+                            color: const Color(0xFF4285F4), // Google Blue matching chatbot
                             size: isMobile ? 24 : 28,
                           ),
                         ),
@@ -507,8 +506,11 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                           feature['title'] ?? 'Feature',
                           style: GoogleFonts.roboto(
                             fontSize: isMobile ? 16 : 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.3,
+                            fontWeight: FontWeight.w700,
+                            color: isDark 
+                                ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                                : const Color(0xFF1C1B1F),
+                            letterSpacing: -0.2,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -517,8 +519,10 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                           style: GoogleFonts.roboto(
                             fontSize: isMobile ? 13 : 14,
                             height: 1.5,
-                            color: theme.textTheme.bodyMedium?.color
-                                ?.withValues(alpha: 0.7),
+                            color: isDark 
+                                ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                                : const Color(0xFF49454F),
+                            letterSpacing: 0.1,
                           ),
                         ),
                       ],

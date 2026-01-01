@@ -252,21 +252,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
       // Show transition animation for flag change
       _playFlagTransitionAnimation();
       
-      // Show language change confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Text(language.flag, style: const TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Text('Language changed to ${language.name}'),
-            ],
-          ),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+      // Language changed - removed snackbar feedback for cleaner UX
     }
     
     _closeDropdown();
