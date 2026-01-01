@@ -1,377 +1,259 @@
-// import 'dart:async';
-// import 'package:flutter/material.dart';
-// import 'package:flutter/scheduler.dart';
-// import '../logging/app_logger.dart';
-// import '../platform/platform_utils.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import '../logging/app_logger.dart';
+import '../animation/animation_config.dart';
 
-// /// Performance monitoring system for tracking app performance
-// /// 
-// /// This system monitors frame rates, memory usage, and other performance
-// /// metrics to help identify and resolve performance issues.
-// class PerformanceMonitor {
-//   static final PerformanceMonitor _instance = PerformanceMonitor._internal();
-//   factory PerformanceMonitor() => _instance;
-//   PerformanceMonitor._internal();
-  
-//   final List<Duration> _frameTimes = [];
-//   final Map<String, Stopwatch> _operations = {};
-//   final Map<String, List<Duration>> _operationHistory = {};
-  
-//   Timer? _monitoringTimer;
-//   bool _isMonitoring = false;
-//   int _frameCount = 0;
-//   double _averageFPS = 60.0;
-  
-//   // Performance thresholds
-//   static const Duration _slowFrameThreshold = Duration(milliseconds: 16); // 60 FPS
-//   static const Duration _jankFrameThreshold = Duration(milliseconds: 32); // 30 FPS
-//   static const int _maxFrameHistory = 120; // 2 seconds at 60 FPS
-  
-//   /// Start performance monitoring
-//   void startMonitoring() {
-//     if (_isMonitoring) return;
-    
-//     try {
-//       _isMonitoring = true;
-      
-//       // Monitor frame performance
-//       SchedulerBinding.instance.addPersistentFrameCallback(_onFrame);
-      
-//       // Start periodic reporting
-//       _monitoringTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-//         _reportPerformanceMetrics();
-//       });
-      
-//       AppLogger.info('Performance monitoring started',
-//         component: 'PerformanceMonitor');
-//     } catch (e) {
-//       AppLogger.error('Failed to start performance monitoring',
-//         component: 'PerformanceMonitor',
-//         error: e);
-//     }
-//   }
-  
-//   /// Stop performance monitoring
-//   void stopMonitoring() {
-//     if (!_isMonitoring) return;
-    
-//     try {
-//       _isMonitoring = false;
-      
-//       SchedulerBinding.instance.removePersistentFrameCallback(_onFrame);
-//       _monitoringTimer?.cancel();
-//       _monitoringTimer = null;
-      
-//       AppLogger.info('Performance monitoring stopped',
-//         component: 'PerformanceMonitor');
-//     } catch (e) {
-//       AppLogger.error('Failed to stop performance monitoring',
-//         component: 'PerformanceMonitor',
-//         error: e);
-//     }
-//   }
-  
-//   /// Start timing an operation
-//   void startOperation(String operationName) {
-//     try {
-//       final stopwatch = Stopwatch()..start();
-//       _operations[operationName] = stopwatch;
-      
-//       AppLogger.debug('Started timing operation',
-//         component: 'PerformanceMonitor',
-//         metadata: {'operation': operationName});
-//     } catch (e) {
-//       AppLogger.warning('Failed to start operation timing',
-//         component: 'PerformanceMonitor',
-//         error: e,
-//         metadata: {'operation': operationName});
-//     }
-//   }
-  
-//   /// End timing an operation
-//   Duration? endOperation(String operationName) {
-//     try {
-//       final stopwatch = _operations.remove(operationName);
-//       if (stopwatch == null) {
-//         AppLogger.warning('Operation not found for timing',
-//           component: 'PerformanceMonitor',
-//           metadata: {'operation': operationName});
-//         return null;
-//       }
-      
-//       stopwatch.stop();
-//       final duration = stopwatch.elapsed;
-      
-//       // Store in history
-//       _operationHistory.putIfAbsent(operationName, () => <Duration>[]);
-//       final history = _operationHistory[operationName]!;
-//       history.add(duration);
-      
-//       // Keep only recent history
-//       if (history.length > 100) {
-//         history.removeAt(0);
-//       }
-      
-//       // Log slow operations
-//       if (duration.inMilliseconds > 100) {
-//         AppLogger.warning('Slow operation detected',
-//           component: 'PerformanceMonitor',
-//           metadata: {
-//             'operation': operationName,
-//             'duration': duration.inMilliseconds,
-//           });
-//       } else {
-//         AppLogger.debug('Operation completed',
-//           component: 'PerformanceMonitor',
-//           metadata: {
-//             'operation': operationName,
-//             'duration': duration.inMilliseconds,
-//           });
-//       }
-      
-//       return duration;
-//     } catch (e) {
-//       AppLogger.error('Failed to end operation timing',
-//         component: 'PerformanceMonitor',
-//         error: e,
-//         metadata: {'operation': operationName});
-//       return null;
-//     }
-//   }
-  
-//   /// Time an async operation
-//   Future<T> timeAsyncOperation<T>(
-//     String operationName,
-//     Future<T> Function() operation,
-//   ) async {
-//     startOperation(operationName);
-//     try {
-//       final result = await operation();
-//       endOperation(operationName);
-//       return result;
-//     } catch (e) {
-//       endOperation(operationName);
-//       rethrow;
-//     }
-//   }
-  
-//   /// Time a synchronous operation
-//   T timeOperation<T>(
-//     String operationName,
-//     T Function() operation,
-//   ) {
-//     startOperation(operationName);
-//     try {
-//       final result = operation();
-//       endOperation(operationName);
-//       return result;
-//     } catch (e) {
-//       endOperation(operationName);
-//       rethrow;
-//     }
-//   }
-  
-//   /// Get current performance metrics
-//   Map<String, dynamic> getMetrics() {
-//     final metrics = <String, dynamic>{
-//       'isMonitoring': _isMonitoring,
-//       'frameCount': _frameCount,
-//       'averageFPS': _averageFPS,
-//       'activeOperations': _operations.length,
-//       'platform': PlatformUtils.isMobile ? 'mobile' : 'desktop',
-//     };
-    
-//     // Add frame performance metrics
-//     if (_frameTimes.isNotEmpty) {
-//       final sortedFrameTimes = List<Duration>.from(_frameTimes)..sort();
-//       metrics.addAll({
-//         'frameMetrics': {
-//           'count': _frameTimes.length,
-//           'averageMs': _frameTimes.map((d) => d.inMicroseconds).reduce((a, b) => a + b) / _frameTimes.length / 1000,
-//           'p50Ms': sortedFrameTimes[sortedFrameTimes.length ~/ 2].inMicroseconds / 1000,
-//           'p90Ms': sortedFrameTimes[(sortedFrameTimes.length * 0.9).floor()].inMicroseconds / 1000,
-//           'p99Ms': sortedFrameTimes[(sortedFrameTimes.length * 0.99).floor()].inMicroseconds / 1000,
-//           'slowFrames': _frameTimes.where((d) => d > _slowFrameThreshold).length,
-//           'jankFrames': _frameTimes.where((d) => d > _jankFrameThreshold).length,
-//         },
-//       });
-//     }
-    
-//     // Add operation metrics
-//     if (_operationHistory.isNotEmpty) {
-//       final operationMetrics = <String, Map<String, dynamic>>{};
-      
-//       _operationHistory.forEach((name, durations) {
-//         if (durations.isNotEmpty) {
-//           final sortedDurations = List<Duration>.from(durations)..sort();
-//           operationMetrics[name] = {
-//             'count': durations.length,
-//             'averageMs': durations.map((d) => d.inMicroseconds).reduce((a, b) => a + b) / durations.length / 1000,
-//             'p50Ms': sortedDurations[sortedDurations.length ~/ 2].inMicroseconds / 1000,
-//             'p90Ms': sortedDurations[(sortedDurations.length * 0.9).floor()].inMicroseconds / 1000,
-//             'maxMs': sortedDurations.last.inMicroseconds / 1000,
-//           };
-//         }
-//       });
-      
-//       metrics['operations'] = operationMetrics;
-//     }
-    
-//     return metrics;
-//   }
-  
-//   /// Handle frame callback for performance monitoring
-//   void _onFrame(Duration timestamp) {
-//     try {
-//       _frameCount++;
-      
-//       // Calculate frame time (simplified)
-//       if (_frameTimes.isNotEmpty) {
-//         final lastFrameTime = _frameTimes.last;
-//         final currentFrameTime = Duration(microseconds: timestamp.inMicroseconds);
-//         final frameDuration = currentFrameTime - lastFrameTime;
-        
-//         _frameTimes.add(frameDuration);
-        
-//         // Keep only recent frame history
-//         if (_frameTimes.length > _maxFrameHistory) {
-//           _frameTimes.removeAt(0);
-//         }
-        
-//         // Update average FPS
-//         if (_frameTimes.length >= 10) {
-//           final recentFrames = _frameTimes.sublist(_frameTimes.length - 10);
-//           final averageFrameTime = recentFrames
-//               .map((d) => d.inMicroseconds)
-//               .reduce((a, b) => a + b) / recentFrames.length;
-          
-//           _averageFPS = 1000000 / averageFrameTime; // Convert to FPS
-//         }
-//       } else {
-//         _frameTimes.add(Duration(microseconds: timestamp.inMicroseconds));
-//       }
-//     } catch (e) {
-//       AppLogger.warning('Frame callback error',
-//         component: 'PerformanceMonitor',
-//         error: e);
-//     }
-//   }
-  
-//   /// Report performance metrics periodically
-//   void _reportPerformanceMetrics() {
-//     try {
-//       final metrics = getMetrics();
-      
-//       // Log performance summary
-//       AppLogger.info('Performance metrics',
-//         component: 'PerformanceMonitor',
-//         metadata: metrics);
-      
-//       // Check for performance issues
-//       _checkPerformanceIssues(metrics);
-//     } catch (e) {
-//       AppLogger.error('Failed to report performance metrics',
-//         component: 'PerformanceMonitor',
-//         error: e);
-//     }
-//   }
-  
-//   /// Check for performance issues and log warnings
-//   void _checkPerformanceIssues(Map<String, dynamic> metrics) {
-//     try {
-//       // Check FPS
-//       final averageFPS = metrics['averageFPS'] as double?;
-//       if (averageFPS != null && averageFPS < 30) {
-//         AppLogger.warning('Low FPS detected',
-//           component: 'PerformanceMonitor',
-//           metadata: {'averageFPS': averageFPS});
-//       }
-      
-//       // Check frame metrics
-//       final frameMetrics = metrics['frameMetrics'] as Map<String, dynamic>?;
-//       if (frameMetrics != null) {
-//         final jankFrames = frameMetrics['jankFrames'] as int?;
-//         final totalFrames = frameMetrics['count'] as int?;
-        
-//         if (jankFrames != null && totalFrames != null && totalFrames > 0) {
-//           final jankPercentage = (jankFrames / totalFrames) * 100;
-//           if (jankPercentage > 5) {
-//             AppLogger.warning('High jank rate detected',
-//               component: 'PerformanceMonitor',
-//               metadata: {
-//                 'jankPercentage': jankPercentage,
-//                 'jankFrames': jankFrames,
-//                 'totalFrames': totalFrames,
-//               });
-//           }
-//         }
-//       }
-      
-//       // Check slow operations
-//       final operations = metrics['operations'] as Map<String, dynamic>?;
-//       if (operations != null) {
-//         operations.forEach((name, opMetrics) {
-//           final averageMs = opMetrics['averageMs'] as double?;
-//           if (averageMs != null && averageMs > 100) {
-//             AppLogger.warning('Slow operation detected',
-//               component: 'PerformanceMonitor',
-//               metadata: {
-//                 'operation': name,
-//                 'averageMs': averageMs,
-//               });
-//           }
-//         });
-//       }
-//     } catch (e) {
-//       AppLogger.error('Failed to check performance issues',
-//         component: 'PerformanceMonitor',
-//         error: e);
-//     }
-//   }
-  
-//   /// Clear all performance data
-//   void clearMetrics() {
-//     _frameTimes.clear();
-//     _operations.clear();
-//     _operationHistory.clear();
-//     _frameCount = 0;
-//     _averageFPS = 60.0;
-    
-//     AppLogger.info('Performance metrics cleared',
-//       component: 'PerformanceMonitor');
-//   }
-  
-//   /// Dispose of resources
-//   void dispose() {
-//     stopMonitoring();
-//     clearMetrics();
-    
-//     AppLogger.info('Performance monitor disposed',
-//       component: 'PerformanceMonitor');
-//   }
-// }
+class PerformanceMonitor {
+  static final PerformanceMonitor _instance = PerformanceMonitor._internal();
+  factory PerformanceMonitor() => _instance;
+  PerformanceMonitor._internal();
 
-// /// Mixin for widgets that need performance monitoring
-// mixin PerformanceMixin<T extends StatefulWidget> on State<T> {
-//   final PerformanceMonitor _performanceMonitor = PerformanceMonitor();
+  Timer? _memoryTimer;
+  Timer? _fpsTimer;
+  int _frameCount = 0;
+  DateTime _lastFpsCheck = DateTime.now();
+  double _currentFps = 60.0;
   
-//   /// Time a build operation
-//   Widget timeWidgetBuild(String operationName, Widget Function() builder) {
-//     return _performanceMonitor.timeOperation(operationName, builder);
-//   }
+  // Memory tracking
+  int _lastMemoryUsage = 0;
+  List<int> _memoryHistory = [];
   
-//   /// Time an async operation
-//   Future<R> timeAsync<R>(String operationName, Future<R> Function() operation) {
-//     return _performanceMonitor.timeAsyncOperation(operationName, operation);
-//   }
+  // Enhanced performance tracking for futuristic UI
+  List<double> _fpsHistory = [];
+  bool _isPerformanceOptimized = true;
+  int _droppedFrames = 0;
+  double _averageFps = 60.0;
   
-//   /// Start timing an operation
-//   void startTiming(String operationName) {
-//     _performanceMonitor.startOperation(operationName);
-//   }
+  // Performance callbacks for UI components
+  final List<Function(double)> _fpsCallbacks = [];
+  final List<Function(PerformanceStatus)> _statusCallbacks = [];
   
-//   /// End timing an operation
-//   Duration? endTiming(String operationName) {
-//     return _performanceMonitor.endOperation(operationName);
-//   }
-// }
+  // Performance thresholds
+  static const int _memoryWarningThreshold = 100 * 1024 * 1024; // 100MB
+  static const int _memoryCriticalThreshold = 200 * 1024 * 1024; // 200MB
+  static const double _fpsWarningThreshold = 45.0;
+  static const double _fpsCriticalThreshold = 30.0;
+
+  void startMonitoring() {
+    if (kDebugMode) {
+      AppLogger.info('Starting enhanced performance monitoring', component: 'PerformanceMonitor');
+      
+      _startMemoryMonitoring();
+      _startFpsMonitoring();
+    }
+  }
+
+  void stopMonitoring() {
+    _memoryTimer?.cancel();
+    _fpsTimer?.cancel();
+    AppLogger.info('Stopped performance monitoring', component: 'PerformanceMonitor');
+  }
+
+  void _startMemoryMonitoring() {
+    _memoryTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _checkMemoryUsage();
+    });
+  }
+
+  void _startFpsMonitoring() {
+    SchedulerBinding.instance.addPersistentFrameCallback(_onFrame);
+    
+    _fpsTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _calculateFps();
+    });
+  }
+
+  void _onFrame(Duration timestamp) {
+    _frameCount++;
+  }
+
+  void _calculateFps() {
+    final now = DateTime.now();
+    final elapsed = now.difference(_lastFpsCheck).inMilliseconds;
+    
+    if (elapsed >= 1000) {
+      _currentFps = (_frameCount * 1000.0) / elapsed;
+      _frameCount = 0;
+      _lastFpsCheck = now;
+      
+      // Track FPS history
+      _fpsHistory.add(_currentFps);
+      if (_fpsHistory.length > 60) { // Keep last 60 seconds
+        _fpsHistory.removeAt(0);
+      }
+      
+      // Calculate average FPS
+      _averageFps = _fpsHistory.reduce((a, b) => a + b) / _fpsHistory.length;
+      
+      // Track dropped frames
+      if (_currentFps < AnimationConfig.targetFPS * 0.9) {
+        _droppedFrames++;
+      }
+      
+      _checkFpsPerformance();
+      _notifyFpsCallbacks();
+    }
+  }
+
+  void _checkMemoryUsage() {
+    // Note: Actual memory usage tracking would require platform-specific implementation
+    // This is a simplified version for demonstration
+    
+    if (Platform.isAndroid || Platform.isIOS) {
+      // On mobile platforms, we'd use platform channels to get actual memory usage
+      // For now, we'll simulate memory tracking
+      _simulateMemoryCheck();
+    }
+  }
+
+  void _simulateMemoryCheck() {
+    // Simulate memory usage (in a real app, this would be actual memory readings)
+    final currentMemory = _lastMemoryUsage + (DateTime.now().millisecondsSinceEpoch % 1000);
+    _lastMemoryUsage = currentMemory;
+    _memoryHistory.add(currentMemory);
+    
+    // Keep only last 20 readings
+    if (_memoryHistory.length > 20) {
+      _memoryHistory.removeAt(0);
+    }
+    
+    if (currentMemory > _memoryCriticalThreshold) {
+      AppLogger.warning('Critical memory usage detected', 
+        component: 'PerformanceMonitor',
+        metadata: {'memoryUsage': currentMemory});
+    } else if (currentMemory > _memoryWarningThreshold) {
+      AppLogger.info('High memory usage detected', 
+        component: 'PerformanceMonitor',
+        metadata: {'memoryUsage': currentMemory});
+    }
+  }
+
+  void _checkFpsPerformance() {
+    final previousStatus = performanceStatus;
+    
+    if (_currentFps < _fpsCriticalThreshold) {
+      AppLogger.warning('Critical FPS drop detected', 
+        component: 'PerformanceMonitor',
+        metadata: {'fps': _currentFps, 'averageFps': _averageFps});
+      _isPerformanceOptimized = false;
+    } else if (_currentFps < _fpsWarningThreshold) {
+      AppLogger.info('FPS performance warning', 
+        component: 'PerformanceMonitor',
+        metadata: {'fps': _currentFps, 'averageFps': _averageFps});
+      _isPerformanceOptimized = false;
+    } else {
+      _isPerformanceOptimized = true;
+    }
+    
+    // Notify status callbacks if status changed
+    if (previousStatus != performanceStatus) {
+      _notifyStatusCallbacks();
+    }
+  }
+
+  void _notifyFpsCallbacks() {
+    for (final callback in _fpsCallbacks) {
+      try {
+        callback(_currentFps);
+      } catch (e) {
+        AppLogger.error('Error in FPS callback', 
+          component: 'PerformanceMonitor', error: e);
+      }
+    }
+  }
+
+  void _notifyStatusCallbacks() {
+    for (final callback in _statusCallbacks) {
+      try {
+        callback(performanceStatus);
+      } catch (e) {
+        AppLogger.error('Error in status callback', 
+          component: 'PerformanceMonitor', error: e);
+      }
+    }
+  }
+
+  // Enhanced API for futuristic UI components
+  void addFpsCallback(Function(double) callback) {
+    _fpsCallbacks.add(callback);
+  }
+
+  void removeFpsCallback(Function(double) callback) {
+    _fpsCallbacks.remove(callback);
+  }
+
+  void addStatusCallback(Function(PerformanceStatus) callback) {
+    _statusCallbacks.add(callback);
+  }
+
+  void removeStatusCallback(Function(PerformanceStatus) callback) {
+    _statusCallbacks.remove(callback);
+  }
+
+  // Performance optimization suggestions
+  PerformanceOptimization getOptimizationSuggestion() {
+    if (_currentFps < AnimationConfig.minFPS) {
+      return PerformanceOptimization.reduceAnimations;
+    } else if (_averageFps < AnimationConfig.targetFPS * 0.8) {
+      return PerformanceOptimization.reduceEffects;
+    } else if (_droppedFrames > 10) {
+      return PerformanceOptimization.optimizeShapes;
+    }
+    return PerformanceOptimization.none;
+  }
+
+  // Auto-optimization based on performance
+  bool shouldReduceAnimations() {
+    return _currentFps < AnimationConfig.minFPS;
+  }
+
+  bool shouldReduceShapes() {
+    return _averageFps < AnimationConfig.targetFPS * 0.7;
+  }
+
+  bool shouldDisableEffects() {
+    return _currentFps < _fpsCriticalThreshold;
+  }
+
+  // Getters for current performance metrics
+  double get currentFps => _currentFps;
+  double get averageFps => _averageFps;
+  int get currentMemoryUsage => _lastMemoryUsage;
+  List<int> get memoryHistory => List.unmodifiable(_memoryHistory);
+  List<double> get fpsHistory => List.unmodifiable(_fpsHistory);
+  bool get isPerformanceOptimized => _isPerformanceOptimized;
+  int get droppedFrames => _droppedFrames;
+  
+  // Performance status
+  PerformanceStatus get performanceStatus {
+    if (_currentFps < _fpsCriticalThreshold || _lastMemoryUsage > _memoryCriticalThreshold) {
+      return PerformanceStatus.critical;
+    } else if (_currentFps < _fpsWarningThreshold || _lastMemoryUsage > _memoryWarningThreshold) {
+      return PerformanceStatus.warning;
+    }
+    return PerformanceStatus.good;
+  }
+
+  // Reset performance tracking
+  void resetTracking() {
+    _fpsHistory.clear();
+    _droppedFrames = 0;
+    _averageFps = 60.0;
+    AppLogger.info('Performance tracking reset', component: 'PerformanceMonitor');
+  }
+}
+
+enum PerformanceStatus {
+  good,
+  warning,
+  critical,
+}
+
+enum PerformanceOptimization {
+  none,
+  optimizeShapes,
+  reduceEffects,
+  reduceAnimations,
+}

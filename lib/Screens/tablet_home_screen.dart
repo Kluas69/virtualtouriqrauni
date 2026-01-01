@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -9,6 +8,10 @@ import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
+import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
+import 'package:virtualtouriu/core/widgets/section_divider.dart';
+import 'package:virtualtouriu/core/design/app_spacing.dart';
+import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 import 'package:animate_do/animate_do.dart';
 
@@ -28,10 +31,14 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
   bool _showRightArrow = true;
   bool _isHeaderVisible = true;
   double _lastScrollPosition = 0;
+  
+  // Futuristic UI state
+  late FuturisticUIState _futuristicUIState;
 
   @override
   void initState() {
     super.initState();
+    _futuristicUIState = FuturisticUIState();
     _scrollController = ScrollController();
     _scrollController.addListener(_handleScroll);
 
@@ -251,11 +258,198 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
     }
   }
 
+  void _handleQuickAction(QuickAction action) {
+    // Handle quick action tap
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text('Quick action: ${action.title}')),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedCarouselSection(
+    Size size,
+    double cardHeight,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: size.width < AppSpacing.mobileBreakpoint 
+            ? 16.0 
+            : size.width < AppSpacing.tabletBreakpoint 
+                ? 24.0 
+                : 32.0,
+        vertical: AppSpacing.getSectionSpacing(size) * 0.5,
+      ),
+      child: Column(
+        children: [
+          // Section Header - Simple without animations
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: size.width < AppSpacing.mobileBreakpoint ? 16.0 : 24.0,
+              vertical: size.width < AppSpacing.mobileBreakpoint ? 16.0 : 24.0,
+            ),
+            child: Column(
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      isDark ? Colors.white : Colors.black87,
+                      theme.primaryColor,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Text(
+                    'Campus Locations',
+                    style: TextStyle(
+                      fontSize: size.width < AppSpacing.mobileBreakpoint ? 24 : 
+                               size.width < AppSpacing.tabletBreakpoint ? 28 : 32,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                      letterSpacing: -0.5,
+                      color: Colors.white, // This will be masked by the shader
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 8 : 12),
+                Text(
+                  'Take a virtual journey through our stunning campus facilities and discover what makes IQRA University special',
+                  style: TextStyle(
+                    fontSize: size.width < AppSpacing.mobileBreakpoint ? 12 : 
+                             size.width < AppSpacing.tabletBreakpoint ? 14 : 16,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    letterSpacing: 0.2,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 20 : 32),
+          
+          // Simple Carousel without white box container
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                height: cardHeight,
+                child: HomeScreen.buildCarousel(
+                  context: context,
+                  cardHeight: cardHeight,
+                  controller: _controller,
+                  selectedIndex: _selectedIndex,
+                  isInteracting: _isInteracting,
+                  onPageChanged: (index) => setState(() => _selectedIndex = index),
+                  isDesktop: size.width > AppSpacing.tabletBreakpoint,
+                  onTap: (_) {},
+                  setInteracting: (_) {},
+                ),
+              ),
+              
+              // Navigation Arrows - responsive positioning with transparent style
+              if (_showLeftArrow && size.width > AppSpacing.mobileBreakpoint)
+                Positioned(
+                  left: size.width < AppSpacing.tabletBreakpoint ? -10 : -20,
+                  child: NavigationArrow(
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    onPressed: () => _navigateToPage(-1),
+                    isDark: isDark,
+                  ),
+                ),
+              if (_showRightArrow && size.width > AppSpacing.mobileBreakpoint)
+                Positioned(
+                  right: size.width < AppSpacing.tabletBreakpoint ? -10 : -20,
+                  child: NavigationArrow(
+                    icon: Icons.arrow_forward_ios_rounded,
+                    onPressed: () => _navigateToPage(1),
+                    isDark: isDark,
+                  ),
+                ),
+            ],
+          ),
+          
+          SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 20 : 32),
+          
+          // Responsive Page Indicators
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: size.width < AppSpacing.mobileBreakpoint ? 16 : 24,
+              vertical: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
+            ),
+            decoration: BoxDecoration(
+              color: isDark 
+                  ? Colors.black.withValues(alpha: 0.4)
+                  : Colors.white.withValues(alpha: 0.9),
+              borderRadius: BorderRadius.circular(
+                size.width < AppSpacing.mobileBreakpoint ? 20 : 30,
+              ),
+              border: Border.all(
+                color: isDark 
+                    ? Colors.grey.withValues(alpha: 0.2)
+                    : Colors.black.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SmoothPageIndicator(
+                  controller: _controller,
+                  count: AppConstants.locationCards.length,
+                  effect: WormEffect(
+                    dotWidth: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
+                    dotHeight: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
+                    spacing: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
+                    activeDotColor: theme.primaryColor,
+                    dotColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                  ),
+                ),
+                if (size.width > AppSpacing.mobileBreakpoint) ...[
+                  const SizedBox(width: 20),
+                  Container(
+                    width: 1,
+                    height: 20,
+                    color: isDark 
+                        ? Colors.grey.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.2),
+                  ),
+                  const SizedBox(width: 20),
+                  PageCounter(
+                    currentIndex: _selectedIndex,
+                    totalCount: AppConstants.locationCards.length,
+                    isDark: isDark,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _controller.removeListener(() {});
     _controller.dispose();
     _scrollController.dispose();
+    _futuristicUIState.dispose();
     super.dispose();
   }
 
@@ -283,191 +477,92 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
         final double heroHeight = (size.height * 0.55).clamp(480.0, 620.0);
         final double cardHeight = (size.width * 0.22).clamp(420.0, 520.0);
 
-        return Stack(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    isDark
-                        ? Colors.black.withValues(alpha: 0.1)
-                        : Colors.grey.shade100,
-                    isDark ? Colors.black.withValues(alpha: 0.2) : Colors.white,
+        return ChangeNotifierProvider.value(
+          value: _futuristicUIState,
+          child: Stack(
+            children: [
+              // Simple background without blur for better performance
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      isDark ? const Color(0xFF0D1117) : const Color(0xFFFAFAFA),
+                      isDark ? const Color(0xFF161B22) : const Color(0xFFFFFFFF),
+                      isDark ? const Color(0xFF0D1117) : const Color(0xFFF5F5F5),
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                ),
+              ),
+              SingleChildScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    FadeInDown(
+                      duration: const Duration(milliseconds: 600),
+                      child: SizedBox(
+                        height: heroHeight,
+                        width: double.infinity,
+                        child: HomeScreen.buildHeroSection(
+                          context: context,
+                          fontSize: (size.width * 0.065).clamp(38.0, 56.0),
+                          heightFactor: 1.0,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.getSectionSpacing(size) * 0.6),
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 700),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: size.width * 0.08,
+                        ),
+                        child: HomeScreen.buildInfoSection(
+                          context: context,
+                          isMobile: false,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: AppSpacing.getSectionSpacing(size)),
+                    
+                    // Quick Actions Grid
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 800),
+                      delay: const Duration(milliseconds: 100),
+                      child: QuickActionsGrid(
+                        isDark: isDark,
+                        onActionTapped: _handleQuickAction,
+                      ),
+                    ),
+                    
+                    // Section Divider
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 900),
+                      delay: const Duration(milliseconds: 150),
+                      child: SectionDivider(
+                        isDark: isDark,
+                        subtitle: "Explore our beautiful campus locations",
+                        height: AppSpacing.getSectionSpacing(size) * 0.8,
+                        accentColor: theme.primaryColor,
+                      ),
+                    ),
+                    // Enhanced Carousel Section
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 1000),
+                      delay: const Duration(milliseconds: 200),
+                      child: _buildEnhancedCarouselSection(size, cardHeight, isDark, theme),
+                    ),
+                    SizedBox(height: AppSpacing.getSectionSpacing(size)),
                   ],
                 ),
               ),
-              child: ClipRRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(
-                    sigmaX: isDark ? 8.0 : 5.0,
-                    sigmaY: isDark ? 8.0 : 5.0,
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    color:
-                        isDark
-                            ? Colors.black.withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.2),
-                  ),
-                ),
-              ),
-            ),
-            SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  FadeInDown(
-                    duration: const Duration(milliseconds: 600),
-                    child: SizedBox(
-                      height: heroHeight,
-                      width: double.infinity,
-                      child: HomeScreen.buildHeroSection(
-                        context: context,
-                        fontSize: (size.width * 0.065).clamp(38.0, 56.0),
-                        heightFactor: 1.0,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: size.height * 0.045),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 700),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: size.width * 0.08,
-                      ),
-                      child: HomeScreen.buildInfoSection(
-                        context: context,
-                        isMobile: false,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: size.height * 0.05),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 800),
-                    delay: const Duration(milliseconds: 100),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: size.width * 0.08,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'FEATURED LOCATIONS',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelLarge?.copyWith(
-                              color: theme.primaryColor,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2.5,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Discover Our Campus',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: (size.width * 0.04).clamp(28.0, 38.0),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: size.height * 0.05),
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 900),
-                    delay: const Duration(milliseconds: 200),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: size.width * 0.02,
-                        vertical: size.height * 0.03,
-                      ),
-                      constraints: const BoxConstraints(maxWidth: 1800),
-                      child: Column(
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                height: cardHeight + 40,
-                                child: HomeScreen.buildCarousel(
-                                  context: context,
-                                  cardHeight: cardHeight,
-                                  controller: _controller,
-                                  selectedIndex: _selectedIndex,
-                                  isInteracting: _isInteracting,
-                                  onPageChanged:
-                                      (index) => setState(
-                                        () => _selectedIndex = index,
-                                      ),
-                                  isDesktop: true,
-                                  onTap: (index) {},
-                                  setInteracting: (value) {},
-                                ),
-                              ),
-                              if (_showLeftArrow)
-                                Positioned(
-                                  left: 0,
-                                  child: NavigationArrow(
-                                    icon: Icons.arrow_back_ios_new_rounded,
-                                    onPressed: () => _navigateToPage(-1),
-                                    isDark: isDark,
-                                  ),
-                                ),
-                              if (_showRightArrow)
-                                Positioned(
-                                  right: 0,
-                                  child: NavigationArrow(
-                                    icon: Icons.arrow_forward_ios_rounded,
-                                    onPressed: () => _navigateToPage(1),
-                                    isDark: isDark,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 32),
-                          SmoothPageIndicator(
-                            controller: _controller,
-                            count: AppConstants.locationCards.length,
-                            effect: WormEffect(
-                              dotWidth: 10,
-                              dotHeight: 10,
-                              spacing: 12,
-                              activeDotColor: theme.primaryColor,
-                              dotColor:
-                                  isDark
-                                      ? Colors.grey.shade700
-                                      : Colors.grey.shade400,
-                              paintStyle: PaintingStyle.fill,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          PageCounter(
-                            currentIndex: _selectedIndex,
-                            totalCount: AppConstants.locationCards.length,
-                            isDark: isDark,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: size.height * 0.08),
-                ],
-              ),
-            ),
-            _buildAnimatedHeader(context, isDark, theme),
-            ChatbotWidget(onNavigate: _handleChatbotNavigation),
-          ],
+              _buildAnimatedHeader(context, isDark, theme),
+              ChatbotWidget(onNavigate: _handleChatbotNavigation),
+            ],
+          ),
         );
       },
     );

@@ -70,18 +70,7 @@ class MemoryManager {
       final isMobile = size.width < 600;
       
       if (isMobile) {
-        // Mobile optimization
-        AppLogger.info('Optimizing for mobile device',
-          component: 'MemoryManager',
-          metadata: {'screenWidth': size.width});
-        
-        // Trigger cleanup more frequently on mobile
-        _performCleanup();
-        
-        // Register for memory pressure monitoring
-        if (!_isInitialized) {
-          initialize();
-        }
+        optimizeForMobile();
       } else {
         // Desktop optimization
         AppLogger.debug('Optimizing for desktop device',
@@ -90,6 +79,41 @@ class MemoryManager {
       }
     } catch (e) {
       AppLogger.warning('Failed to optimize for device',
+        component: 'MemoryManager',
+        error: e);
+    }
+  }
+  
+  /// Aggressive mobile optimization
+  void optimizeForMobile() {
+    try {
+      AppLogger.info('Optimizing for mobile device',
+        component: 'MemoryManager');
+      
+      // More aggressive cleanup on mobile
+      _performCleanup();
+      
+      // Reduce cache size for mobile
+      if (_cache.length > _maxCacheSize ~/ 2) {
+        _evictOldestEntries();
+      }
+      
+      // Initialize if not already done
+      if (!_isInitialized) {
+        initialize();
+      }
+      
+      // Configure image cache for mobile
+      ImageCacheConfig.configure();
+      
+      AppLogger.info('Mobile optimization completed',
+        component: 'MemoryManager',
+        metadata: {
+          'cacheSize': _cache.length,
+          'webglContexts': _activeWebGLContexts.length,
+        });
+    } catch (e) {
+      AppLogger.warning('Failed to optimize for mobile',
         component: 'MemoryManager',
         error: e);
     }

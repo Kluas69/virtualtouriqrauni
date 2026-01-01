@@ -1,5 +1,3 @@
-// lib/Screens/desktop_home_screen.dart
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -9,8 +7,12 @@ import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
-import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
+import 'package:virtualtouriu/core/widgets/language_selector.dart';
+import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
+import 'package:virtualtouriu/core/widgets/section_divider.dart';
+import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
+import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 import 'package:animate_do/animate_do.dart';
 
@@ -33,11 +35,15 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
   bool _isHeaderVisible = true;
   double _lastScrollPosition = 0;
 
+  // Futuristic UI state
+  late FuturisticUIState _futuristicUIState;
+
   static final _initFuture = AppConstants.initialize();
 
   @override
   void initState() {
     super.initState();
+    _futuristicUIState = FuturisticUIState();
     _initializeControllers();
   }
 
@@ -134,6 +140,62 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
     }
   }
 
+  void _handleLanguageChanged(Language language) {
+    // Handle language change
+    _futuristicUIState.setCurrentLanguage(language);
+    
+    // Save language preference
+    LanguagePreferences.saveLanguage(language.code);
+    
+    // Show language change confirmation with proper RTL support
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Directionality(
+          textDirection: RTLHelper.getTextDirection(language),
+          child: Row(
+            children: [
+              Text(language.flag, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  language.isRTL 
+                      ? 'تم تغيير اللغة إلى ${language.name}'
+                      : 'Language changed to ${language.name}',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.green,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        action: SnackBarAction(
+          label: language.isRTL ? 'تراجع' : 'Undo',
+          textColor: Colors.white,
+          onPressed: () {
+            // Revert to previous language (English as default)
+            _futuristicUIState.setCurrentLanguage(Language.english);
+            LanguagePreferences.saveLanguage(Language.english.code);
+          },
+        ),
+      ),
+    );
+    
+    // Apply RTL layout if needed
+    if (language.isRTL) {
+      // Force rebuild with RTL direction
+      setState(() {});
+    }
+  }
+
+  void _handleQuickAction(QuickAction action) {
+    // Handle quick action tap - search functionality now accessed through actions
+    _showSnackBar('Quick action: ${action.title}', Colors.blue);
+    // The action's onTap will be called automatically
+  }
+
   int _findLocationIndex(String location) {
     final normalized = location.toLowerCase().trim();
     return AppConstants.locationCards.indexWhere(
@@ -193,6 +255,7 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
   void dispose() {
     _controller?.dispose();
     if (widget.scrollController == null) _scrollController.dispose();
+    _futuristicUIState.dispose();
     super.dispose();
   }
 
@@ -202,69 +265,83 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
     final theme = Theme.of(context);
     final size = MediaQuery.of(context).size;
 
-    return FutureBuilder<void>(
-      future: _initFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return ChangeNotifierProvider.value(
+      value: _futuristicUIState,
+      child: FutureBuilder<void>(
+        future: _initFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              'Error: ${snapshot.error}',
-              style: const TextStyle(color: Colors.red, fontSize: 16),
-            ),
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            );
+          }
+
+          final heroHeight = (size.height * 0.52).clamp(500.0, 650.0);
+          final cardHeight = (size.width * 0.20).clamp(420.0, 520.0);
+
+          return Stack(
+            children: [
+              // Main content without floating shapes
+              Stack(
+                children: [
+                  _buildBackground(isDark),
+                  _buildScrollableContent(
+                    size,
+                    heroHeight,
+                    cardHeight,
+                    isDark,
+                    theme,
+                  ),
+                ],
+              ),
+              _buildAnimatedHeader(isDark, theme),
+              ChatbotWidget(onNavigate: _handleChatbotNavigation),
+            ],
           );
-        }
-
-        final heroHeight = (size.height * 0.52).clamp(500.0, 650.0);
-        final cardHeight = (size.width * 0.20).clamp(420.0, 520.0);
-
-        return Stack(
-          children: [
-            _buildBackground(isDark),
-            _buildScrollableContent(
-              size,
-              heroHeight,
-              cardHeight,
-              isDark,
-              theme,
-            ),
-            _buildAnimatedHeader(isDark, theme),
-            ChatbotWidget(onNavigate: _handleChatbotNavigation),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 
   Widget _buildBackground(bool isDark) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+    return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            isDark ? Colors.black.withValues(alpha: 0.1) : Colors.grey.shade100,
-            isDark ? Colors.black.withValues(alpha: 0.2) : Colors.white,
-          ],
-        ),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: isDark ? 8 : 5,
-          sigmaY: isDark ? 8 : 5,
-        ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.2),
-        ),
+        gradient: _buildSimpleBackgroundGradient(isDark),
       ),
     );
+  }
+
+  LinearGradient _buildSimpleBackgroundGradient(bool isDark) {
+    if (isDark) {
+      return const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF0D1117),
+          Color(0xFF161B22),
+          Color(0xFF0D1117),
+        ],
+        stops: [0.0, 0.5, 1.0],
+      );
+    } else {
+      return const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFFFAFAFA),
+          Color(0xFFFFFFFF),
+          Color(0xFFF5F5F5),
+        ],
+        stops: [0.0, 0.5, 1.0],
+      );
+    }
   }
 
   Widget _buildScrollableContent(
@@ -290,7 +367,7 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
               ),
             ),
           ),
-          SizedBox(height: size.height * 0.04),
+          SizedBox(height: AppSpacing.getSectionSpacing(size) * 0.6),
           FadeInUp(
             duration: const Duration(milliseconds: 700),
             child: Padding(
@@ -301,37 +378,116 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
               ),
             ),
           ),
-          SizedBox(height: size.height * 0.06),
+          SizedBox(height: AppSpacing.getSectionSpacing(size)),
+          
+          // Quick Actions Grid
+          FadeInUp(
+            duration: const Duration(milliseconds: 800),
+            delay: const Duration(milliseconds: 100),
+            child: QuickActionsGrid(
+              isDark: isDark,
+              onActionTapped: _handleQuickAction,
+            ),
+          ),
+          
+          // Section Divider
           FadeInUp(
             duration: const Duration(milliseconds: 900),
-            delay: const Duration(milliseconds: 200),
-            child: _buildCarouselSection(size, cardHeight, isDark, theme),
+            delay: const Duration(milliseconds: 150),
+            child: SectionDivider(
+              isDark: isDark,
+              subtitle: "Explore our beautiful campus locations",
+              height: AppSpacing.getSectionSpacing(size) * 0.8,
+              accentColor: theme.primaryColor,
+            ),
           ),
-          SizedBox(height: size.height * 0.08),
+          
+          // Enhanced Carousel Section
+          FadeInUp(
+            duration: const Duration(milliseconds: 1000),
+            delay: const Duration(milliseconds: 200),
+            child: _buildEnhancedCarouselSection(size, cardHeight, isDark, theme),
+          ),
+          SizedBox(height: AppSpacing.getSectionSpacing(size)),
         ],
       ),
     );
   }
 
-  Widget _buildCarouselSection(
+  Widget _buildEnhancedCarouselSection(
     Size size,
     double cardHeight,
     bool isDark,
     ThemeData theme,
   ) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: size.width * 0.02,
-        vertical: size.height * 0.03,
+        horizontal: size.width < AppSpacing.mobileBreakpoint 
+            ? 16.0 
+            : size.width < AppSpacing.tabletBreakpoint 
+                ? 24.0 
+                : 32.0,
+        vertical: AppSpacing.getSectionSpacing(size) * 0.5,
       ),
-      constraints: const BoxConstraints(maxWidth: 1800),
       child: Column(
         children: [
+          // Section Header - Simple without animations
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(
+              horizontal: size.width < AppSpacing.mobileBreakpoint ? 16.0 : 24.0,
+              vertical: size.width < AppSpacing.mobileBreakpoint ? 16.0 : 24.0,
+            ),
+            child: Column(
+              children: [
+                ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      isDark ? Colors.white : Colors.black87,
+                      theme.primaryColor,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Text(
+                    'Campus Locations',
+                    style: TextStyle(
+                      fontSize: size.width < AppSpacing.mobileBreakpoint ? 24 : 
+                               size.width < AppSpacing.tabletBreakpoint ? 28 : 32,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                      letterSpacing: -0.5,
+                      color: Colors.white, // This will be masked by the shader
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 8 : 12),
+                Text(
+                  'Take a virtual journey through our stunning campus facilities and discover what makes IQRA University special',
+                  style: TextStyle(
+                    fontSize: size.width < AppSpacing.mobileBreakpoint ? 12 : 
+                             size.width < AppSpacing.tabletBreakpoint ? 14 : 16,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    letterSpacing: 0.2,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 20 : 32),
+          
+          // Simple Carousel without white box container
           Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                height: cardHeight + 40,
+                height: cardHeight,
                 child: _controller == null 
                   ? const Center(child: CircularProgressIndicator())
                   : HomeScreen.buildCarousel(
@@ -340,53 +496,149 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
                       controller: _controller!,
                       selectedIndex: _selectedIndex,
                       isInteracting: false,
-                      onPageChanged:
-                          (index) => setState(() => _selectedIndex = index),
-                      isDesktop: true,
+                      onPageChanged: (index) => setState(() => _selectedIndex = index),
+                      isDesktop: size.width > AppSpacing.tabletBreakpoint,
                       onTap: (_) {},
-                  setInteracting: (_) {},
-                ),
+                      setInteracting: (_) {},
+                    ),
               ),
-              if (_showLeftArrow)
+              
+              // Navigation Arrows - responsive positioning with transparent style
+              if (_showLeftArrow && size.width > AppSpacing.mobileBreakpoint)
                 Positioned(
-                  left: 0,
-                  child: NavigationArrow(
+                  left: size.width < AppSpacing.tabletBreakpoint ? -10 : -20,
+                  child: _buildTransparentNavigationArrow(
                     icon: Icons.arrow_back_ios_new_rounded,
                     onPressed: () => _navigateToPage(-1),
                     isDark: isDark,
+                    theme: theme,
+                    size: size,
                   ),
                 ),
-              if (_showRightArrow)
+              if (_showRightArrow && size.width > AppSpacing.mobileBreakpoint)
                 Positioned(
-                  right: 0,
-                  child: NavigationArrow(
+                  right: size.width < AppSpacing.tabletBreakpoint ? -10 : -20,
+                  child: _buildTransparentNavigationArrow(
                     icon: Icons.arrow_forward_ios_rounded,
                     onPressed: () => _navigateToPage(1),
                     isDark: isDark,
+                    theme: theme,
+                    size: size,
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 32),
+          
+          SizedBox(height: size.width < AppSpacing.mobileBreakpoint ? 20 : 32),
+          
+          // Responsive Page Indicators
           if (_controller != null)
-            SmoothPageIndicator(
-              controller: _controller!,
-              count: AppConstants.locationCards.length,
-              effect: WormEffect(
-                dotWidth: 10,
-                dotHeight: 10,
-                spacing: 12,
-                activeDotColor: theme.primaryColor,
-                dotColor: isDark ? Colors.grey.shade700 : Colors.grey.shade400,
+            Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: size.width < AppSpacing.mobileBreakpoint ? 16 : 24,
+                vertical: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
+              ),
+              decoration: BoxDecoration(
+                color: isDark 
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(
+                  size.width < AppSpacing.mobileBreakpoint ? 20 : 30,
+                ),
+                border: Border.all(
+                  color: isDark 
+                      ? Colors.grey.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SmoothPageIndicator(
+                    controller: _controller!,
+                    count: AppConstants.locationCards.length,
+                    effect: WormEffect(
+                      dotWidth: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
+                      dotHeight: size.width < AppSpacing.mobileBreakpoint ? 8 : 12,
+                      spacing: size.width < AppSpacing.mobileBreakpoint ? 12 : 16,
+                      activeDotColor: theme.primaryColor,
+                      dotColor: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                    ),
+                  ),
+                  if (size.width > AppSpacing.mobileBreakpoint) ...[
+                    const SizedBox(width: 20),
+                    Container(
+                      width: 1,
+                      height: 20,
+                      color: isDark 
+                          ? Colors.grey.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.2),
+                    ),
+                    const SizedBox(width: 20),
+                    PageCounter(
+                      currentIndex: _selectedIndex,
+                      totalCount: AppConstants.locationCards.length,
+                      isDark: isDark,
+                    ),
+                  ],
+                ],
               ),
             ),
-          const SizedBox(height: 20),
-          PageCounter(
-            currentIndex: _selectedIndex,
-            totalCount: AppConstants.locationCards.length,
-            isDark: isDark,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransparentNavigationArrow({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required bool isDark,
+    required ThemeData theme,
+    required Size size,
+  }) {
+    final arrowSize = size.width < AppSpacing.mobileBreakpoint ? 40.0 : 
+                     size.width < AppSpacing.tabletBreakpoint ? 50.0 : 60.0;
+    final iconSize = size.width < AppSpacing.mobileBreakpoint ? 18.0 : 
+                     size.width < AppSpacing.tabletBreakpoint ? 20.0 : 24.0;
+    
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isDark 
+            ? Colors.black.withValues(alpha: 0.4)
+            : Colors.white.withValues(alpha: 0.9),
+        border: Border.all(
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.2)
+              : Colors.black.withValues(alpha: 0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
+            blurRadius: size.width < AppSpacing.mobileBreakpoint ? 8 : 16,
+            offset: Offset(0, size.width < AppSpacing.mobileBreakpoint ? 4 : 8),
           ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(arrowSize / 2),
+          child: Container(
+            width: arrowSize,
+            height: arrowSize,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isDark ? Colors.white : Colors.black87,
+              size: iconSize,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -399,27 +651,47 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
       left: 0,
       right: 0,
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              FadeInLeft(
-                duration: const Duration(milliseconds: 600),
-                child: HeaderBadge(
-                  isDark: isDark,
-                  text: 'IQRA Virtual Tour',
-                  icon: Icons.school,
+        child: ChangeNotifierProvider.value(
+          value: _futuristicUIState,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Left side - Badge
+                FadeInLeft(
+                  duration: const Duration(milliseconds: 600),
+                  child: HeaderBadge(
+                    isDark: isDark,
+                    text: 'IQRA Virtual Tour',
+                    icon: Icons.school,
+                  ),
                 ),
-              ),
-              FadeInRight(
-                duration: const Duration(milliseconds: 600),
-                child: ThemeToggleButton(
-                  isDark: isDark,
-                  onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+                
+                // Center - Spacer for clean layout
+                const Spacer(),
+                
+                // Right side - Language Selector and Theme Toggle
+                FadeInRight(
+                  duration: const Duration(milliseconds: 600),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      LanguageSelector(
+                        currentLanguage: _futuristicUIState.currentLanguage,
+                        onLanguageChanged: _handleLanguageChanged,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: 12),
+                      ThemeToggleButton(
+                        isDark: isDark,
+                        onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

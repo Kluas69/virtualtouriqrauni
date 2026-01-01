@@ -58,15 +58,55 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_memoryOptimized && mounted) {
-      // Initialize memory manager instead of optimizeForDevice
+      // Initialize memory manager with mobile optimizations
       try {
-        MemoryManager().initialize();
+        final size = MediaQuery.of(context).size;
+        final isMobile = size.width < 600;
+        
+        if (isMobile) {
+          // More aggressive memory optimization for mobile
+          MemoryManager().optimizeForMobile();
+          
+          // Additional mobile-specific optimizations
+          _optimizeForMobileDevice();
+        } else {
+          MemoryManager().initialize();
+        }
         _memoryOptimized = true;
       } catch (e) {
         AppLogger.warning('Memory manager initialization failed',
           component: 'CategoriesScreen',
           error: e);
       }
+    }
+  }
+
+  // Additional mobile optimizations
+  void _optimizeForMobileDevice() {
+    try {
+      // Reduce scroll sensitivity for mobile
+      if (_scrollController.hasClients) {
+        _scrollController.position.physics;
+      }
+      
+      // Optimize image cache for mobile - more aggressive settings
+      PaintingBinding.instance.imageCache.maximumSize = 30; // Reduced from 50
+      PaintingBinding.instance.imageCache.maximumSizeBytes = 25 << 20; // 25MB instead of 50MB
+      
+      // Clear existing cache to start fresh
+      PaintingBinding.instance.imageCache.clear();
+      
+      // Force a small delay to let memory settle
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          // Additional mobile-specific optimizations can go here
+        }
+      });
+      
+    } catch (e) {
+      AppLogger.warning('Mobile optimization failed', 
+        component: 'CategoriesScreen',
+        error: e);
     }
   }
 
@@ -174,6 +214,24 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             backgroundColor:
                 isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
             body: ErrorState(message: 'Error: ${snapshot.error}'),
+          );
+        }
+
+        // Additional safety check for mobile devices
+        if (isMobile && !_memoryOptimized) {
+          return Scaffold(
+            backgroundColor:
+                isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+            body: LoadingState(isDark: isDark, message: 'Optimizing for mobile...'),
+          );
+        }
+
+        // Additional check to ensure all data is loaded before rendering
+        if (AppConstants.locationCards.isEmpty) {
+          return Scaffold(
+            backgroundColor:
+                isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+            body: LoadingState(isDark: isDark, message: 'Loading location data...'),
           );
         }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
@@ -11,6 +10,10 @@ import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
+import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
+import 'package:virtualtouriu/core/widgets/section_divider.dart';
+import 'package:virtualtouriu/core/design/app_spacing.dart';
+import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 
 class MobileHomeScreenOptimized extends StatefulWidget {
@@ -31,12 +34,16 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
   bool _isHeaderVisible = true;
   double _lastScrollPosition = 0;
   bool _memoryOptimized = false;
+  
+  // Futuristic UI state
+  late FuturisticUIState _futuristicUIState;
 
   static final _initFuture = AppConstants.initialize();
 
   @override
   void initState() {
     super.initState();
+    _futuristicUIState = FuturisticUIState();
     _initializeControllers();
   }
 
@@ -138,10 +145,16 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
     );
   }
 
+  void _handleQuickAction(QuickAction action) {
+    // Handle quick action tap
+    _showSnackBar('Quick action: ${action.title}', true);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     if (widget.scrollController == null) _scrollController.dispose();
+    _futuristicUIState.dispose();
     super.dispose();
   }
 
@@ -180,19 +193,22 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
         final heroHeight = (size.height * 0.50).clamp(380.0, 520.0);
         final cardHeight = size.height * 0.40;
 
-        return Stack(
-          children: [
-            _buildSimpleBackground(isDark),
-            _buildScrollableContent(
-              size,
-              heroHeight,
-              cardHeight,
-              isDark,
-              theme,
-            ),
-            _buildAnimatedHeader(isDark, theme),
-            ChatbotWidget(onNavigate: _handleChatbotNavigation),
-          ],
+        return ChangeNotifierProvider.value(
+          value: _futuristicUIState,
+          child: Stack(
+            children: [
+              _buildSimpleBackground(isDark),
+              _buildScrollableContent(
+                size,
+                heroHeight,
+                cardHeight,
+                isDark,
+                theme,
+              ),
+              _buildAnimatedHeader(isDark, theme),
+              ChatbotWidget(onNavigate: _handleChatbotNavigation),
+            ],
+          ),
         );
       },
     );
@@ -240,11 +256,25 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: _buildMobileInfoSection(context, theme, isDark),
           ),
-          SizedBox(height: size.height * 0.05),
+          SizedBox(height: AppSpacing.getSectionSpacing(size)),
+
+          // Quick Actions Grid
+          QuickActionsGrid(
+            isDark: isDark,
+            onActionTapped: _handleQuickAction,
+          ),
+          
+          // Section Divider
+          SectionDivider(
+            isDark: isDark,
+            subtitle: "Explore our beautiful campus locations",
+            height: AppSpacing.getSectionSpacing(size) * 0.8,
+            accentColor: theme.primaryColor,
+          ),
 
           // Carousel section
           _buildCarouselSection(size, cardHeight, isDark, theme),
-          SizedBox(height: size.height * 0.08),
+          SizedBox(height: AppSpacing.getSectionSpacing(size)),
         ],
       ),
     );
@@ -404,37 +434,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
             _buildSimpleStat(Icons.explore, 'HD Quality', isDark),
           ],
         ),
-        const SizedBox(height: 24),
-
-        // Start tour button
-        Center(
-          child: ElevatedButton(
-            onPressed: () => HomeScreen.navigateToCategories(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              elevation: 4,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.explore_rounded, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Start Virtual Tour',
-                  style: GoogleFonts.roboto(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -470,6 +470,51 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
   ) {
     return Column(
       children: [
+        // Campus Locations Header - matching desktop/tablet style
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    isDark ? Colors.white : Colors.black87,
+                    theme.primaryColor,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: Text(
+                  'Campus Locations',
+                  style: GoogleFonts.roboto(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                    letterSpacing: -0.5,
+                    color: Colors.white, // This will be masked by the shader
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Take a virtual journey through our stunning campus facilities',
+                style: GoogleFonts.roboto(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  height: 1.5,
+                  letterSpacing: 0.2,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Carousel
         SizedBox(
           height: cardHeight,
           child: PageView.builder(
