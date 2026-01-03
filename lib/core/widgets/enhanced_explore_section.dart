@@ -43,8 +43,8 @@ class EnhancedExploreSection extends StatelessWidget {
           
           SizedBox(height: isMobile ? 24 : isTablet ? 32 : 40),
           
-          // 3D Tour Stats
-          _build3DTourStats(theme, isDark, size, isTablet, isDesktop),
+          // 3D Tour Features Grid
+          _build3DTourFeatures(theme, isDark, size, isTablet, isDesktop),
           
           SizedBox(height: isMobile ? 32 : isTablet ? 40 : 48),
           
@@ -62,7 +62,7 @@ class EnhancedExploreSection extends StatelessWidget {
         FadeInUp(
           duration: const Duration(milliseconds: 600),
           child: TagBadge(
-            text: '360° VIRTUAL TOUR',
+            text: '3D VIRTUAL TOUR',
             fontSize: isMobile ? 11 : isTablet ? 12 : 13,
           ),
         ),
@@ -99,7 +99,7 @@ class EnhancedExploreSection extends StatelessWidget {
           child: SizedBox(
             width: isMobile ? double.infinity : isTablet ? size.width * 0.7 : 600,
             child: Text(
-              'Experience our state-of-the-art H-9 Islamabad campus through immersive 360° virtual reality. Navigate seamlessly through facilities and discover what makes IQRA University exceptional.',
+              'Step into our H-9 Islamabad campus through immersive 3D virtual reality powered by Three.js. Navigate seamlessly through classrooms, labs, and facilities with realistic WebGL rendering.',
               style: GoogleFonts.roboto(
                 fontSize: isMobile ? 14 : isTablet ? 16 : 18,
                 height: 1.6,
@@ -170,7 +170,7 @@ class EnhancedExploreSection extends StatelessWidget {
             ],
           ),
           child: const Icon(
-            Icons.view_in_ar_rounded,
+            Icons.threed_rotation,
             size: 64,
             color: Colors.white,
           ),
@@ -184,7 +184,7 @@ class EnhancedExploreSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Immersive 3D Campus Experience',
+                'Three.js Powered 3D Experience',
                 style: GoogleFonts.roboto(
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
@@ -194,7 +194,7 @@ class EnhancedExploreSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Navigate through our campus in stunning 360-degree panoramic views. Explore classrooms, laboratories, libraries, and recreational facilities with interactive hotspots and detailed information about each location.',
+                'Navigate through our campus using advanced WebGL rendering with Three.js. Experience realistic 3D environments with first-person controls, interactive hotspots, and optimized performance across all devices.',
                 style: GoogleFonts.roboto(
                   fontSize: 16,
                   color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
@@ -233,7 +233,7 @@ class EnhancedExploreSection extends StatelessWidget {
             ],
           ),
           child: Icon(
-            Icons.view_in_ar_rounded,
+            Icons.threed_rotation,
             size: isTablet ? 48 : 40,
             color: Colors.white,
           ),
@@ -243,7 +243,7 @@ class EnhancedExploreSection extends StatelessWidget {
         
         // Title
         Text(
-          'Immersive 3D Campus Experience',
+          'Three.js Powered 3D Experience',
           style: GoogleFonts.roboto(
             fontSize: isTablet ? 24 : 20,
             fontWeight: FontWeight.w800,
@@ -256,7 +256,7 @@ class EnhancedExploreSection extends StatelessWidget {
         
         // Description
         Text(
-          'Navigate through our campus in stunning 360-degree panoramic views. Explore classrooms, laboratories, libraries, and recreational facilities with interactive hotspots.',
+          'Navigate through our campus using advanced WebGL rendering with Three.js. Experience realistic 3D environments with first-person controls and interactive hotspots.',
           style: GoogleFonts.roboto(
             fontSize: isTablet ? 15 : 14,
             color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7),
@@ -268,7 +268,7 @@ class EnhancedExploreSection extends StatelessWidget {
     );
   }
 
-  Widget _build3DTourStats(ThemeData theme, bool isDark, Size size, bool isTablet, bool isDesktop) {
+  Widget _build3DTourFeatures(ThemeData theme, bool isDark, Size size, bool isTablet, bool isDesktop) {
     return FadeInUp(
       duration: const Duration(milliseconds: 900),
       delay: const Duration(milliseconds: 300),
@@ -302,38 +302,38 @@ class EnhancedExploreSection extends StatelessWidget {
             ? Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildStatItem(theme, Icons.view_in_ar_rounded, '360°', 'Virtual Reality', isTablet, isDesktop),
+                  _buildFeatureItem(theme, Icons.web, 'WebGL', 'Hardware Accelerated', isTablet, isDesktop),
                   _buildDivider(isDark),
-                  _buildStatItem(theme, Icons.location_city, '8+', 'Campus Locations', isTablet, isDesktop),
+                  _buildFeatureItem(theme, Icons.gamepad, 'WASD', 'First-Person Controls', isTablet, isDesktop),
                   _buildDivider(isDark),
-                  _buildStatItem(theme, Icons.hd_rounded, '4K', 'Ultra HD Quality', isTablet, isDesktop),
+                  _buildFeatureItem(theme, Icons.memory, 'Optimized', 'Mobile Performance', isTablet, isDesktop),
                 ],
               )
             : isTablet
                 ? Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildStatItem(theme, Icons.view_in_ar_rounded, '360°', 'Virtual Reality', isTablet, isDesktop),
+                      _buildFeatureItem(theme, Icons.web, 'WebGL', 'Hardware Accelerated', isTablet, isDesktop),
                       _buildDivider(isDark),
-                      _buildStatItem(theme, Icons.location_city, '8+', 'Locations', isTablet, isDesktop),
+                      _buildFeatureItem(theme, Icons.gamepad, 'WASD', 'Controls', isTablet, isDesktop),
                       _buildDivider(isDark),
-                      _buildStatItem(theme, Icons.hd_rounded, '4K', 'Ultra HD', isTablet, isDesktop),
+                      _buildFeatureItem(theme, Icons.memory, 'Optimized', 'Performance', isTablet, isDesktop),
                     ],
                   )
                 : Column(
                     children: [
-                      _buildStatItem(theme, Icons.view_in_ar_rounded, '360°', 'Virtual Reality', isTablet, isDesktop),
+                      _buildFeatureItem(theme, Icons.web, 'WebGL', 'Hardware Accelerated Rendering', isTablet, isDesktop),
                       const SizedBox(height: 16),
-                      _buildStatItem(theme, Icons.location_city, '8+', 'Campus Locations', isTablet, isDesktop),
+                      _buildFeatureItem(theme, Icons.gamepad, 'WASD', 'First-Person Controls', isTablet, isDesktop),
                       const SizedBox(height: 16),
-                      _buildStatItem(theme, Icons.hd_rounded, '4K', 'Ultra HD Quality', isTablet, isDesktop),
+                      _buildFeatureItem(theme, Icons.memory, 'Optimized', 'Mobile Performance', isTablet, isDesktop),
                     ],
                   ),
       ),
     );
   }
 
-  Widget _buildStatItem(ThemeData theme, IconData icon, String value, String label, bool isTablet, bool isDesktop) {
+  Widget _buildFeatureItem(ThemeData theme, IconData icon, String value, String label, bool isTablet, bool isDesktop) {
     return Column(
       children: [
         Container(

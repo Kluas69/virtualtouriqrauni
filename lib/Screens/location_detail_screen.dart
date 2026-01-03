@@ -108,35 +108,193 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     if (viewType == 'webgl') {
       final url = AppConstants.webglUrlFor(widget.locationData.name);
       if (url == null || url.isEmpty) {
-        // Virtual tour not available - removed snackbar feedback for cleaner UX
+        // Virtual tour not available - show helpful message for mobile users
+        if (MediaQuery.of(context).size.width < 600) {
+          _showMobileWebGLUnavailableDialog();
+        }
         return;
       }
 
-      Navigator.push(
-        context,
+      // Special handling for classroom - use the integrated 3D viewer
+      if (widget.locationData.name.toLowerCase().contains('classroom') || 
+          url.contains('classroom')) {
+        
+        // For mobile devices, show a warning about 3D performance
+        if (MediaQuery.of(context).size.width < 600) {
+          _showMobile3DWarningDialog(() {
+            // CRITICAL FIX: Use Navigator.of(context).push instead of Navigator.push
+            // to prevent page refresh issues in Flutter web
+            Navigator.of(context, rootNavigator: false).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => WebGLRoomScreen(
+                  title: widget.locationData.name, 
+                  url: 'classroom' // Use 'classroom' as room ID for Three.js
+                ),
+                transitionsBuilder: (_, animation, __, child) =>
+                    FadeTransition(opacity: animation, child: child),
+                transitionDuration: const Duration(milliseconds: 400),
+                settings: RouteSettings(
+                  name: '/webgl/${widget.locationData.name}',
+                  arguments: {'url': 'classroom', 'title': widget.locationData.name},
+                ),
+              ),
+            );
+          });
+          return;
+        }
+        
+        // For desktop/tablet, proceed directly
+        Navigator.of(context, rootNavigator: false).push(
+          PageRouteBuilder(
+            pageBuilder: (_, __, ___) => WebGLRoomScreen(
+              title: widget.locationData.name, 
+              url: 'classroom' // Use 'classroom' as room ID for Three.js
+            ),
+            transitionsBuilder: (_, animation, __, child) =>
+                FadeTransition(opacity: animation, child: child),
+            transitionDuration: const Duration(milliseconds: 400),
+            settings: RouteSettings(
+              name: '/webgl/${widget.locationData.name}',
+              arguments: {'url': 'classroom', 'title': widget.locationData.name},
+            ),
+          ),
+        );
+        return;
+      }
+
+      // For other WebGL content, use the original approach
+      Navigator.of(context, rootNavigator: false).push(
         PageRouteBuilder(
-          pageBuilder:
-              (_, __, ___) =>
-                  WebGLRoomScreen(title: widget.locationData.name, url: url),
-          transitionsBuilder:
-              (_, animation, __, child) =>
-                  FadeTransition(opacity: animation, child: child),
+          pageBuilder: (_, __, ___) => WebGLRoomScreen(
+            title: widget.locationData.name, 
+            url: url
+          ),
+          transitionsBuilder: (_, animation, __, child) =>
+              FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 400),
+          settings: RouteSettings(
+            name: '/webgl/${widget.locationData.name}',
+            arguments: {'url': url, 'title': widget.locationData.name},
+          ),
         ),
       );
       return;
     }
 
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: false).push(
       PageRouteBuilder(
-        pageBuilder:
-            (_, __, ___) =>
-                PanoramaScreen(locationName: widget.locationData.name),
-        transitionsBuilder:
-            (_, animation, __, child) =>
-                FadeTransition(opacity: animation, child: child),
+        pageBuilder: (_, __, ___) => PanoramaScreen(
+          locationName: widget.locationData.name
+        ),
+        transitionsBuilder: (_, animation, __, child) =>
+            FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 400),
+        settings: RouteSettings(
+          name: '/panorama/${widget.locationData.name}',
+          arguments: {'locationName': widget.locationData.name},
+        ),
+      ),
+    );
+  }
+
+  void _showMobile3DWarningDialog(VoidCallback onProceed) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.view_in_ar, color: Colors.blue.shade600),
+            const SizedBox(width: 8),
+            const Text('3D Classroom Tour'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'You\'re about to enter an immersive 3D classroom environment optimized for mobile devices.',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.blue.shade600),
+                      const SizedBox(width: 8),
+                      const Text('Mobile Features:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('• Virtual joysticks for movement'),
+                  const Text('• Touch camera controls'),
+                  const Text('• Gyroscope support (if available)'),
+                  const Text('• Optimized graphics for mobile'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Note: For the best experience, ensure you have a stable internet connection and close other apps to free up memory.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onProceed();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Enter 3D Tour'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMobileWebGLUnavailableDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber, color: Colors.orange.shade600),
+            const SizedBox(width: 8),
+            const Text('3D Tour Unavailable'),
+          ],
+        ),
+        content: const Text(
+          'The 3D virtual tour is not available for this location on mobile devices. '
+          'Please try using a desktop browser for the full 3D experience, or explore other available content.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

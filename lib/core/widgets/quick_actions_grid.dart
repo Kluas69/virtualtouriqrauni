@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../animation/animation_config.dart';
 import '../state/futuristic_ui_state.dart';
 import '../design/app_spacing.dart';
-import '../navigation/safe_navigation.dart';
 import '../../Screens/categories.dart';
 import '../../Screens/about_university_screen.dart';
 
@@ -221,31 +220,16 @@ class QuickActionsGrid extends StatelessWidget {
     ];
   }
 
-  // Safe navigation with loading only for mobile to prevent crashes
+  // Direct navigation without loading dialogs (loading only in categories screen)
   static Future<void> _showLoadingAndNavigate(BuildContext context, Widget screen, String screenName) async {
-    final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-    
-    if (isMobile) {
-      // Mobile: Use SafeNavigation with loading dialog and proper preloading
-      await SafeNavigation.navigateToScreen(
-        context: context,
-        screen: screen,
-        screenName: screenName,
-        routeName: '/$screenName',
-        showLoadingDialog: true,
-        minLoadingTime: Duration(milliseconds: 3000), // 3 seconds for mobile stability
-      );
-    } else {
-      // Desktop/Tablet: Direct navigation without loading dialog
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => screen,
-          settings: RouteSettings(name: '/$screenName'),
-        ),
-      );
-    }
+    // Direct navigation for all platforms - no loading dialogs
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => screen,
+        settings: RouteSettings(name: '/$screenName'),
+      ),
+    );
   }
 }
 

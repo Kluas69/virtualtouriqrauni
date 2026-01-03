@@ -6,6 +6,41 @@
     "trailingSlash": false,
     "headers": [
       {
+        "source": "**/*.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "text/javascript"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.glb",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/octet-stream"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
         "source": "**/*.@(js.br|wasm.br|data.br|framework.js.br|loader.js.br|symbols.json.br)",
         "headers": [
           {
@@ -47,20 +82,11 @@
             "value": "application/wasm"
           }
         ]
-      },
-      {
-        "source": "**/*.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache"
-          }
-        ]
       }
     ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "!/threejs/**",
         "destination": "/index.html"
       }
     ]

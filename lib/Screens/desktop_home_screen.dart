@@ -13,6 +13,7 @@ import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';
 import 'package:virtualtouriu/core/widgets/enhanced_explore_section.dart';
 import 'package:virtualtouriu/core/widgets/google_style_page_indicator.dart';
+import 'package:virtualtouriu/core/widgets/developer_credit.dart';
 import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
 import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/themes/themes.dart';
@@ -304,6 +305,13 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
             duration: const Duration(milliseconds: 1000),
             delay: const Duration(milliseconds: 200),
             child: _buildEnhancedCarouselSection(size, cardHeight, isDark, theme),
+          ),
+          SizedBox(height: AppSpacing.getSectionSpacing(size)),
+          
+          // Developer Credit
+          DeveloperCredit(
+            isDark: isDark,
+            isMobile: false,
           ),
           SizedBox(height: AppSpacing.getSectionSpacing(size)),
         ],

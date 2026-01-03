@@ -56,6 +56,9 @@ dependencies:
   # Math utilities
   vector_math: ^2.1.4
 
+  # Sensors (for gyroscope support)
+  sensors_plus: ^4.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

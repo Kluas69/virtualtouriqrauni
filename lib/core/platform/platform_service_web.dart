@@ -24,10 +24,32 @@ class WebPlatformService implements PlatformService {
   bool get isWebPlatform => true;
   
   @override
-  bool get isMobilePlatform => false;
+  bool get isMobilePlatform {
+    try {
+      final userAgent = html.window.navigator.userAgent.toLowerCase();
+      // Check for mobile device indicators in user agent
+      return userAgent.contains('mobile') ||
+             userAgent.contains('android') ||
+             userAgent.contains('iphone') ||
+             userAgent.contains('ipad') ||
+             userAgent.contains('ipod') ||
+             userAgent.contains('blackberry') ||
+             userAgent.contains('windows phone') ||
+             userAgent.contains('opera mini');
+    } catch (e) {
+      // If user agent detection fails, check screen size as fallback
+      try {
+        final screen = html.window.screen;
+        final width = screen?.width ?? 1920;
+        return width < 768; // Common mobile breakpoint
+      } catch (e) {
+        return false; // Conservative fallback
+      }
+    }
+  }
   
   @override
-  bool get isDesktopPlatform => false;
+  bool get isDesktopPlatform => !isMobilePlatform;
   
   @override
   String get userAgent {

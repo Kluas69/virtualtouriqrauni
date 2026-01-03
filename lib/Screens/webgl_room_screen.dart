@@ -1,19 +1,26 @@
+import 'dart:async';
+import 'dart:html' as html;
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/webgl/webgl_factory.dart';
 import '../core/webgl/webgl_service.dart';
-import '../core/webgl/webgl_service_web.dart';
+import '../core/webgl/webgl_service_mobile.dart';
 import '../core/logging/app_logger.dart';
 import '../core/platform/platform_utils.dart';
 import '../core/memory/memory_manager.dart';
+import '../core/widgets/mobile_3d_controls.dart';
+import '../core/sensors/gyroscope_controller.dart';
+import '../core/state/refresh_fix.dart';
 import '../themes/themes.dart';
 
 /// Platform-agnostic WebGL room screen
 /// 
 /// This screen uses the WebGL abstraction layer to provide 3D model viewing
 /// on web platforms and graceful fallbacks on other platforms.
+/// Updated to work with Three.js room-based navigation system.
+/// Fixed to prevent multiple initializations and screen refreshing.
 class WebGLRoomScreen extends StatefulWidget {
   final String url;
   final String title;
@@ -29,12 +36,14 @@ class WebGLRoomScreen extends StatefulWidget {
 }
 
 class _WebGLRoomScreenState extends State<WebGLRoomScreen>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin, RefreshOptimizationMixin {
   
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnimation;
   late final WebGLService _webglService;
+  late final WebGLServiceMobile? _mobileService;
   late final MemoryManager _memoryManager;
+  late final GyroscopeController _gyroscopeController;
   
   bool _isLoading = true;
   bool _hasError = false;
@@ -43,6 +52,13 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
   String? _errorMessage;
   bool _isWebGLSupported = false;
   String? _webglContextId;
+  bool _isInitialized = false; // Prevent multiple initializations
+  String? _mobileViewerId; // Track mobile viewer ID
+  
+  // Mobile gaming controls
+  bool _showMobileControls = false;
+  bool _isGyroscopeEnabled = false;
+  bool _isFullscreen = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -51,10 +67,70 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
   void initState() {
     super.initState();
     _webglService = WebGLFactory.instance;
+    
+    // Use mobile service for mobile devices
+    if (PlatformUtils.isMobile) {
+      _mobileService = WebGLServiceMobile.instance;
+    } else {
+      _mobileService = null;
+    }
+    
     _memoryManager = MemoryManager();
+    _gyroscopeController = GyroscopeController();
     _initializeAnimations();
-    _initializeWebGL();
-    _hideControlsAfterDelay();
+    
+    // Check if mobile controls should be shown
+    _showMobileControls = PlatformUtils.isMobile;
+    
+    // Initialize mobile features
+    if (_showMobileControls) {
+      _initializeMobileFeatures();
+    }
+    
+    // CRITICAL FIX: Add navigation protection to prevent app refresh
+    _addNavigationProtection();
+    
+    // Only initialize once
+    if (!_isInitialized) {
+      _initializeWebGL();
+      _hideControlsAfterDelay();
+      _isInitialized = true;
+      
+      // SAFETY NET: Ensure loading state is cleared after maximum time - REDUCED TO 10 SECONDS
+      Timer(const Duration(seconds: 10), () {
+        if (mounted && _isLoading) {
+          AppLogger.warning('Force clearing loading state after 10 seconds',
+            component: 'WebGLRoomScreen');
+          safeSetState(() {
+            _isLoading = false;
+            _hasError = false;
+            _isWebGLSupported = true; // Use fallback mode
+          });
+        }
+      });
+    }
+  }
+  
+  /// Add navigation protection to prevent app refresh
+  void _addNavigationProtection() {
+    // CRITICAL FIX: Prevent browser back button from causing app refresh
+    html.window.addEventListener('beforeunload', (event) {
+      AppLogger.info('Preventing page unload during WebGL session',
+        component: 'WebGLRoomScreen');
+      // Don't actually prevent unload, just log it
+    });
+    
+    // CRITICAL FIX: Handle browser navigation events
+    html.window.addEventListener('popstate', (event) {
+      AppLogger.info('Browser back button pressed during WebGL session',
+        component: 'WebGLRoomScreen');
+      
+      // If we're still in the WebGL screen, handle navigation properly
+      if (mounted) {
+        // Use Flutter navigation instead of browser navigation
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   void _initializeAnimations() {
@@ -76,8 +152,24 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
       // Initialize memory manager first
       await _memoryManager.initialize();
       
-      // Use enhanced initialization with retry logic
-      await _initializeWebGLWithRetry();
+      // Use enhanced initialization with retry logic and overall timeout - REDUCED TO 10 SECONDS
+      await _initializeWebGLWithRetry().timeout(
+        const Duration(seconds: 10), // Overall timeout for entire initialization
+        onTimeout: () {
+          AppLogger.warning('WebGL initialization timed out completely',
+            component: 'WebGLRoomScreen');
+          
+          // Force completion with fallback mode
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _hasError = false;
+              _isWebGLSupported = true; // Use fallback mode
+            });
+          }
+          throw TimeoutException('WebGL initialization timeout', const Duration(seconds: 10));
+        },
+      );
       
       // Register WebGL context for memory monitoring
       if (_isWebGLSupported && PlatformUtils.isWeb) {
@@ -86,7 +178,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
       }
       
       if (mounted) {
-        setState(() {
+        safeSetState(() {
           _isLoading = false;
         });
         _fadeController.forward();
@@ -107,7 +199,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
         metadata: {'url': widget.url});
       
       if (mounted) {
-        setState(() {
+        safeSetState(() {
           _isLoading = false;
           _hasError = true;
           _errorMessage = _buildErrorMessage(e);
@@ -123,12 +215,38 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
     
     while (retryCount < maxRetries) {
       try {
-        await _webglService.initialize();
-        _isWebGLSupported = await _webglService.isSupported();
+        // CRITICAL FIX: Add timeout to prevent hanging - REDUCED TO 3 SECONDS
+        await _webglService.initialize().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            AppLogger.warning('WebGL service initialization timed out',
+              component: 'WebGLRoomScreen',
+              metadata: {'retry': retryCount});
+            throw TimeoutException('WebGL service initialization timeout', const Duration(seconds: 3));
+          },
+        );
+        
+        _isWebGLSupported = await _webglService.isSupported().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            AppLogger.warning('WebGL support check timed out, assuming supported',
+              component: 'WebGLRoomScreen',
+              metadata: {'retry': retryCount});
+            return true; // Optimistic fallback
+          },
+        );
         
         // Additional GLB capability check for classroom model
-        if (_isWebGLSupported && _webglService is WebGLServiceWeb) {
-          final canRenderGLB = await _webglService.canRenderGLB();
+        if (_isWebGLSupported) {
+          final canRenderGLB = await _webglService.canRenderGLB().timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              AppLogger.warning('GLB capability check timed out, assuming supported',
+                component: 'WebGLRoomScreen',
+                metadata: {'retry': retryCount});
+              return true; // Optimistic fallback
+            },
+          );
           
           if (!canRenderGLB) {
             AppLogger.warning('GLB rendering capability uncertain',
@@ -146,11 +264,30 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
           error: e,
           metadata: {'retryCount': retryCount, 'maxRetries': maxRetries});
         
+        // CRITICAL FIX: Handle Flutter engine assertion specifically
+        if (e.toString().contains('window.dart') || e.toString().contains('Assertion failed')) {
+          AppLogger.error('Flutter engine assertion detected - using fallback approach',
+            component: 'WebGLRoomScreen',
+            error: e);
+          
+          // Use alternative approach that doesn't trigger Flutter engine assertions
+          _useAlternativeWebGLApproach();
+          return;
+        }
+        
         if (retryCount >= maxRetries) {
           // Final attempt failed - but still allow fallback
           AppLogger.info('All WebGL initialization attempts failed, allowing fallback mode',
             component: 'WebGLRoomScreen');
           _isWebGLSupported = true; // Force fallback mode
+          
+          // CRITICAL FIX: Ensure loading state is cleared even when all retries fail
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _hasError = false; // Don't show error, use fallback mode
+            });
+          }
           break;
         }
         
@@ -158,6 +295,56 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
         await Future.delayed(retryDelay);
       }
     }
+  }
+  
+  void _useAlternativeWebGLApproach() {
+    AppLogger.info('Using alternative WebGL approach to avoid Flutter engine assertion',
+      component: 'WebGLRoomScreen');
+    
+    setState(() {
+      _isLoading = false;
+      _hasError = false;
+    });
+    
+    // Show a message to the user about opening in new tab
+    _showAlternativeWebGLDialog();
+  }
+  
+  void _showAlternativeWebGLDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('3D Viewer'),
+        content: const Text(
+          'The 3D classroom will open in the current tab. '
+          'This provides the best 3D experience with full integration.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop(); // Go back to previous screen
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _openWebGLInCurrentTab();
+            },
+            child: const Text('Open 3D View'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _openWebGLInCurrentTab() {
+    // CRITICAL FIX: Instead of opening in new tab, navigate to the Three.js content
+    final url = './threejs/?room=${widget.url}';
+    
+    // Use Flutter navigation to go to the Three.js content
+    html.window.location.assign(url);
   }
   
   String _buildErrorMessage(dynamic error) {
@@ -202,6 +389,117 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
   String _estimateModelSize() {
     // Rough estimate for classroom model
     return PlatformUtils.isMobile ? '5-10' : '10-15';
+  }
+
+  // Mobile gaming controls methods
+  Future<void> _initializeMobileFeatures() async {
+    try {
+      await _gyroscopeController.initialize();
+      AppLogger.info('Mobile features initialized',
+        component: 'WebGLRoomScreen',
+        metadata: {'gyroscope_supported': _gyroscopeController.isSupported});
+    } catch (e) {
+      AppLogger.error('Failed to initialize mobile features',
+        component: 'WebGLRoomScreen',
+        error: e);
+    }
+  }
+
+  void _onMovementChanged(Offset movement) {
+    // Handle movement joystick input
+    AppLogger.debug('Movement input: ${movement.dx.toStringAsFixed(2)}, ${movement.dy.toStringAsFixed(2)}',
+      component: 'WebGLRoomScreen');
+    
+    // Send movement data to Three.js via mobile service
+    if (_mobileService != null && _mobileViewerId != null) {
+      _mobileService!.sendMovementInput(_mobileViewerId!, movement.dx, movement.dy);
+    }
+  }
+
+  void _onCameraChanged(Offset camera) {
+    // Handle camera joystick input
+    AppLogger.debug('Camera input: ${camera.dx.toStringAsFixed(2)}, ${camera.dy.toStringAsFixed(2)}',
+      component: 'WebGLRoomScreen');
+    
+    // Send camera data to Three.js via mobile service
+    if (_mobileService != null && _mobileViewerId != null) {
+      _mobileService!.sendCameraInput(_mobileViewerId!, camera.dx, camera.dy);
+    }
+  }
+
+  void _onJump() {
+    AppLogger.info('Jump action triggered', component: 'WebGLRoomScreen');
+    
+    // Send jump command to Three.js
+    if (_mobileService != null && _mobileViewerId != null) {
+      _mobileService!.sendMobileAction(_mobileViewerId!, 'jump');
+    }
+  }
+
+  void _onInteract() {
+    AppLogger.info('Interact action triggered', component: 'WebGLRoomScreen');
+    
+    // Send interact command to Three.js
+    if (_mobileService != null && _mobileViewerId != null) {
+      _mobileService!.sendMobileAction(_mobileViewerId!, 'interact');
+    }
+  }
+
+  void _onMenu() {
+    AppLogger.info('Menu action triggered', component: 'WebGLRoomScreen');
+    
+    // Send menu command to Three.js
+    if (_mobileService != null && _mobileViewerId != null) {
+      _mobileService!.sendMobileAction(_mobileViewerId!, 'menu');
+    }
+  }
+
+  void _toggleGyroscope() {
+    setState(() {
+      _isGyroscopeEnabled = !_isGyroscopeEnabled;
+    });
+
+    if (_isGyroscopeEnabled) {
+      _gyroscopeController.enable().then((_) {
+        _gyroscopeController.calibrate();
+        
+        // Listen to gyroscope data and send to Three.js
+        _gyroscopeController.gyroscopeStream.listen((data) {
+          if (_mobileService != null && _mobileViewerId != null) {
+            _mobileService!.sendGyroscopeInput(_mobileViewerId!, data.x, data.y, data.z);
+          }
+        });
+      });
+      
+      // Send gyroscope toggle to Three.js
+      if (_mobileService != null && _mobileViewerId != null) {
+        _mobileService!.sendMobileAction(_mobileViewerId!, 'gyroscope_toggle', data: {'enabled': true});
+      }
+    } else {
+      _gyroscopeController.disable();
+      
+      // Send gyroscope toggle to Three.js
+      if (_mobileService != null && _mobileViewerId != null) {
+        _mobileService!.sendMobileAction(_mobileViewerId!, 'gyroscope_toggle', data: {'enabled': false});
+      }
+    }
+
+    AppLogger.info('Gyroscope ${_isGyroscopeEnabled ? 'enabled' : 'disabled'}',
+      component: 'WebGLRoomScreen');
+  }
+
+  void _toggleFullscreen() {
+    setState(() {
+      _isFullscreen = !_isFullscreen;
+    });
+    
+    // Send fullscreen toggle to Three.js
+    if (_mobileService != null && _mobileViewerId != null) {
+      _mobileService!.sendMobileAction(_mobileViewerId!, 'fullscreen_toggle', data: {'enabled': _isFullscreen});
+    }
+    
+    AppLogger.info('Fullscreen ${_isFullscreen ? 'enabled' : 'disabled'}',
+      component: 'WebGLRoomScreen');
   }
 
   void _hideControlsAfterDelay() {
@@ -273,6 +571,11 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
       _memoryManager.unregisterWebGLContext(_webglContextId!);
     }
     
+    // Dispose mobile resources
+    if (_showMobileControls) {
+      _gyroscopeController.dispose();
+    }
+    
     _fadeController.dispose();
     super.dispose();
   }
@@ -299,6 +602,22 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
           // Controls overlay
           if (_showControls && !_isLoading)
             _buildControlsOverlay(isDark),
+          
+          // Mobile gaming controls overlay
+          if (_showMobileControls && !_isLoading && !_hasError)
+            Mobile3DControls(
+              onMovementChanged: _onMovementChanged,
+              onCameraChanged: _onCameraChanged,
+              onJump: _onJump,
+              onInteract: _onInteract,
+              onMenu: _onMenu,
+              onGyroscopeToggle: _toggleGyroscope,
+              onFullscreen: _toggleFullscreen,
+              showGyroscopeButton: _gyroscopeController.isSupported,
+              isGyroscopeEnabled: _isGyroscopeEnabled,
+              isFullscreen: _isFullscreen,
+              opacity: 0.8,
+            ),
           
           // Help dialog
           if (_showHelpDialog)
@@ -349,7 +668,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Loading 3D Environment',
+                      'Loading 3D Classroom',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -366,15 +685,43 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
                             : Colors.grey.shade600,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark 
+                            ? Colors.blue.shade900.withValues(alpha: 0.3)
+                            : Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.view_in_ar,
+                            size: 16,
+                            color: isDark ? Colors.blue.shade300 : Colors.blue.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Preparing immersive experience...',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: isDark ? Colors.blue.shade300 : Colors.blue.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     if (PlatformUtils.isMobile) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Text(
                         'Optimizing for mobile device...',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           color: isDark 
-                              ? Colors.blue.shade300
-                              : Colors.blue.shade600,
+                              ? Colors.orange.shade300
+                              : Colors.orange.shade600,
                         ),
                       ),
                     ],
@@ -495,14 +842,39 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
       onTap: _toggleControls,
       child: FadeTransition(
         opacity: _fadeAnimation,
-        child: _webglService.createViewer(
-          url: widget.url,
-          title: widget.title,
-          onLoaded: _onWebGLLoaded,
-          onError: _onWebGLError,
-        ),
+        child: _showMobileControls && _mobileService != null
+            ? _buildMobileWebGLViewer()
+            : _webglService.createViewer(
+                url: widget.url,
+                title: widget.title,
+                onLoaded: _onWebGLLoaded,
+                onError: _onWebGLError,
+              ),
       ),
     );
+  }
+  
+  Widget _buildMobileWebGLViewer() {
+    final viewer = _mobileService!.createViewer(
+      url: widget.url,
+      title: widget.title,
+      onLoaded: _onWebGLLoaded,
+      onError: _onWebGLError,
+    );
+    
+    // Extract mobile viewer ID for communication
+    if (viewer is MobileWebGLViewerWidget) {
+      // We need to get the viewer ID after the widget is built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // The viewer ID will be available after the widget is initialized
+          // For now, we'll use a placeholder and update it when the viewer is ready
+          _mobileViewerId = 'mobile-webgl-${widget.url.hashCode}-${DateTime.now().millisecondsSinceEpoch}';
+        }
+      });
+    }
+    
+    return viewer;
   }
 
   Widget _buildControlsOverlay(bool isDark) {

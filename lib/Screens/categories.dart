@@ -15,7 +15,6 @@ import 'package:virtualtouriu/core/widgets/error_state.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
 import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/core/logging/app_logger.dart';
-import 'package:virtualtouriu/core/navigation/safe_navigation.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -877,40 +876,23 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       child: GestureDetector(
         onTap: () async {
           final size = MediaQuery.of(context).size;
-          final isMobile = size.width < 600;
-          
-          if (isMobile) {
-            // Mobile: Use SafeNavigation with loading dialog
-            await SafeNavigation.navigateToScreen(
-              context: context,
-              screen: LocationDetailScreen(
-                locationName: data.title,
-                imagePath: data.imagePath,
-                locationData: data,
-              ),
-              screenName: 'location_detail',
-              routeName: '/location_detail',
-              showLoadingDialog: true,
-              minLoadingTime: Duration(milliseconds: 2500),
-            );
-          } else {
-            // Desktop/Tablet: Direct navigation
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder:
-                    (context, animation, _) => FadeTransition(
-                      opacity: animation,
-                      child: LocationDetailScreen(
-                        locationName: data.title,
-                        imagePath: data.imagePath,
-                        locationData: data,
-                      ),
+          // CRITICAL FIX: Remove SmartLoadingNavigation for mobile to prevent stuck loading
+          // Use direct navigation for all platforms to avoid loading popup issues
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder:
+                  (context, animation, _) => FadeTransition(
+                    opacity: animation,
+                    child: LocationDetailScreen(
+                      locationName: data.title,
+                      imagePath: data.imagePath,
+                      locationData: data,
                     ),
-                transitionDuration: const Duration(milliseconds: 300),
-              ),
-            );
-          }
+                  ),
+              transitionDuration: const Duration(milliseconds: 300),
+            ),
+          );
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

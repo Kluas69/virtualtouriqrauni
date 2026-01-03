@@ -205,7 +205,10 @@ class AppConstants {
 
   static String viewTypeFor(String locationName) {
     // FIXED: Removed mobile fallback for WebGL – now loads on mobile too (with warning in WebGlRoomScreen)
-    if (locationName == 'Class Rooms') {
+    // Updated to support multiple WebGL rooms
+    if (locationName == 'Class Rooms' || 
+        locationName == 'Library' || 
+        locationName == 'Auditorium') {
       return 'webgl';
     }
     return 'panorama';
@@ -213,8 +216,15 @@ class AppConstants {
 
   static String? webglUrlFor(String locationName) {
     // FIXED: Removed mobile check – return URL on all devices
+    // Updated to use Three.js server with room-based navigation
     if (locationName == 'Class Rooms') {
-      return 'assets/models/classroom.glb';
+      return 'classroom'; // Room ID for Three.js RoomManager
+    }
+    if (locationName == 'Library') {
+      return 'library'; // Room ID for Three.js RoomManager
+    }
+    if (locationName == 'Auditorium') {
+      return 'lab'; // Room ID for Three.js RoomManager (using lab as placeholder)
     }
     return null;
   }

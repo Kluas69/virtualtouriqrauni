@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
@@ -15,7 +14,7 @@ import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';
 import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
-import 'package:virtualtouriu/core/navigation/safe_navigation.dart';
+import 'package:virtualtouriu/core/widgets/developer_credit.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 
 class MobileHomeScreenOptimized extends StatefulWidget {
@@ -245,6 +244,13 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
 
           // Carousel section
           _buildCarouselSection(size, cardHeight, isDark, theme),
+          SizedBox(height: AppSpacing.getSectionSpacing(size)),
+          
+          // Developer Credit
+          DeveloperCredit(
+            isDark: isDark,
+            isMobile: true,
+          ),
           SizedBox(height: AppSpacing.getSectionSpacing(size)),
         ],
       ),
@@ -542,18 +548,16 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
   Widget _buildMobileCard(LocationCardData card, ThemeData theme, bool isDark) {
     return GestureDetector(
       onTap: () async {
-        // Use SafeNavigation for mobile location detail navigation
-        await SafeNavigation.navigateToScreen(
-          context: context,
-          screen: LocationDetailScreen(
-            locationName: card.title,
-            imagePath: card.imagePath,
-            locationData: card,
+        // Direct navigation without loading dialog (loading only in categories screen)
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LocationDetailScreen(
+              locationName: card.title,
+              imagePath: card.imagePath,
+              locationData: card,
+            ),
           ),
-          screenName: 'location_detail',
-          routeName: '/location_detail',
-          showLoadingDialog: true,
-          minLoadingTime: Duration(milliseconds: 2500), // 2.5 seconds for location details
         );
       },
       child: Container(
