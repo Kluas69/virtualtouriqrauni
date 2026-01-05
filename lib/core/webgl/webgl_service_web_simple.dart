@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:html' as html;
-import 'dart:ui_web' as ui;
+import 'dart:js' as js;
 import 'package:flutter/material.dart';
 import 'webgl_service.dart';
 import '../logging/app_logger.dart';
+import 'null_safety_layer.dart';
+import 'webgl_context_manager.dart';
 
 /// Creates the web implementation for web platforms
 WebGLService createWebGLService() {
@@ -12,61 +14,433 @@ WebGLService createWebGLService() {
 
 /// Simple web-specific implementation of WebGL service
 class WebGLServiceWebSimple implements WebGLService {
+  static const String _logComponent = 'WebGLServiceWebSimple';
+  late final WebGLContextManager _contextManager;
+  QualityLevel _currentQuality = QualityLevel.high;
+  final StreamController<WebGLPerformanceMetrics> _performanceController = StreamController<WebGLPerformanceMetrics>.broadcast();
+  
   @override
-  Future<bool> isSupported() async {
+  Future<void> initialize() async {
     try {
-      final canvas = html.CanvasElement();
-      var context = canvas.getContext('webgl2') ?? canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
-      return context != null;
-    } catch (e) {
-      return true; // Optimistic fallback
+      AppLogger.info('Initializing WebGL service for web', component: _logComponent);
+      _contextManager = WebGLContextManager.instance;
+      await _contextManager.initialize();
+      AppLogger.info('WebGL service initialized successfully', component: _logComponent);
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to initialize WebGL service: $e', 
+        component: _logComponent, 
+        error: e, 
+        stackTrace: stackTrace
+      );
+      rethrow;
     }
   }
-  
+
   @override
-  Future<WebGLCapabilities> detectCapabilities() async {
-    return const WebGLCapabilities(
-      webgl2Support: false,
-      webgl1Support: true,
-      supportedExtensions: [],
-      maxTextureSize: 2048,
-      maxVertexAttributes: 16,
-      renderer: 'Unknown',
-      vendor: 'Unknown',
-      instancingSupport: false,
-      floatTextureSupport: false,
-      compressedTextureSupport: false,
+  Future<Widget> create3DViewer({
+    required String url,
+    String? containerId,
+    Map<String, String>? additionalStyles,
+  }) async {
+    try {
+      AppLogger.info('Creating 3D viewer for URL: $url', component: _logComponent);
+      
+      // Determine the full URL for the iframe
+      String iframeUrl;
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        iframeUrl = url;
+      } else if (url == 'classroom') {
+        iframeUrl = '/threejs/professional_classroom_enhanced.html';
+      } else {
+        iframeUrl = '/threejs/$url';
+      }
+      
+      AppLogger.info('Using iframe URL: $iframeUrl', component: _logComponent);
+      
+      // Return a simple container that will be handled by the screen
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        child: Text('3D Viewer: $iframeUrl'),
+      );
+    } catch (e, stackTrace) {
+      AppLogger.error('Exception creating 3D viewer: $e', 
+        component: _logComponent, 
+        error: e, 
+        stackTrace: stackTrace
+      );
+      
+      // Return fallback widget on error
+      return _createFallbackWidget(url: url, error: e.toString());
+    }
+  }
+
+  /// Create iframe element for the platform view
+  html.Element _createIframeElement(String src, String id, Map<String, String>? additionalStyles) {
+    try {
+      AppLogger.info('Creating iframe element for: $src', component: _logComponent);
+      
+      final iframe = NullSafetyLayer.createSafeIframe(
+        src: src,
+        id: id,
+        styles: {
+          'width': '100%',
+          'height': '100%',
+          'border': 'none',
+          'background': '#000',
+          ...?additionalStyles,
+        },
+        attributes: {
+          'allowfullscreen': 'true',
+          'webkitallowfullscreen': 'true',
+          'mozallowfullscreen': 'true',
+          'allow': 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+        },
+      );
+      
+      if (iframe != null) {
+        // Skip iframe validation - let the browser handle compatibility
+        AppLogger.info('Iframe created successfully, skipping validation', component: _logComponent);
+        
+        // Set fullscreen capability
+        _setupIframeEventHandlers(iframe);
+        
+        AppLogger.info('Successfully created iframe element', component: _logComponent);
+        return iframe;
+      } else {
+        AppLogger.warning('Failed to create iframe, creating fallback', component: _logComponent);
+        return _createFallbackElement(src);
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('Exception creating iframe element: $e', 
+        component: _logComponent, 
+        error: e, 
+        stackTrace: stackTrace
+      );
+      return _createFallbackElement(src);
+    }
+  }
+
+  /// Setup event handlers for iframe
+  void _setupIframeEventHandlers(html.IFrameElement iframe) {
+    try {
+      // Handle iframe load events
+      iframe.onLoad.listen((event) {
+        AppLogger.info('Iframe loaded successfully', component: _logComponent);
+      });
+      
+      iframe.onError.listen((event) {
+        AppLogger.warning('Iframe load error: $event', component: _logComponent);
+      });
+      
+    } catch (e) {
+      AppLogger.warning('Failed to setup iframe event handlers: $e', component: _logComponent);
+    }
+  }
+
+  /// Create fallback element when iframe fails
+  html.Element _createFallbackElement(String url) {
+    try {
+      AppLogger.info('Creating fallback element for: $url', component: _logComponent);
+      
+      final container = NullSafetyLayer.createFallbackContainer(
+        'Failed to load 3D viewer\\nPlease try refreshing the page',
+      );
+      
+      AppLogger.info('Created fallback element', component: _logComponent);
+      return container;
+    } catch (e, stackTrace) {
+      AppLogger.error('Exception creating fallback element: $e', 
+        component: _logComponent, 
+        error: e, 
+        stackTrace: stackTrace
+      );
+      
+      // Return minimal fallback
+      final minimalDiv = html.DivElement();
+      minimalDiv.style.width = '100%';
+      minimalDiv.style.height = '100%';
+      minimalDiv.style.backgroundColor = '#f0f0f0';
+      minimalDiv.text = '3D Viewer Unavailable';
+      return minimalDiv;
+    }
+  }
+
+  /// Create fallback widget when 3D viewer creation fails
+  Widget _createFallbackWidget({required String url, String? error}) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blue.shade900,
+            Colors.purple.shade900,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.white70,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Failed to load 3D viewer',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (error != null) ...[
+              SizedBox(height: 8),
+              Text(
+                error,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Trigger a page reload
+                html.window.location.reload();
+              },
+              icon: Icon(Icons.refresh),
+              label: Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
-  
+
   @override
-  Future<bool> supportsExtension(String extension) async => false;
-  
+  bool isWebGLSupported() {
+    try {
+      final canvas = html.CanvasElement();
+      final context = canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
+      final supported = context != null;
+      
+      AppLogger.info('WebGL supported: $supported', component: _logComponent);
+      return supported;
+    } catch (e) {
+      AppLogger.warning('Error checking WebGL support: $e', component: _logComponent);
+      return false;
+    }
+  }
+
   @override
-  Stream<WebGLPerformanceMetrics> get performanceStream => 
-    Stream.periodic(const Duration(seconds: 1), (_) => WebGLPerformanceMetrics(
-      triangleCount: 0,
-      drawCalls: 0,
-      textureCount: 0,
-      memoryUsageMB: 0.0,
-      currentFPS: 60.0,
-      isOptimized: true,
-      timestamp: DateTime.now(),
-    ));
-  
-  QualityLevel _currentQuality = QualityLevel.high;
-  
+  void registerViewFactory(String viewType, Function factory) {
+    try {
+      // Register the platform view factory for web
+      // This is handled by the Flutter web engine
+      AppLogger.debug('Registering view factory: $viewType', component: _logComponent);
+    } catch (e) {
+      AppLogger.warning('Failed to register view factory: $e', component: _logComponent);
+    }
+  }
+
+  @override
+  Future<void> handleContextLoss() async {
+    try {
+      AppLogger.warning('Handling WebGL context loss', component: _logComponent);
+      // For web, we typically need to reload the page or recreate the context
+      await Future.delayed(Duration(milliseconds: 100));
+      AppLogger.info('WebGL context loss handled', component: _logComponent);
+    } catch (e) {
+      AppLogger.error('Failed to handle context loss: $e', component: _logComponent);
+    }
+  }
+
+  @override
+  Future<bool> attemptContextRecovery() async {
+    try {
+      AppLogger.info('Attempting WebGL context recovery', component: _logComponent);
+      
+      // For web, context recovery usually involves recreating the WebGL context
+      // This is typically handled by the browser and Three.js
+      await Future.delayed(Duration(milliseconds: 500));
+      
+      final recovered = isWebGLSupported();
+      AppLogger.info('WebGL context recovery result: $recovered', component: _logComponent);
+      return recovered;
+    } catch (e) {
+      AppLogger.error('Failed to recover WebGL context: $e', component: _logComponent);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> isSupported() async {
+    return isWebGLSupported();
+  }
+
+  @override
+  Future<WebGLCapabilities> detectCapabilities() async {
+    try {
+      AppLogger.info('Detecting WebGL capabilities', component: _logComponent);
+      
+      final canvas = html.CanvasElement();
+      final gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl') ?? canvas.getContext('experimental-webgl');
+      
+      if (gl == null) {
+        return WebGLCapabilities(
+          webgl2Support: false,
+          webgl1Support: false,
+          supportedExtensions: [],
+          maxTextureSize: 0,
+          maxVertexAttributes: 0,
+          renderer: 'None',
+          vendor: 'None',
+          instancingSupport: false,
+          floatTextureSupport: false,
+          compressedTextureSupport: false,
+        );
+      }
+
+      // Convert to JsObject for proper JavaScript interop
+      final jsGl = js.JsObject.fromBrowserObject(gl);
+
+      // Detect WebGL version
+      final webgl2Support = canvas.getContext('webgl2') != null;
+      final webgl1Support = canvas.getContext('webgl') != null || canvas.getContext('experimental-webgl') != null;
+      
+      // Get supported extensions
+      final extensions = <String>[];
+      try {
+        final supportedExtensions = jsGl.callMethod('getSupportedExtensions');
+        if (supportedExtensions != null) {
+          final extensionsList = js.JsArray.from(supportedExtensions);
+          for (int i = 0; i < extensionsList.length; i++) {
+            extensions.add(extensionsList[i].toString());
+          }
+        }
+      } catch (e) {
+        AppLogger.warning('Failed to get supported extensions: $e', component: _logComponent);
+      }
+
+      // Get renderer info
+      String renderer = 'Unknown';
+      String vendor = 'Unknown';
+      try {
+        final debugInfo = jsGl.callMethod('getExtension', ['WEBGL_debug_renderer_info']);
+        if (debugInfo != null) {
+          final debugInfoJs = js.JsObject.fromBrowserObject(debugInfo);
+          renderer = jsGl.callMethod('getParameter', [debugInfoJs['UNMASKED_RENDERER_WEBGL']]).toString();
+          vendor = jsGl.callMethod('getParameter', [debugInfoJs['UNMASKED_VENDOR_WEBGL']]).toString();
+        }
+      } catch (e) {
+        AppLogger.debug('Debug renderer info not available: $e', component: _logComponent);
+      }
+
+      // Get max texture size
+      int maxTextureSize = 0;
+      try {
+        maxTextureSize = jsGl.callMethod('getParameter', [jsGl['MAX_TEXTURE_SIZE']]);
+      } catch (e) {
+        AppLogger.warning('Failed to get max texture size: $e', component: _logComponent);
+        maxTextureSize = 2048; // Default fallback
+      }
+
+      // Get max vertex attributes
+      int maxVertexAttributes = 0;
+      try {
+        maxVertexAttributes = jsGl.callMethod('getParameter', [jsGl['MAX_VERTEX_ATTRIBS']]);
+      } catch (e) {
+        AppLogger.warning('Failed to get max vertex attributes: $e', component: _logComponent);
+        maxVertexAttributes = 16; // Default fallback
+      }
+
+      final capabilities = WebGLCapabilities(
+        webgl2Support: webgl2Support,
+        webgl1Support: webgl1Support,
+        supportedExtensions: extensions,
+        maxTextureSize: maxTextureSize,
+        maxVertexAttributes: maxVertexAttributes,
+        renderer: renderer,
+        vendor: vendor,
+        instancingSupport: extensions.contains('ANGLE_instanced_arrays') || webgl2Support,
+        floatTextureSupport: extensions.contains('OES_texture_float') || webgl2Support,
+        compressedTextureSupport: extensions.any((ext) => ext.contains('compressed_texture')),
+      );
+
+      AppLogger.info('WebGL capabilities detected: ${capabilities.webglVersion}', component: _logComponent);
+      return capabilities;
+    } catch (e, stackTrace) {
+      AppLogger.error('Failed to detect WebGL capabilities: $e', 
+        component: _logComponent, 
+        error: e, 
+        stackTrace: stackTrace
+      );
+      
+      // Return basic capabilities as fallback
+      return WebGLCapabilities(
+        webgl2Support: false,
+        webgl1Support: isWebGLSupported(),
+        supportedExtensions: [],
+        maxTextureSize: 2048,
+        maxVertexAttributes: 16,
+        renderer: 'Fallback',
+        vendor: 'Unknown',
+        instancingSupport: false,
+        floatTextureSupport: false,
+        compressedTextureSupport: false,
+      );
+    }
+  }
+
+  @override
+  Future<bool> canRenderGLB() async {
+    try {
+      final capabilities = await detectCapabilities();
+      // GLB rendering requires WebGL support and certain extensions
+      return capabilities.hasWebGLSupport && 
+             capabilities.maxTextureSize >= 1024 &&
+             capabilities.maxVertexAttributes >= 8;
+    } catch (e) {
+      AppLogger.warning('Failed to check GLB rendering capability: $e', component: _logComponent);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> supportsExtension(String extension) async {
+    try {
+      final capabilities = await detectCapabilities();
+      return capabilities.supportedExtensions.contains(extension);
+    } catch (e) {
+      AppLogger.warning('Failed to check extension support: $e', component: _logComponent);
+      return false;
+    }
+  }
+
+  @override
+  Stream<WebGLPerformanceMetrics> get performanceStream => _performanceController.stream;
+
   @override
   void setQualityLevel(QualityLevel level) {
     _currentQuality = level;
+    AppLogger.info('Quality level set to: ${level.displayName}', component: _logComponent);
   }
-  
+
   @override
   QualityLevel get currentQuality => _currentQuality;
-  
-  @override
-  Future<bool> canRenderGLB() async => true;
-  
+
   @override
   Widget createViewer({
     required String url,
@@ -74,267 +448,43 @@ class WebGLServiceWebSimple implements WebGLService {
     VoidCallback? onLoaded,
     Function(String)? onError,
   }) {
-    // CRITICAL FIX: Use pre-registered platform view for desktop
-    final viewType = 'desktop-webgl-viewer-stable';
-    
-    // Determine which HTML file to use based on the URL
-    String htmlFile;
-    if (url == 'classroom' || url.contains('classroom')) {
-      // Use the professional Three.js system for classroom
-      htmlFile = './threejs/professional_classroom_enhanced.html';
-    } else {
-      // Use the professional viewer for other content too
-      htmlFile = './threejs/professional_classroom_enhanced.html';
-    }
-    
-    // Initialize the iframe content in the pre-registered platform view
-    _initializeDesktopIframeContent(htmlFile, url, title, onLoaded, onError);
-    
+    // Return a simple container - the actual iframe creation is handled by the screen
     return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 2,
-          ),
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: HtmlElementView(viewType: viewType),
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: Text('3D Viewer Loading: $title'),
       ),
     );
   }
-  
-  /// Initialize iframe content in the pre-registered desktop platform view
-  void _initializeDesktopIframeContent(
-    String htmlFile, 
-    String url, 
-    String title, 
-    VoidCallback? onLoaded, 
-    Function(String)? onError
-  ) {
-    Timer(const Duration(milliseconds: 500), () {
-      try {
-        // Find any desktop WebGL container that's ready
-        final containers = html.document.querySelectorAll('[id*="desktop-webgl-container"]');
-        
-        if (containers.isNotEmpty) {
-          final container = containers.first as html.Element;
-          AppLogger.info('Found desktop WebGL container: ${container.id}',
-            component: 'WebGLServiceWebSimple');
-          
-          _createDesktopIframeInContainer(container, htmlFile, url, title, onLoaded, onError);
-        } else {
-          AppLogger.warning('No desktop WebGL container found, retrying...',
-            component: 'WebGLServiceWebSimple');
-          
-          // Retry after a longer delay
-          Timer(const Duration(seconds: 1), () {
-            _initializeDesktopIframeContent(htmlFile, url, title, onLoaded, onError);
-          });
-        }
-      } catch (e) {
-        AppLogger.error('Failed to initialize desktop iframe content',
-          component: 'WebGLServiceWebSimple',
-          error: e);
-        onError?.call('Failed to initialize desktop 3D viewer: ${e.toString()}');
-      }
-    });
-  }
-  
-  /// Create iframe in the desktop container
-  void _createDesktopIframeInContainer(
-    html.Element container,
-    String htmlFile,
-    String url,
-    String title,
-    VoidCallback? onLoaded,
-    Function(String)? onError,
-  ) {
-    try {
-      // Remove loading indicator
-      final loadingDiv = container.querySelector('[id*="loading"]');
-      loadingDiv?.remove();
-      
-      // Create the actual iframe
-      final iframe = html.IFrameElement()
-        ..src = htmlFile
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..style.display = 'block'
-        ..style.overflow = 'hidden'
-        ..allow = 'accelerometer; gyroscope; magnetometer; fullscreen'
-        ..allowFullscreen = true
-        ..setAttribute('loading', 'eager')
-        ..setAttribute('importance', 'high');
-      
-      // Enhanced iframe configuration for professional Three.js viewer
-      iframe.style.setProperty('border-radius', '8px');
-      iframe.style.setProperty('box-shadow', '0 4px 20px rgba(0,0,0,0.1)');
-      
-      // Add iframe to container
-      container.append(iframe);
-      
-      // Handle iframe load events
-      iframe.onLoad.listen((_) {
-        AppLogger.info('Professional 3D classroom viewer loaded successfully',
-          component: 'WebGLServiceWebSimple',
-          metadata: {
-            'htmlFile': htmlFile, 
-            'url': url, 
-            'title': title,
-            'engine': 'Three.js Game Engine'
-          });
-        
-        // Send configuration to the professional viewer
-        Timer(const Duration(milliseconds: 500), () {
-          try {
-            iframe.contentWindow?.postMessage({
-              'type': 'configure',
-              'roomId': url,
-              'title': title,
-              'mobile': _isMobileDevice(),
-              'quality': _getQualityForDevice(),
-              'features': {
-                'shadows': true,
-                'postProcessing': true,
-                'physics': true,
-                'mobileControls': _isMobileDevice(),
-                'gyroscope': _isMobileDevice(),
-              }
-            }, '*');
-          } catch (e) {
-            AppLogger.warning('Failed to send configuration to professional viewer',
-              component: 'WebGLServiceWebSimple', error: e);
-          }
-        });
-        
-        onLoaded?.call();
-      });
-      
-      iframe.onError.listen((event) {
-        AppLogger.error('Professional 3D classroom viewer failed to load',
-          component: 'WebGLServiceWebSimple',
-          error: event,
-          metadata: {'htmlFile': htmlFile, 'url': url});
-        onError?.call('Failed to load professional 3D classroom viewer');
-      });
-      
-      // Listen for messages from the professional iframe
-      html.window.onMessage.listen((event) {
-        if (event.data is Map) {
-          final data = event.data as Map;
-          
-          switch (data['type']) {
-            case 'professionalClassroomLoaded':
-              AppLogger.info('Professional classroom model loaded successfully',
-                component: 'WebGLServiceWebSimple',
-                metadata: {
-                  'success': data['success'], 
-                  'engine': data['engine'],
-                  'systems': data['systems'],
-                  'quality': data['quality']
-                });
-              onLoaded?.call();
-              break;
-              
-            case 'professionalClassroomError':
-              AppLogger.error('Professional classroom viewer error',
-                component: 'WebGLServiceWebSimple',
-                error: data['error']);
-              onError?.call(data['error'] ?? 'Professional viewer error');
-              break;
-              
-            case 'professionalEngineReady':
-              AppLogger.info('Professional game engine initialized',
-                component: 'WebGLServiceWebSimple',
-                metadata: {
-                  'fps': data['fps'],
-                  'quality': data['quality'],
-                  'systems': data['systems']
-                });
-              break;
-              
-            case 'professionalPerformanceUpdate':
-              // Handle performance updates from the professional engine
-              AppLogger.debug('Professional engine performance update',
-                component: 'WebGLServiceWebSimple',
-                metadata: {
-                  'fps': data['fps'],
-                  'triangles': data['triangles'],
-                  'drawCalls': data['drawCalls']
-                });
-              break;
-          }
-        }
-      });
-      
-      AppLogger.info('Desktop WebGL iframe created successfully',
-        component: 'WebGLServiceWebSimple',
-        metadata: {'url': htmlFile});
-        
-    } catch (e) {
-      AppLogger.error('Failed to create desktop iframe',
-        component: 'WebGLServiceWebSimple',
-        error: e);
-      onError?.call('Failed to create desktop 3D viewer: ${e.toString()}');
-    }
-  }
-  
-  /// Detect if running on mobile device
-  bool _isMobileDevice() {
-    final userAgent = html.window.navigator.userAgent.toLowerCase();
-    return userAgent.contains('mobile') || 
-           userAgent.contains('android') || 
-           userAgent.contains('iphone') || 
-           userAgent.contains('ipad');
-  }
-  
-  /// Get optimal quality level for current device
-  String _getQualityForDevice() {
-    if (_isMobileDevice()) {
-      return 'medium'; // Optimized for mobile
-    }
-    
-    // Check for high-end desktop features
-    final userAgent = html.window.navigator.userAgent.toLowerCase();
-    if (userAgent.contains('chrome') || userAgent.contains('firefox')) {
-      return 'high'; // Modern browsers can handle high quality
-    }
-    
-    return 'medium'; // Safe default
-  }
-  
-  @override
-  void registerViewFactory(String viewType, Function factory) {
-    // No-op for simple implementation
-  }
-  
-  @override
-  Future<void> initialize() async {
-    // Simple initialization
-  }
-  
-  @override
-  Future<void> handleContextLoss() async {
-    // No-op
-  }
-  
-  @override
-  Future<bool> attemptContextRecovery() async => true;
-  
+
   @override
   void dispose() {
-    // No-op
+    try {
+      AppLogger.info('Disposing WebGL service resources', component: _logComponent);
+      _performanceController.close();
+      _contextManager.dispose();
+      AppLogger.info('WebGL service disposed successfully', component: _logComponent);
+    } catch (e, stackTrace) {
+      AppLogger.error('Exception during disposal: $e', 
+        component: _logComponent, 
+        error: e, 
+        stackTrace: stackTrace
+      );
+    }
+  }
+
+  /// Get performance metrics
+  Map<String, dynamic> getPerformanceMetrics() {
+    try {
+      return {
+        'webglSupported': isWebGLSupported(),
+        'timestamp': DateTime.now().toIso8601String(),
+        'platform': 'web',
+      };
+    } catch (e) {
+      AppLogger.warning('Failed to get performance metrics: $e', component: _logComponent);
+      return {'error': e.toString()};
+    }
   }
 }

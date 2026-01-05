@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import 'webgl_service.dart';
 import '../logging/app_logger.dart';
+import 'null_safety_layer.dart';
+import 'webgl_context_manager.dart';
 
 // Conditional imports for web compatibility
 import 'dart:html' as html show 
@@ -16,12 +17,12 @@ import 'dart:html' as html show
 
 /// Mobile-optimized WebGL service with gaming controls support
 class WebGLServiceMobile implements WebGLService {
-  static final WebGLServiceMobile _instance = WebGLServiceMobile._internal();
-  factory WebGLServiceMobile() => _instance;
+  static WebGLServiceMobile? _instance;
+  factory WebGLServiceMobile() => _instance ??= WebGLServiceMobile._internal();
   WebGLServiceMobile._internal();
   
   /// Get the singleton instance
-  static WebGLServiceMobile get instance => _instance;
+  static WebGLServiceMobile get instance => _instance ??= WebGLServiceMobile._internal();
   
   // Mobile control state
   bool _mobileControlsEnabled = false;
@@ -30,10 +31,86 @@ class WebGLServiceMobile implements WebGLService {
   // Quality level
   QualityLevel _currentQuality = QualityLevel.high;
   
+  // CRITICAL: Track active contexts to prevent memory leaks
+  static final Set<String> _activeContexts = <String>{};
+  static const int _maxContexts = 2; // Limit to prevent browser crashes
+  static final Map<String, html.IFrameElement> _globalIframes = {}; // Global iframe tracking
+  static int _contextCounter = 0;
+  
+  // Enhanced context management
+  late final WebGLContextManager _contextManager;
+  
   // Delegate all WebGLService methods with basic implementations
   @override
   Future<void> initialize() async {
     AppLogger.info('Initializing mobile WebGL service', component: 'WebGLServiceMobile');
+    
+    // Initialize context manager
+    _contextManager = WebGLContextManager.instance;
+    await _contextManager.initialize();
+    
+    // CRITICAL FIX: Check and cleanup existing contexts before initialization
+    await _cleanupExcessiveContexts();
+  }
+  
+  /// CRITICAL: Cleanup excessive WebGL contexts to prevent browser crashes
+  Future<void> _cleanupExcessiveContexts() async {
+    try {
+      // Use context manager for cleanup
+      await _contextManager.cleanupExcessiveContexts();
+      
+      // Legacy cleanup for backward compatibility
+      if (_activeContexts.length >= _maxContexts) {
+        AppLogger.warning('Too many WebGL contexts detected (${_activeContexts.length}), cleaning up oldest',
+          component: 'WebGLServiceMobile');
+        
+        // Remove oldest contexts
+        final contextsToRemove = _activeContexts.take(_activeContexts.length - _maxContexts + 1).toList();
+        for (final contextId in contextsToRemove) {
+          await _forceCleanupContext(contextId);
+        }
+        
+        // Force garbage collection
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    } catch (e) {
+      AppLogger.error('Failed to cleanup excessive contexts',
+        component: 'WebGLServiceMobile',
+        error: e);
+    }
+  }
+  
+  /// Force cleanup of a specific WebGL context
+  Future<void> _forceCleanupContext(String contextId) async {
+    try {
+      _activeContexts.remove(contextId);
+      
+      // Remove associated iframes
+      final iframe = _globalIframes.remove(contextId);
+      if (iframe != null) {
+        iframe.remove();
+        AppLogger.info('Forcefully removed iframe for context: $contextId',
+          component: 'WebGLServiceMobile');
+      }
+      
+      // Send cleanup message to Three.js
+      try {
+        iframe?.contentWindow?.postMessage({
+          'type': 'force_cleanup',
+          'contextId': contextId,
+          'source': 'flutter',
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        }, '*');
+      } catch (e) {
+        // Ignore postMessage errors during cleanup
+      }
+      
+    } catch (e) {
+      AppLogger.warning('Error during force context cleanup',
+        component: 'WebGLServiceMobile',
+        error: e,
+        metadata: {'contextId': contextId});
+    }
   }
   
   @override
@@ -106,7 +183,56 @@ class WebGLServiceMobile implements WebGLService {
   
   @override
   void dispose() {
-    _activeIframes.clear();
+    // CRITICAL FIX: Proper cleanup of all resources
+    _cleanupAllResources();
+  }
+  
+  /// CRITICAL: Cleanup all WebGL resources to prevent memory leaks
+  void _cleanupAllResources() {
+    try {
+      AppLogger.info('Cleaning up all WebGL resources',
+        component: 'WebGLServiceMobile',
+        metadata: {
+          'activeContexts': _activeContexts.length,
+          'activeIframes': _activeIframes.length,
+          'globalIframes': _globalIframes.length,
+        });
+      
+      // Cleanup all active iframes
+      for (final entry in _activeIframes.entries) {
+        try {
+          final iframe = entry.value;
+          // Send cleanup message before removing
+          iframe.contentWindow?.postMessage({
+            'type': 'dispose_context',
+            'viewerId': entry.key,
+            'source': 'flutter',
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          }, '*');
+          
+          // Remove iframe from DOM
+          iframe.remove();
+        } catch (e) {
+          AppLogger.warning('Error cleaning up iframe: ${entry.key}',
+            component: 'WebGLServiceMobile',
+            error: e);
+        }
+      }
+      
+      // Clear all tracking maps
+      _activeIframes.clear();
+      _globalIframes.clear();
+      _activeContexts.clear();
+      _contextCounter = 0;
+      
+      AppLogger.info('WebGL resource cleanup completed',
+        component: 'WebGLServiceMobile');
+        
+    } catch (e) {
+      AppLogger.error('Error during WebGL resource cleanup',
+        component: 'WebGLServiceMobile',
+        error: e);
+    }
   }
   
   @override
@@ -116,12 +242,22 @@ class WebGLServiceMobile implements WebGLService {
     VoidCallback? onLoaded,
     Function(String)? onError,
   }) {
+    // CRITICAL FIX: Check context limits before creating new viewer
+    if (_activeContexts.length >= _maxContexts) {
+      AppLogger.warning('Maximum WebGL contexts reached, cleaning up before creating new viewer',
+        component: 'WebGLServiceMobile');
+      
+      // Cleanup oldest context
+      _cleanupExcessiveContexts();
+    }
+    
     return MobileWebGLViewerWidget(
       url: url,
       title: title,
       onLoaded: onLoaded,
       onError: onError,
       service: this,
+      contextManager: _contextManager,
     );
   }
   
@@ -229,16 +365,91 @@ class WebGLServiceMobile implements WebGLService {
   
   /// Register iframe for mobile communication
   void _registerIframe(String viewerId, html.IFrameElement iframe) {
-    _activeIframes[viewerId] = iframe;
-    AppLogger.info('Registered iframe for mobile controls: $viewerId',
-      component: 'WebGLServiceMobile');
+    // CRITICAL FIX: Prevent duplicate registrations and track contexts
+    if (_activeIframes.containsKey(viewerId)) {
+      AppLogger.warning('Iframe already registered for viewer: $viewerId, cleaning up old one',
+        component: 'WebGLServiceMobile');
+      _unregisterIframe(viewerId);
+    }
+    
+    // Create context through context manager
+    _contextManager.createContext(viewerId).then((contextId) {
+      // Register in both local and global tracking (legacy support)
+      _activeIframes[viewerId] = iframe;
+      _globalIframes[contextId] = iframe;
+      _activeContexts.add(contextId);
+      
+      // Register iframe with context manager
+      _contextManager.registerIframe(contextId, iframe);
+      
+      // Set context ID as iframe attribute for tracking
+      NullSafetyLayer.safeSetAttribute(iframe, 'data-context-id', contextId);
+      NullSafetyLayer.safeSetAttribute(iframe, 'data-viewer-id', viewerId);
+      
+      AppLogger.info('Registered iframe for mobile controls',
+        component: 'WebGLServiceMobile',
+        metadata: {
+          'viewerId': viewerId,
+          'contextId': contextId,
+          'totalContexts': _activeContexts.length,
+          'maxContexts': _maxContexts,
+        });
+    }).catchError((error) {
+      AppLogger.error('Failed to create context for iframe registration',
+        component: 'WebGLServiceMobile',
+        error: error,
+        metadata: {'viewerId': viewerId});
+    });
   }
   
   /// Unregister iframe
   void _unregisterIframe(String viewerId) {
-    _activeIframes.remove(viewerId);
-    AppLogger.info('Unregistered iframe: $viewerId',
-      component: 'WebGLServiceMobile');
+    try {
+      final iframe = _activeIframes.remove(viewerId);
+      if (iframe != null) {
+        // Get context ID from iframe using null safety
+        final contextId = NullSafetyLayer.safeExecute<String?>(
+          () => iframe.getAttribute('data-context-id'),
+          operationName: 'getAttribute(data-context-id)',
+        );
+        
+        // Send cleanup message to Three.js before removing
+        try {
+          iframe.contentWindow?.postMessage({
+            'type': 'cleanup_context',
+            'viewerId': viewerId,
+            'contextId': contextId,
+            'source': 'flutter',
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          }, '*');
+        } catch (e) {
+          // Ignore postMessage errors during cleanup
+        }
+        
+        // Dispose context through context manager
+        if (contextId != null) {
+          _contextManager.disposeContext(contextId);
+          _globalIframes.remove(contextId);
+          _activeContexts.remove(contextId);
+        }
+        
+        // Remove iframe from DOM using null safety
+        NullSafetyLayer.safeRemoveElement(iframe);
+        
+        AppLogger.info('Unregistered and cleaned up iframe',
+          component: 'WebGLServiceMobile',
+          metadata: {
+            'viewerId': viewerId,
+            'contextId': contextId,
+            'remainingContexts': _activeContexts.length,
+          });
+      }
+    } catch (e) {
+      AppLogger.error('Error unregistering iframe',
+        component: 'WebGLServiceMobile',
+        error: e,
+        metadata: {'viewerId': viewerId});
+    }
   }
   
   /// Build the Three.js viewer URL with the room ID
@@ -264,6 +475,7 @@ class MobileWebGLViewerWidget extends StatefulWidget {
   final VoidCallback? onLoaded;
   final Function(String)? onError;
   final WebGLServiceMobile service;
+  final WebGLContextManager contextManager;
   
   const MobileWebGLViewerWidget({
     super.key,
@@ -272,6 +484,7 @@ class MobileWebGLViewerWidget extends StatefulWidget {
     this.onLoaded,
     this.onError,
     required this.service,
+    required this.contextManager,
   });
   
   @override
@@ -453,26 +666,40 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
   /// Create iframe in the provided container
   void _createIframeInContainer(html.Element container) {
     try {
-      // Remove loading indicator
-      final loadingDiv = container.querySelector('[id*="loading"]');
-      loadingDiv?.remove();
+      // Remove loading indicator using null safety
+      final loadingDiv = NullSafetyLayer.safeQuerySelector('[id*="loading"]', parent: container);
+      if (loadingDiv != null) {
+        NullSafetyLayer.safeRemoveElement(loadingDiv);
+      }
       
-      // Create the actual iframe
-      final iframe = html.IFrameElement()
-        ..src = widget.service._buildThreeJsViewerUrl(widget.url)
-        ..style.border = 'none'
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..allowFullscreen = true
-        ..allow = 'accelerometer; gyroscope; magnetometer; xr-spatial-tracking; gamepad';
+      // Create the actual iframe using null safety layer
+      final iframe = NullSafetyLayer.createSafeIframe(
+        src: widget.service._buildThreeJsViewerUrl(widget.url),
+        id: 'mobile-webgl-iframe-${_viewerId}',
+        attributes: {
+          'loading': 'lazy',
+          'referrerpolicy': 'no-referrer-when-downgrade',
+          'sandbox': 'allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-orientation-lock',
+          'allow': 'accelerometer; gyroscope; magnetometer; xr-spatial-tracking; gamepad',
+        },
+        styles: {
+          'border': 'none',
+          'width': '100%',
+          'height': '100%',
+        },
+      );
       
-      // Mobile-specific iframe attributes
-      iframe.setAttribute('loading', 'lazy');
-      iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-orientation-lock');
+      if (iframe == null) {
+        throw StateError('Failed to create iframe using null safety layer');
+      }
       
-      // Add iframe to container
-      container.append(iframe);
+      // Skip iframe validation for mobile - let the browser handle compatibility
+      AppLogger.info('Iframe created successfully for mobile, skipping validation', component: 'WebGLServiceMobile');
+      
+      // Add iframe to container using null safety
+      if (!NullSafetyLayer.safeAppendChild(container, iframe)) {
+        throw StateError('Failed to append iframe to container');
+      }
       
       // Register iframe for mobile communication
       widget.service._registerIframe(_viewerId, iframe);

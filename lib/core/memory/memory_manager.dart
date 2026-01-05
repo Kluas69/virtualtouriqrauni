@@ -19,6 +19,11 @@ class MemoryManager {
   final Map<String, StreamSubscription> _subscriptions = {};
   final Set<String> _activeWebGLContexts = {};
   
+  // CRITICAL: Enhanced WebGL context management
+  static const int _maxWebGLContexts = 2; // Browser limit to prevent crashes
+  final Map<String, DateTime> _contextTimestamps = {};
+  Timer? _contextCleanupTimer;
+  
   // Memory thresholds for mobile devices
   static const int _maxCacheSize = 50; // Maximum cached items
   static const Duration _cacheExpiry = Duration(minutes: 30);
@@ -46,6 +51,11 @@ class MemoryManager {
         });
         _setupMemoryPressureListener();
       }
+      
+      // CRITICAL: Start WebGL context cleanup timer
+      _contextCleanupTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+        _cleanupOldWebGLContexts();
+      });
       
       _isInitialized = true;
       AppLogger.info('Memory manager initialized',
@@ -198,18 +208,102 @@ class MemoryManager {
   
   /// Register a WebGL context for monitoring
   void registerWebGLContext(String contextId) {
+    // CRITICAL: Check context limits before registering
+    if (_activeWebGLContexts.length >= _maxWebGLContexts) {
+      AppLogger.warning('Maximum WebGL contexts reached, cleaning up oldest',
+        component: 'MemoryManager',
+        metadata: {
+          'currentContexts': _activeWebGLContexts.length,
+          'maxContexts': _maxWebGLContexts,
+        });
+      
+      _forceCleanupOldestContext();
+    }
+    
     _activeWebGLContexts.add(contextId);
-    AppLogger.debug('Registered WebGL context',
+    _contextTimestamps[contextId] = DateTime.now();
+    
+    AppLogger.info('Registered WebGL context',
       component: 'MemoryManager',
-      metadata: {'contextId': contextId, 'totalContexts': _activeWebGLContexts.length});
+      metadata: {
+        'contextId': contextId,
+        'totalContexts': _activeWebGLContexts.length,
+        'maxContexts': _maxWebGLContexts,
+      });
+  }
+  
+  /// Force cleanup of the oldest WebGL context
+  void _forceCleanupOldestContext() {
+    if (_contextTimestamps.isEmpty) return;
+    
+    // Find oldest context
+    String? oldestContextId;
+    DateTime? oldestTime;
+    
+    for (final entry in _contextTimestamps.entries) {
+      if (oldestTime == null || entry.value.isBefore(oldestTime)) {
+        oldestTime = entry.value;
+        oldestContextId = entry.key;
+      }
+    }
+    
+    if (oldestContextId != null) {
+      AppLogger.warning('Force cleaning up oldest WebGL context',
+        component: 'MemoryManager',
+        metadata: {
+          'contextId': oldestContextId,
+          'age': DateTime.now().difference(oldestTime!).inMinutes,
+        });
+      
+      unregisterWebGLContext(oldestContextId);
+    }
+  }
+  
+  /// Clean up old WebGL contexts periodically
+  void _cleanupOldWebGLContexts() {
+    final now = DateTime.now();
+    final oldContexts = <String>[];
+    
+    // Find contexts older than 10 minutes
+    for (final entry in _contextTimestamps.entries) {
+      if (now.difference(entry.value).inMinutes > 10) {
+        oldContexts.add(entry.key);
+      }
+    }
+    
+    // Clean up old contexts
+    for (final contextId in oldContexts) {
+      AppLogger.info('Cleaning up old WebGL context',
+        component: 'MemoryManager',
+        metadata: {
+          'contextId': contextId,
+          'age': now.difference(_contextTimestamps[contextId]!).inMinutes,
+        });
+      
+      unregisterWebGLContext(contextId);
+    }
+    
+    if (oldContexts.isNotEmpty) {
+      AppLogger.info('Cleaned up old WebGL contexts',
+        component: 'MemoryManager',
+        metadata: {
+          'cleanedCount': oldContexts.length,
+          'remainingContexts': _activeWebGLContexts.length,
+        });
+    }
   }
   
   /// Unregister a WebGL context
   void unregisterWebGLContext(String contextId) {
     _activeWebGLContexts.remove(contextId);
-    AppLogger.debug('Unregistered WebGL context',
+    _contextTimestamps.remove(contextId);
+    
+    AppLogger.info('Unregistered WebGL context',
       component: 'MemoryManager',
-      metadata: {'contextId': contextId, 'totalContexts': _activeWebGLContexts.length});
+      metadata: {
+        'contextId': contextId,
+        'totalContexts': _activeWebGLContexts.length,
+      });
   }
   
   /// Monitor WebGL memory usage
@@ -219,6 +313,22 @@ class MemoryManager {
     try {
       // Estimate WebGL memory usage based on active contexts
       _webglMemoryUsage = _activeWebGLContexts.length * 20 * 1024 * 1024; // Estimate 20MB per context
+      
+      // CRITICAL: Check for excessive contexts
+      if (_activeWebGLContexts.length > _maxWebGLContexts) {
+        AppLogger.error('CRITICAL: Too many WebGL contexts detected!',
+          component: 'MemoryManager',
+          metadata: {
+            'activeContexts': _activeWebGLContexts.length,
+            'maxAllowed': _maxWebGLContexts,
+            'estimatedMemory': _webglMemoryUsage,
+          });
+        
+        // Force cleanup of excess contexts
+        while (_activeWebGLContexts.length > _maxWebGLContexts) {
+          _forceCleanupOldestContext();
+        }
+      }
       
       if (_webglMemoryUsage > _maxModelCacheSize) {
         AppLogger.warning('High WebGL memory usage detected',
@@ -370,10 +480,18 @@ class MemoryManager {
             _performAggressiveCleanup();
             
             // Clear WebGL contexts if memory pressure is severe
-            if (_webglMemoryUsage > _maxModelCacheSize * 0.8) {
-              AppLogger.warning('Severe memory pressure, clearing WebGL contexts',
-                component: 'MemoryManager');
-              _activeWebGLContexts.clear();
+            if (_webglMemoryUsage > _maxModelCacheSize * 0.8 || _activeWebGLContexts.length > _maxWebGLContexts) {
+              AppLogger.error('Severe memory pressure, clearing excess WebGL contexts',
+                component: 'MemoryManager',
+                metadata: {
+                  'activeContexts': _activeWebGLContexts.length,
+                  'maxContexts': _maxWebGLContexts,
+                });
+              
+              // Force cleanup to safe levels
+              while (_activeWebGLContexts.length > 1) {
+                _forceCleanupOldestContext();
+              }
             }
           }
         } catch (e) {
@@ -398,6 +516,9 @@ class MemoryManager {
     _webglMonitorTimer?.cancel();
     _webglMonitorTimer = null;
     
+    _contextCleanupTimer?.cancel();
+    _contextCleanupTimer = null;
+    
     // Cancel all subscriptions
     for (final subscription in _subscriptions.values) {
       subscription.cancel();
@@ -406,6 +527,7 @@ class MemoryManager {
     
     // Clear WebGL contexts
     _activeWebGLContexts.clear();
+    _contextTimestamps.clear();
     _webglMemoryUsage = 0;
     
     clearCache();

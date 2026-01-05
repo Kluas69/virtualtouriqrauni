@@ -217,15 +217,16 @@ class AppConstants {
   static String? webglUrlFor(String locationName) {
     // FIXED: Removed mobile check – return URL on all devices
     // Updated to use Three.js server with room-based navigation
-    if (locationName == 'Class Rooms') {
-      return 'classroom'; // Room ID for Three.js RoomManager
+    // CRITICAL FIX: Use URL-safe room IDs instead of location names with spaces
+    switch (locationName) {
+      case 'Class Rooms':
+        return 'classroom'; // URL-safe room ID
+      case 'Library':
+        return 'library'; // URL-safe room ID
+      case 'Auditorium':
+        return 'auditorium'; // URL-safe room ID
+      default:
+        return null;
     }
-    if (locationName == 'Library') {
-      return 'library'; // Room ID for Three.js RoomManager
-    }
-    if (locationName == 'Auditorium') {
-      return 'lab'; // Room ID for Three.js RoomManager (using lab as placeholder)
-    }
-    return null;
   }
 }

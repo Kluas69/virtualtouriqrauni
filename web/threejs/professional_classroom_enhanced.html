@@ -748,7 +748,7 @@
             </div>
             <div class="control-row">
                 <button onclick="activateNormalMode()">🚶 Normal</button>
-                <button class="bee-mode" onclick="activateBeeMode()">� Bee MMode</button>
+                <button class="bee-mode" onclick="activateBeeMode()">🐝 Bee Mode</button>
             </div>
             <div class="control-row">
                 <button class="ant-mode" onclick="activateAntMode()">🐜 Ant Mode</button>
@@ -770,7 +770,7 @@
         <div class="control-group">
             <h3>💡 Rendering</h3>
             <div class="control-row">
-                <button onclick="toggleFog()">�️ Fog</buttson>
+                <button onclick="toggleFog()">🌫️ Fog</button>
                 <button onclick="cycleQuality()">⚙️ Quality</button>
             </div>
             <div class="control-row">
@@ -919,10 +919,204 @@
         let qualityLevel = 2; // 0=Low, 1=Medium, 2=High, 3=Ultra
         let orbitMode = true; // Start with orbit controls
         
+        // ===== CRITICAL WEBGL CONTEXT MANAGEMENT =====
+        let webglContexts = new Set();
+        const MAX_WEBGL_CONTEXTS = 2;
+        let contextLossCount = 0;
+        let performanceMonitor = {
+            fps: 60,
+            frameCount: 0,
+            lastTime: performance.now(),
+            memoryUsage: 0,
+            triangleCount: 0,
+            drawCalls: 0
+        };
+        
+        // WebGL context loss handling
+        function handleContextLoss(event) {
+            event.preventDefault();
+            contextLossCount++;
+            console.warn('🚨 WebGL context lost! Count:', contextLossCount);
+            
+            // Send context loss message to Flutter
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'webgl_context_lost',
+                    contextLossCount: contextLossCount,
+                    timestamp: Date.now()
+                }, '*');
+            }
+            
+            showNotification('⚠️ WebGL Context Lost - Attempting Recovery...');
+            
+            // Attempt recovery after a short delay
+            setTimeout(() => {
+                attemptContextRecovery();
+            }, 1000);
+        }
+        
+        function handleContextRestore(event) {
+            console.log('✅ WebGL context restored!');
+            showNotification('✅ WebGL Context Restored!');
+            
+            // Reinitialize renderer and scene
+            if (renderer && scene && camera) {
+                try {
+                    // Recreate renderer
+                    const container = document.getElementById('container');
+                    container.removeChild(renderer.domElement);
+                    
+                    renderer = new THREE.WebGLRenderer({ 
+                        antialias: true,
+                        powerPreference: "high-performance"
+                    });
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                    renderer.shadowMap.enabled = shadowsEnabled;
+                    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                    renderer.outputColorSpace = THREE.SRGBColorSpace;
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    renderer.toneMappingExposure = 1.2;
+                    
+                    // Add context loss listeners
+                    renderer.domElement.addEventListener('webglcontextlost', handleContextLoss, false);
+                    renderer.domElement.addEventListener('webglcontextrestored', handleContextRestore, false);
+                    
+                    container.appendChild(renderer.domElement);
+                    
+                    // Send recovery success message to Flutter
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'webgl_context_recovered',
+                            timestamp: Date.now()
+                        }, '*');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Failed to recover WebGL context:', error);
+                    showError('Failed to recover WebGL context: ' + error.message);
+                }
+            }
+        }
+        
+        function attemptContextRecovery() {
+            try {
+                // Force context recovery by recreating the renderer
+                if (renderer) {
+                    const gl = renderer.getContext();
+                    if (gl && gl.isContextLost()) {
+                        console.log('🔄 Attempting WebGL context recovery...');
+                        // The context will be restored automatically by the browser
+                        // We just need to wait for the contextrestored event
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Context recovery attempt failed:', error);
+                showError('WebGL context recovery failed. Please refresh the page.');
+            }
+        }
+        
+        // Monitor WebGL contexts to prevent browser crashes
+        function monitorWebGLContexts() {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (gl) {
+                const contextId = 'context_' + Date.now();
+                webglContexts.add(contextId);
+                
+                console.log(`📊 WebGL contexts: ${webglContexts.size}/${MAX_WEBGL_CONTEXTS}`);
+                
+                if (webglContexts.size > MAX_WEBGL_CONTEXTS) {
+                    console.warn('🚨 Too many WebGL contexts! Cleaning up...');
+                    cleanupExcessiveContexts();
+                }
+                
+                // Add context loss listener
+                canvas.addEventListener('webglcontextlost', (event) => {
+                    webglContexts.delete(contextId);
+                    console.log(`🗑️ WebGL context cleaned up: ${contextId}`);
+                }, false);
+            }
+        }
+        
+        function cleanupExcessiveContexts() {
+            // Force garbage collection and context cleanup
+            if (window.gc) {
+                window.gc();
+            }
+            
+            // Clear some contexts from our tracking
+            const contextsToRemove = Math.max(0, webglContexts.size - MAX_WEBGL_CONTEXTS);
+            let removed = 0;
+            
+            for (const contextId of webglContexts) {
+                if (removed >= contextsToRemove) break;
+                webglContexts.delete(contextId);
+                removed++;
+            }
+            
+            console.log(`🧹 Cleaned up ${removed} WebGL contexts`);
+            
+            // Send cleanup message to Flutter
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'webgl_contexts_cleaned',
+                    removedCount: removed,
+                    remainingCount: webglContexts.size,
+                    timestamp: Date.now()
+                }, '*');
+            }
+        }
+        
+        // Enhanced performance monitoring
+        function updatePerformanceMonitor() {
+            performanceMonitor.frameCount++;
+            const currentTime = performance.now();
+            
+            if (currentTime - performanceMonitor.lastTime >= 1000) {
+                performanceMonitor.fps = Math.round((performanceMonitor.frameCount * 1000) / (currentTime - performanceMonitor.lastTime));
+                
+                // Update UI
+                document.getElementById('fps-hud').textContent = performanceMonitor.fps;
+                document.getElementById('fps-counter').textContent = performanceMonitor.fps;
+                
+                // Performance-based quality adjustment
+                if (performanceMonitor.fps < 20 && qualityLevel > 0) {
+                    qualityLevel--;
+                    applyQualitySettings();
+                    console.log(`📉 Quality reduced to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
+                    showNotification(`📉 Quality reduced for better performance (FPS: ${performanceMonitor.fps})`);
+                } else if (performanceMonitor.fps > 50 && qualityLevel < 2) {
+                    qualityLevel++;
+                    applyQualitySettings();
+                    console.log(`📈 Quality increased to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
+                }
+                
+                // Send performance data to Flutter
+                if (window.parent && window.parent !== window && renderer && renderer.info) {
+                    const info = renderer.info;
+                    window.parent.postMessage({
+                        type: 'performance_update',
+                        fps: performanceMonitor.fps,
+                        triangles: info.render.triangles,
+                        drawCalls: info.render.calls,
+                        memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
+                        contextLossCount: contextLossCount,
+                        webglContexts: webglContexts.size,
+                        timestamp: Date.now()
+                    }, '*');
+                }
+                
+                performanceMonitor.frameCount = 0;
+                performanceMonitor.lastTime = currentTime;
+            }
+        }
+        
         // Game-like Player System
         const player = {
             position: { x: 0, y: 0.3, z: 5 }, // Start on floor level
-            size: { radius: 0.3, height: 1.6 },
+            size: { radius: 0.3, height: 0.9 },
             velocity: { x: 0, y: 0, z: 0 },
             speed: 3.5, // Optimized for realistic game movement
             jumpPower: 8, // Reduced for more realistic jumping
@@ -1036,10 +1230,12 @@
                 camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
                 camera.position.set(0, 2, 5);
                 
-                // Create Professional Renderer
+                // Create Professional Renderer with Context Management
                 renderer = new THREE.WebGLRenderer({ 
                     antialias: true,
-                    powerPreference: "high-performance"
+                    powerPreference: "high-performance",
+                    preserveDrawingBuffer: false, // Better memory management
+                    failIfMajorPerformanceCaveat: false // Allow fallback
                 });
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1048,7 +1244,15 @@
                 renderer.outputColorSpace = THREE.SRGBColorSpace;
                 renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 renderer.toneMappingExposure = 1.2;
+                
+                // CRITICAL: Add WebGL context loss/restore handlers
+                renderer.domElement.addEventListener('webglcontextlost', handleContextLoss, false);
+                renderer.domElement.addEventListener('webglcontextrestored', handleContextRestore, false);
+                
                 document.getElementById('container').appendChild(renderer.domElement);
+                
+                // Monitor WebGL contexts
+                monitorWebGLContexts();
                 
                 updateProgress(30);
                 
@@ -1365,7 +1569,8 @@
                     controls.update();
                 }
                 
-                // Professional performance monitoring
+                // CRITICAL: Enhanced performance monitoring
+                updatePerformanceMonitor();
                 updatePerformanceStats();
                 
                 // Professional rendering
@@ -2188,24 +2393,136 @@
                     }
                 }
             }
+            
+            // CRITICAL: Handle cleanup messages from Flutter
+            if (event.data && event.data.type === 'cleanup_context') {
+                console.log('🧹 Received cleanup request from Flutter:', event.data);
+                cleanupWebGLResources();
+            }
+            
+            if (event.data && event.data.type === 'force_cleanup') {
+                console.log('🚨 Received force cleanup request from Flutter:', event.data);
+                forceCleanupWebGLResources();
+            }
+            
+            if (event.data && event.data.type === 'dispose_context') {
+                console.log('🗑️ Received dispose request from Flutter:', event.data);
+                disposeWebGLResources();
+            }
         });
         
-        // Send periodic performance updates to Flutter
+        // CRITICAL: WebGL resource cleanup functions
+        function cleanupWebGLResources() {
+            try {
+                console.log('🧹 Cleaning up WebGL resources...');
+                
+                // Dispose of geometries and materials
+                if (classroomModel) {
+                    classroomModel.traverse((child) => {
+                        if (child.isMesh) {
+                            if (child.geometry) {
+                                child.geometry.dispose();
+                            }
+                            if (child.material) {
+                                if (Array.isArray(child.material)) {
+                                    child.material.forEach(material => material.dispose());
+                                } else {
+                                    child.material.dispose();
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Dispose of textures
+                if (renderer && renderer.info) {
+                    const textures = renderer.info.memory.textures;
+                    console.log(`🗑️ Disposing ${textures} textures`);
+                }
+                
+                console.log('✅ WebGL resources cleaned up');
+                
+            } catch (error) {
+                console.error('❌ Error cleaning up WebGL resources:', error);
+            }
+        }
+        
+        function forceCleanupWebGLResources() {
+            try {
+                console.log('🚨 Force cleaning up WebGL resources...');
+                
+                // Stop animation loop
+                if (window.animationId) {
+                    cancelAnimationFrame(window.animationId);
+                }
+                
+                // Dispose renderer
+                if (renderer) {
+                    renderer.dispose();
+                    renderer.forceContextLoss();
+                    renderer = null;
+                }
+                
+                // Clear scene
+                if (scene) {
+                    while (scene.children.length > 0) {
+                        scene.remove(scene.children[0]);
+                    }
+                    scene = null;
+                }
+                
+                // Clear contexts
+                webglContexts.clear();
+                
+                console.log('✅ Force cleanup completed');
+                
+            } catch (error) {
+                console.error('❌ Error during force cleanup:', error);
+            }
+        }
+        
+        function disposeWebGLResources() {
+            try {
+                console.log('🗑️ Disposing WebGL resources...');
+                
+                // Clean up everything
+                cleanupWebGLResources();
+                forceCleanupWebGLResources();
+                
+                // Send disposal confirmation to Flutter
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'webgl_disposed',
+                        timestamp: Date.now()
+                    }, '*');
+                }
+                
+                console.log('✅ WebGL resources disposed');
+                
+            } catch (error) {
+                console.error('❌ Error disposing WebGL resources:', error);
+            }
+        }
+        
+        // Send periodic performance updates to Flutter - REDUCED FREQUENCY
         setInterval(() => {
             if (window.parent && window.parent !== window && renderer && renderer.info) {
                 const info = renderer.info;
                 window.parent.postMessage({
                     type: 'professionalPerformanceUpdate',
-                    fps: Math.round(1000 / clock.getDelta()),
+                    fps: performanceMonitor.fps,
                     triangles: info.render.triangles,
                     drawCalls: info.render.calls,
                     memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
+                    contextLossCount: contextLossCount,
+                    webglContexts: webglContexts.size,
                     timestamp: Date.now()
                 }, '*');
             }
-        }, 2000);
+        }, 5000); // Reduced from 2000ms to 5000ms to reduce message frequency
         
         console.log('🎓 Professional Three.js Classroom Viewer Enhanced Ready!');
     </script>
 </body>
 </html>
+

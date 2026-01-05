@@ -82,6 +82,51 @@ class MyApp extends StatelessWidget {
                     errorMessage: 'Failed to load home screen',
                     child: const StableWidget(child: HomeScreen()),
                   ),
+                  // CRITICAL FIX: Add route handling to prevent navigation errors
+                  onGenerateRoute: (settings) {
+                    AppLogger.info('Route requested: ${settings.name}',
+                      component: 'Main',
+                      metadata: {'route': settings.name, 'arguments': settings.arguments});
+                    
+                    // Handle WebGL routes
+                    if (settings.name?.startsWith('/webgl/') == true) {
+                      AppLogger.warning('WebGL route intercepted, redirecting to home',
+                        component: 'Main',
+                        metadata: {'route': settings.name});
+                      
+                      // Redirect to home screen instead of trying to handle WebGL routes
+                      return MaterialPageRoute(
+                        builder: (context) => ErrorBoundary(
+                          errorMessage: 'Failed to load home screen',
+                          child: const StableWidget(child: HomeScreen()),
+                        ),
+                        settings: const RouteSettings(name: '/'),
+                      );
+                    }
+                    
+                    // Default route handling
+                    return MaterialPageRoute(
+                      builder: (context) => ErrorBoundary(
+                        errorMessage: 'Failed to load home screen',
+                        child: const StableWidget(child: HomeScreen()),
+                      ),
+                      settings: const RouteSettings(name: '/'),
+                    );
+                  },
+                  // CRITICAL FIX: Handle unknown routes gracefully
+                  onUnknownRoute: (settings) {
+                    AppLogger.warning('Unknown route requested: ${settings.name}',
+                      component: 'Main',
+                      metadata: {'route': settings.name});
+                    
+                    return MaterialPageRoute(
+                      builder: (context) => ErrorBoundary(
+                        errorMessage: 'Page not found',
+                        child: const StableWidget(child: HomeScreen()),
+                      ),
+                      settings: const RouteSettings(name: '/'),
+                    );
+                  },
                   builder: (context, child) {
                     // Add global error handling wrapper
                     return ErrorBoundary(
