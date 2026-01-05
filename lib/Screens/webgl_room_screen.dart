@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:html' as html;
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,6 +13,9 @@ import '../core/widgets/mobile_3d_controls.dart';
 import '../core/sensors/gyroscope_controller.dart';
 import '../core/state/refresh_fix.dart';
 import '../themes/themes.dart';
+
+// Conditional imports for web compatibility
+import 'dart:html' as html show window;
 
 /// Platform-agnostic WebGL room screen
 /// 
@@ -668,7 +670,9 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Loading 3D Classroom',
+                      widget.url == 'classroom' || widget.url.contains('classroom')
+                          ? 'Loading Professional 3D Classroom'
+                          : 'Loading 3D Environment',
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,

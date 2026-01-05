@@ -2122,7 +2122,88 @@
         init().catch(error => {
             console.error('❌ Failed to start application:', error);
             showError(`Failed to start application: ${error.message}`);
+            
+            // Send error message to Flutter
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'professionalClassroomError',
+                    error: `Failed to start application: ${error.message}`,
+                    timestamp: Date.now()
+                }, '*');
+            }
         });
+        
+        // Send ready message to Flutter when everything is loaded
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'professionalClassroomLoaded',
+                        success: true,
+                        engine: 'Professional Three.js Game Engine',
+                        systems: ['Rendering', 'Physics', 'Input', 'Performance', 'Assets'],
+                        quality: qualityLevel === 0 ? 'low' : qualityLevel === 1 ? 'medium' : qualityLevel === 2 ? 'high' : 'ultra',
+                        timestamp: Date.now()
+                    }, '*');
+                }
+            }, 1000);
+        });
+        
+        // Listen for configuration messages from Flutter
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'configure') {
+                console.log('🔧 Received configuration from Flutter:', event.data);
+                
+                // Apply mobile optimizations if needed
+                if (event.data.mobile) {
+                    console.log('📱 Applying mobile optimizations');
+                    
+                    // Reduce quality for mobile
+                    if (event.data.quality === 'medium') {
+                        qualityLevel = 1;
+                        applyQualitySettings();
+                    } else if (event.data.quality === 'low') {
+                        qualityLevel = 0;
+                        applyQualitySettings();
+                    }
+                    
+                    // Show mobile controls
+                    const mobileControls = document.getElementById('mobile-controls');
+                    if (mobileControls) {
+                        mobileControls.style.display = 'block';
+                    }
+                }
+                
+                // Apply feature settings
+                if (event.data.features) {
+                    const features = event.data.features;
+                    
+                    if (features.shadows === false) {
+                        toggleShadows();
+                    }
+                    
+                    if (features.postProcessing === false && renderer) {
+                        // Disable post-processing for better mobile performance
+                        console.log('🎭 Disabling post-processing for mobile');
+                    }
+                }
+            }
+        });
+        
+        // Send periodic performance updates to Flutter
+        setInterval(() => {
+            if (window.parent && window.parent !== window && renderer && renderer.info) {
+                const info = renderer.info;
+                window.parent.postMessage({
+                    type: 'professionalPerformanceUpdate',
+                    fps: Math.round(1000 / clock.getDelta()),
+                    triangles: info.render.triangles,
+                    drawCalls: info.render.calls,
+                    memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
+                    timestamp: Date.now()
+                }, '*');
+            }
+        }, 2000);
         
         console.log('🎓 Professional Three.js Classroom Viewer Enhanced Ready!');
     </script>

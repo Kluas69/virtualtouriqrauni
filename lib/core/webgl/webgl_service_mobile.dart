@@ -1,10 +1,18 @@
 import 'dart:async';
-import 'dart:html' as html;
-import 'dart:js' as js;
 import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import 'webgl_service.dart';
 import '../logging/app_logger.dart';
+
+// Conditional imports for web compatibility
+import 'dart:html' as html show 
+  CanvasElement, 
+  IFrameElement, 
+  DivElement, 
+  Element, 
+  MessageEvent, 
+  window, 
+  document;
 
 /// Mobile-optimized WebGL service with gaming controls support
 class WebGLServiceMobile implements WebGLService {
@@ -89,16 +97,11 @@ class WebGLServiceMobile implements WebGLService {
   
   @override
   void registerViewFactory(String viewType, Function factory) {
-    // Mobile-specific view factory registration
-    try {
-      // Use platform view registry for mobile
-      ui.platformViewRegistry.registerViewFactory(viewType, factory);
-      AppLogger.info('Registered mobile view factory: $viewType',
-        component: 'WebGLServiceMobile');
-    } catch (e) {
-      AppLogger.error('Failed to register mobile view factory', 
-        component: 'WebGLServiceMobile', error: e);
-    }
+    // CRITICAL FIX: Platform views are now pre-registered during app initialization
+    // This method is no longer needed for runtime registration
+    AppLogger.debug('Platform view factory registration skipped - using pre-registered views',
+      component: 'WebGLServiceMobile',
+      metadata: {'viewType': viewType});
   }
   
   @override
@@ -210,11 +213,8 @@ class WebGLServiceMobile implements WebGLService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
       
-      // Send message to iframe
-      iframe.contentWindow?.postMessage(
-        js.JsObject.jsify(message),
-        '*'
-      );
+      // Send message to iframe using postMessage without JS interop
+      iframe.contentWindow?.postMessage(message, '*');
       
       AppLogger.debug('Sent mobile message: $type',
         component: 'WebGLServiceMobile',
@@ -389,103 +389,164 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
       if (!mounted) return;
       
       try {
-        // Use a stable view type for mobile
+        // CRITICAL FIX: Use pre-registered platform view instead of registering at runtime
         final stableViewType = 'mobile-webgl-viewer-stable';
         
-        // Register the view factory only once
-        try {
-          ui.platformViewRegistry.registerViewFactory(
-            stableViewType,
-            (int viewId) {
-              try {
-                AppLogger.info('Creating mobile WebGL iframe for room: ${widget.url}',
-                  component: 'MobileWebGLViewer',
-                  metadata: {'viewType': stableViewType, 'viewerId': _viewerId});
-                
-                final iframe = html.IFrameElement()
-                  ..src = widget.service._buildThreeJsViewerUrl(widget.url)
-                  ..style.border = 'none'
-                  ..style.width = '100%'
-                  ..style.height = '100%'
-                  ..allowFullscreen = true
-                  ..allow = 'accelerometer; gyroscope; magnetometer; xr-spatial-tracking; gamepad';
-                
-                // Mobile-specific iframe attributes
-                iframe.setAttribute('loading', 'lazy');
-                iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-                iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-orientation-lock');
-                
-                // Register iframe for mobile communication
-                widget.service._registerIframe(_viewerId, iframe);
-                
-                iframe.onLoad.listen((_) {
-                  AppLogger.info('Mobile WebGL iframe loaded successfully',
-                    component: 'MobileWebGLViewer',
-                    metadata: {'url': iframe.src, 'viewerId': _viewerId});
-                  
-                  // Enable mobile controls
-                  widget.service.enableMobileControls(_viewerId);
-                  
-                  // Check if the iframe actually loaded content - REDUCED TO 1 SECOND
-                  Timer(const Duration(seconds: 1), () {
-                    if (mounted && _isLoading) {
-                      // If still loading after 1 second, assume success and clear loading
-                      _handleLoadingComplete();
-                    }
-                  });
-                });
-                
-                iframe.onError.listen((_) {
-                  AppLogger.error('Mobile WebGL iframe failed to load',
-                    component: 'MobileWebGLViewer',
-                    metadata: {'url': iframe.src, 'viewerId': _viewerId});
-                  
-                  _handleLoadingError('Failed to load mobile WebGL content. Please ensure the Three.js server is running on port 3000.');
-                });
-                
-                // Enhanced timeout with fallback options - REDUCED TO 3 SECONDS
-                Timer(const Duration(seconds: 3), () {
-                  if (mounted && _isLoading) {
-                    AppLogger.warning('Mobile WebGL iframe loading timeout - clearing loading state',
-                      component: 'MobileWebGLViewer',
-                      metadata: {'viewerId': _viewerId});
-                    
-                    // CRITICAL FIX: Just clear loading state instead of showing error
-                    _handleLoadingComplete();
-                  }
-                });
-                
-                return iframe;
-              } catch (e) {
-                AppLogger.error('Failed to create mobile WebGL iframe',
-                  component: 'MobileWebGLViewer',
-                  error: e);
-                
-                _handleLoadingError('Mobile WebGL initialization failed: ${e.toString()}');
-                return html.DivElement()..text = 'Mobile WebGL not available';
-              }
-            },
-          );
-          
-          // Update the view type to use the stable one
-          setState(() {
-            _viewType = stableViewType;
-          });
-        } catch (e) {
-          // View factory already registered, which is fine for mobile
-          AppLogger.debug('Mobile view factory already registered: $stableViewType',
-            component: 'MobileWebGLViewer');
-          setState(() {
-            _viewType = stableViewType;
-          });
-        }
+        AppLogger.info('Using pre-registered mobile WebGL platform view',
+          component: 'MobileWebGLViewer',
+          metadata: {'viewType': stableViewType, 'viewerId': _viewerId});
+        
+        // Update the view type to use the pre-registered one
+        setState(() {
+          _viewType = stableViewType;
+        });
+        
+        // Initialize the iframe content after the platform view is ready
+        _initializeIframeContent();
+        
       } catch (e) {
-        AppLogger.error('Failed to register mobile view factory',
+        AppLogger.error('Failed to use mobile platform view',
           component: 'MobileWebGLViewer',
           error: e,
           metadata: {'viewType': _viewType});
         
-        _handleLoadingError('Mobile WebGL integration failed: ${e.toString()}');
+        _handleLoadingError('Mobile WebGL platform view error: ${e.toString()}');
+      }
+    });
+  }
+  
+  /// Initialize iframe content in the pre-registered platform view
+  void _initializeIframeContent() {
+    // Wait for the platform view to be ready
+    Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      
+      try {
+        // Find any mobile WebGL container that's ready
+        final containers = html.document.querySelectorAll('[id*="mobile-webgl-container"][data-ready="true"]');
+        
+        if (containers.isNotEmpty) {
+          final container = containers.first as html.Element;
+          AppLogger.info('Found mobile WebGL container: ${container.id}',
+            component: 'MobileWebGLViewer');
+          _createIframeInContainer(container);
+        } else {
+          AppLogger.warning('No mobile WebGL container found, retrying...',
+            component: 'MobileWebGLViewer');
+          
+          // Retry after a longer delay
+          Timer(const Duration(seconds: 1), () {
+            if (mounted) {
+              _initializeIframeContent();
+            }
+          });
+        }
+      } catch (e) {
+        AppLogger.error('Failed to initialize iframe content',
+          component: 'MobileWebGLViewer',
+          error: e);
+        _handleLoadingError('Failed to initialize mobile 3D viewer: ${e.toString()}');
+      }
+    });
+  }
+  
+  /// Create iframe in the provided container
+  void _createIframeInContainer(html.Element container) {
+    try {
+      // Remove loading indicator
+      final loadingDiv = container.querySelector('[id*="loading"]');
+      loadingDiv?.remove();
+      
+      // Create the actual iframe
+      final iframe = html.IFrameElement()
+        ..src = widget.service._buildThreeJsViewerUrl(widget.url)
+        ..style.border = 'none'
+        ..style.width = '100%'
+        ..style.height = '100%'
+        ..allowFullscreen = true
+        ..allow = 'accelerometer; gyroscope; magnetometer; xr-spatial-tracking; gamepad';
+      
+      // Mobile-specific iframe attributes
+      iframe.setAttribute('loading', 'lazy');
+      iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+      iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-orientation-lock');
+      
+      // Add iframe to container
+      container.append(iframe);
+      
+      // Register iframe for mobile communication
+      widget.service._registerIframe(_viewerId, iframe);
+      
+      _setupIframeEventHandlers(iframe);
+      
+      AppLogger.info('Mobile WebGL iframe created in container successfully',
+        component: 'MobileWebGLViewer',
+        metadata: {'url': iframe.src, 'viewerId': _viewerId});
+        
+    } catch (e) {
+      AppLogger.error('Failed to create iframe in container',
+        component: 'MobileWebGLViewer',
+        error: e);
+      _handleLoadingError('Failed to create mobile 3D viewer: ${e.toString()}');
+    }
+  }
+  
+  /// Create iframe directly (fallback method)
+  void _createDirectIframe() {
+    try {
+      AppLogger.info('Creating direct iframe as fallback',
+        component: 'MobileWebGLViewer');
+      
+      // This is a fallback - the iframe will be created by the platform view factory
+      // Just handle the loading completion
+      Timer(const Duration(seconds: 2), () {
+        if (mounted && _isLoading) {
+          _handleLoadingComplete();
+        }
+      });
+      
+    } catch (e) {
+      AppLogger.error('Failed to create direct iframe',
+        component: 'MobileWebGLViewer',
+        error: e);
+      _handleLoadingError('Mobile 3D viewer initialization failed: ${e.toString()}');
+    }
+  }
+  
+  /// Setup iframe event handlers
+  void _setupIframeEventHandlers(html.IFrameElement iframe) {
+    iframe.onLoad.listen((_) {
+      AppLogger.info('Mobile WebGL iframe loaded successfully',
+        component: 'MobileWebGLViewer',
+        metadata: {'url': iframe.src, 'viewerId': _viewerId});
+      
+      // Enable mobile controls
+      widget.service.enableMobileControls(_viewerId);
+      
+      // Check if the iframe actually loaded content
+      Timer(const Duration(seconds: 1), () {
+        if (mounted && _isLoading) {
+          _handleLoadingComplete();
+        }
+      });
+    });
+    
+    iframe.onError.listen((_) {
+      AppLogger.error('Mobile WebGL iframe failed to load',
+        component: 'MobileWebGLViewer',
+        metadata: {'url': iframe.src, 'viewerId': _viewerId});
+      
+      _handleLoadingError('Failed to load mobile WebGL content. Please ensure the Three.js server is accessible.');
+    });
+    
+    // Enhanced timeout with fallback options
+    Timer(const Duration(seconds: 3), () {
+      if (mounted && _isLoading) {
+        AppLogger.warning('Mobile WebGL iframe loading timeout - clearing loading state',
+          component: 'MobileWebGLViewer',
+          metadata: {'viewerId': _viewerId});
+        
+        _handleLoadingComplete();
       }
     });
   }

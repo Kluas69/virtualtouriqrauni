@@ -205,7 +205,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           children: [
             Icon(Icons.view_in_ar, color: Colors.blue.shade600),
             const SizedBox(width: 8),
-            const Text('3D Classroom Tour'),
+            const Text(' 3D Classroom'),
           ],
         ),
         content: Column(
@@ -213,7 +213,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'You\'re about to enter an immersive 3D classroom environment optimized for mobile devices.',
+              'You\'re about to enter a professional 3D classroom environment powered by our advanced Three.js game engine.',
               style: TextStyle(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 16),
@@ -229,22 +229,50 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.blue.shade600),
+                      Icon(Icons.engineering, size: 16, color: Colors.blue.shade600),
                       const SizedBox(width: 8),
-                      const Text('Mobile Features:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const Text('Professional Features:', style: TextStyle(fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text('• Virtual joysticks for movement'),
-                  const Text('• Touch camera controls'),
-                  const Text('• Gyroscope support (if available)'),
-                  const Text('• Optimized graphics for mobile'),
+                  const Text('• Advanced game engine with ECS architecture'),
+                  const Text('• Professional rendering with PBR & post-processing'),
+                  const Text('• Mobile-optimized controls & gyroscope support'),
+                  const Text('• Real-time physics and collision detection'),
+                  const Text('• Multiple character sizes (Normal, Bee, Ant)'),
+                  const Text('• Quality scaling for optimal performance'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.touch_app, size: 16, color: Colors.green.shade600),
+                      const SizedBox(width: 8),
+                      const Text('Mobile Controls:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('• Virtual joysticks for movement & camera'),
+                  const Text('• Touch gestures for interaction'),
+                  const Text('• Gyroscope support for immersive look-around'),
+                  const Text('• Professional game-style HUD'),
                 ],
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'Note: For the best experience, ensure you have a stable internet connection and close other apps to free up memory.',
+              'Note: This professional 3D environment requires WebGL support and will automatically optimize graphics quality based on your device capabilities.',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey.shade600,
@@ -267,7 +295,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
               backgroundColor: Colors.blue.shade600,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Enter 3D Tour'),
+            child: const Text('Enter Professional 3D Tour'),
           ),
         ],
       ),
@@ -495,7 +523,9 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
               duration: const Duration(milliseconds: 600),
               child: Center(
                 child: CustomButton(
-                  text: 'Start Virtual Tour',
+                  text: widget.locationData.name.toLowerCase().contains('classroom') 
+                      ? 'Start Professional 3D Tour'
+                      : 'Start Virtual Tour',
                   onPressed: _openTour,
                   fontSize: 16,
                   isMobile: isMobile,

@@ -1,7 +1,16 @@
 {
   "hosting": {
     "public": "build/web",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json", 
+      "**/.*", 
+      "**/node_modules/**",
+      "**/*.py",
+      "**/*.bat",
+      "**/*.sh",
+      "**/*.exe",
+      "**/*.bin"
+    ],
     "cleanUrls": true,
     "trailingSlash": false,
     "headers": [

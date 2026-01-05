@@ -9,9 +9,13 @@ import 'core/state/app_state_manager.dart';
 import 'core/state/refresh_fix.dart';
 import 'core/assets/asset_manager.dart';
 import 'core/logging/app_logger.dart';
+import 'core/webgl/webgl_platform_views.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // CRITICAL FIX: Register platform view factories BEFORE app initialization
+  WebGLPlatformViews.registerAll();
   
   // Initialize core systems
   await _initializeCoreServices();

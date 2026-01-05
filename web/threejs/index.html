@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional 3D Classroom - Redirecting...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .loading {
+            max-width: 400px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 255, 255, 0.3);
+            border-top: 4px solid #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #00ffff;
+        }
+        p {
+            font-size: 16px;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+        <h1>Loading Professional 3D Classroom</h1>
+        <p>Redirecting to the enhanced Three.js game engine...</p>
+    </div>
+
+    <script>
+        // Get room parameter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const room = urlParams.get('room') || 'classroom';
+        
+        console.log('🎮 Professional 3D Classroom - Redirecting to enhanced viewer');
+        console.log('📍 Room:', room);
+        
+        // Redirect to the professional classroom enhanced version
+        setTimeout(() => {
+            window.location.href = './professional_classroom_enhanced.html';
+        }, 1000);
+    </script>
+</body>
+</html>
