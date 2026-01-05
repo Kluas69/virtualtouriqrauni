@@ -1,6 +1,6 @@
 import 'webgl_service.dart';
 import 'webgl_service_impl.dart'
-    if (dart.library.html) 'webgl_service_impl_web.dart';
+    if (dart.library.html) 'webgl_service_web_simple.dart';
 
 /// Factory for creating platform-specific WebGL service instances
 class WebGLFactory {

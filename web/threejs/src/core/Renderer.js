@@ -1,6 +1,5 @@
 /**
- * Professional WebGL Renderer
- * Handles WebGL context creation with fallback strategies
+ * Renderer - Three.js renderer setup and management
  */
 
 import * as THREE from 'three';
@@ -9,272 +8,218 @@ export class Renderer {
     constructor(container, options = {}) {
         this.container = container;
         this.options = {
-            antialias: false,
-            alpha: true,
+            antialias: true,
             powerPreference: 'high-performance',
-            stencil: false,
-            depth: true,
-            logarithmicDepthBuffer: false,
+            enableShadows: true,
+            shadowMapType: THREE.PCFSoftShadowMap,
+            pixelRatio: Math.min(window.devicePixelRatio, 2),
+            outputColorSpace: THREE.SRGBColorSpace,
             ...options
         };
         
         this.renderer = null;
-        this.isWebGL2 = false;
-        this.capabilities = null;
+        this.stats = null;
         
-        this.init();
+        this.setupRenderer();
+        this.setupEventListeners();
+        
+        console.log('✅ Renderer initialized');
     }
-    
-    init() {
-        console.log('🎨 Initializing WebGL Renderer...');
+
+    /**
+     * Setup Three.js renderer
+     */
+    setupRenderer() {
+        // Create WebGL renderer
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: this.options.antialias,
+            powerPreference: this.options.powerPreference
+        });
         
-        // Detect device capabilities
-        this.detectCapabilities();
+        // Set size
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(this.options.pixelRatio);
         
-        // Create renderer with fallback strategy
-        this.renderer = this.createRendererWithFallback();
-        
-        if (!this.renderer) {
-            throw new Error('Failed to create WebGL renderer');
+        // Configure shadows
+        if (this.options.enableShadows) {
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = this.options.shadowMapType;
         }
         
-        // Configure renderer
-        this.configureRenderer();
+        // Set color space
+        this.renderer.outputColorSpace = this.options.outputColorSpace;
         
         // Add to container
         this.container.appendChild(this.renderer.domElement);
         
-        console.log('✅ WebGL Renderer initialized:', {
-            webgl2: this.isWebGL2,
-            pixelRatio: this.renderer.getPixelRatio(),
-            capabilities: this.capabilities
-        });
+        console.log('🖥️ WebGL renderer created and added to DOM');
     }
-    
-    detectCapabilities() {
-        const canvas = document.createElement('canvas');
+
+    /**
+     * Setup event listeners
+     */
+    setupEventListeners() {
+        // Handle window resize
+        window.addEventListener('resize', () => this.onWindowResize());
         
-        // Test WebGL 2.0
-        let context = canvas.getContext('webgl2');
-        if (context) {
-            this.isWebGL2 = true;
-            this.capabilities = this.analyzeContext(context, 'webgl2');
-            return;
+        // Handle visibility change for performance
+        document.addEventListener('visibilitychange', () => this.onVisibilityChange());
+    }
+
+    /**
+     * Handle window resize
+     */
+    onWindowResize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        this.renderer.setSize(width, height);
+        
+        // Emit resize event for camera and other systems
+        if (window.classroomViewer && window.classroomViewer.onResize) {
+            window.classroomViewer.onResize(width, height);
         }
         
-        // Test WebGL 1.0
-        context = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (context) {
-            this.isWebGL2 = false;
-            this.capabilities = this.analyzeContext(context, 'webgl');
-            return;
+        console.log(`📐 Renderer resized to ${width}×${height}`);
+    }
+
+    /**
+     * Handle visibility change
+     */
+    onVisibilityChange() {
+        if (document.hidden) {
+            console.log('📱 Page hidden - renderer can be paused');
+        } else {
+            console.log('📱 Page visible - renderer resumed');
         }
         
-        throw new Error('WebGL not supported');
-    }
-    
-    analyzeContext(gl, version) {
-        const capabilities = {
-            version,
-            vendor: gl.getParameter(gl.VENDOR),
-            renderer: gl.getParameter(gl.RENDERER),
-            maxTextureSize: gl.getParameter(gl.MAX_TEXTURE_SIZE),
-            maxVertexAttributes: gl.getParameter(gl.MAX_VERTEX_ATTRIBS),
-            maxFragmentUniforms: gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS),
-            maxVertexUniforms: gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS),
-            extensions: gl.getSupportedExtensions() || []
-        };
-        
-        // WebGL 2.0 specific
-        if (version === 'webgl2') {
-            capabilities.maxDrawBuffers = gl.getParameter(gl.MAX_DRAW_BUFFERS);
-            capabilities.maxColorAttachments = gl.getParameter(gl.MAX_COLOR_ATTACHMENTS);
-        }
-        
-        return capabilities;
-    }
-    
-    createRendererWithFallback() {
-        const strategies = [
-            // Strategy 1: WebGL 2.0 with full options
-            () => this.createRenderer({ 
-                ...this.options,
-                context: this.isWebGL2 ? 'webgl2' : null 
-            }),
-            
-            // Strategy 2: WebGL 1.0 with full options
-            () => this.createRenderer({ 
-                ...this.options,
-                context: 'webgl' 
-            }),
-            
-            // Strategy 3: Reduced options for compatibility
-            () => this.createRenderer({
-                antialias: false,
-                alpha: false,
-                powerPreference: 'low-power',
-                stencil: false,
-                depth: true
-            }),
-            
-            // Strategy 4: Minimal options (last resort)
-            () => this.createRenderer({
-                antialias: false,
-                alpha: false,
-                powerPreference: 'low-power'
-            })
-        ];
-        
-        for (let i = 0; i < strategies.length; i++) {
-            try {
-                const renderer = strategies[i]();
-                if (renderer) {
-                    console.log(`✅ Renderer created with strategy ${i + 1}`);
-                    return renderer;
-                }
-            } catch (error) {
-                console.warn(`⚠️ Renderer strategy ${i + 1} failed:`, error.message);
-            }
-        }
-        
-        return null;
-    }
-    
-    createRenderer(options) {
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext(options.context || 'webgl', options);
-        
-        if (!context) {
-            throw new Error(`Failed to create ${options.context || 'webgl'} context`);
-        }
-        
-        return new THREE.WebGLRenderer({
-            canvas,
-            context,
-            ...options
-        });
-    }
-    
-    configureRenderer() {
-        const { renderer } = this;
-        
-        // Basic setup
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(this.getOptimalPixelRatio());
-        
-        // Color management
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        
-        // Shadows (conditional)
-        if (this.shouldEnableShadows()) {
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        }
-        
-        // Performance optimizations
-        renderer.info.autoReset = true;
-        renderer.sortObjects = true;
-        renderer.autoClear = true;
-        
-        // Mobile optimizations
-        if (this.isMobileDevice()) {
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            renderer.shadowMap.enabled = false;
+        // Emit visibility change event
+        if (window.classroomViewer && window.classroomViewer.onVisibilityChange) {
+            window.classroomViewer.onVisibilityChange(!document.hidden);
         }
     }
-    
-    getOptimalPixelRatio() {
-        const devicePixelRatio = window.devicePixelRatio || 1;
-        
-        // Limit pixel ratio based on device capabilities
-        if (this.isMobileDevice()) {
-            return Math.min(devicePixelRatio, 1.5);
-        }
-        
-        if (this.isLowEndDevice()) {
-            return Math.min(devicePixelRatio, 1.0);
-        }
-        
-        return Math.min(devicePixelRatio, 2.0);
-    }
-    
-    shouldEnableShadows() {
-        // Disable shadows on low-end devices
-        if (this.isLowEndDevice() || this.isMobileDevice()) {
-            return false;
-        }
-        
-        // Check if device supports shadow mapping
-        const extensions = this.capabilities?.extensions || [];
-        return extensions.includes('WEBGL_depth_texture');
-    }
-    
-    isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-    
-    isLowEndDevice() {
-        // Heuristics for low-end device detection
-        const memory = navigator.deviceMemory || 4;
-        const cores = navigator.hardwareConcurrency || 4;
-        
-        return memory <= 2 || cores <= 2;
-    }
-    
-    // Public API
+
+    /**
+     * Render scene with camera
+     * @param {THREE.Scene} scene - Scene to render
+     * @param {THREE.Camera} camera - Camera to render with
+     */
     render(scene, camera) {
-        if (this.renderer) {
-            this.renderer.render(scene, camera);
-        }
+        this.renderer.render(scene, camera);
     }
-    
-    setSize(width, height) {
-        if (this.renderer) {
-            this.renderer.setSize(width, height);
-        }
+
+    /**
+     * Get renderer instance
+     * @returns {THREE.WebGLRenderer} Renderer instance
+     */
+    getRenderer() {
+        return this.renderer;
     }
-    
+
+    /**
+     * Get renderer DOM element
+     * @returns {HTMLCanvasElement} Canvas element
+     */
+    getDomElement() {
+        return this.renderer.domElement;
+    }
+
+    /**
+     * Set pixel ratio
+     * @param {number} ratio - Pixel ratio
+     */
     setPixelRatio(ratio) {
-        if (this.renderer) {
-            this.renderer.setPixelRatio(ratio);
-        }
+        this.options.pixelRatio = ratio;
+        this.renderer.setPixelRatio(ratio);
     }
-    
-    getPixelRatio() {
-        return this.renderer ? this.renderer.getPixelRatio() : 1;
+
+    /**
+     * Enable/disable shadows
+     * @param {boolean} enabled - Whether shadows should be enabled
+     */
+    setShadowsEnabled(enabled) {
+        this.options.enableShadows = enabled;
+        this.renderer.shadowMap.enabled = enabled;
     }
-    
+
+    /**
+     * Set shadow map type
+     * @param {number} type - Shadow map type (THREE.BasicShadowMap, THREE.PCFShadowMap, etc.)
+     */
+    setShadowMapType(type) {
+        this.options.shadowMapType = type;
+        this.renderer.shadowMap.type = type;
+    }
+
+    /**
+     * Get renderer info for debugging
+     * @returns {Object} Renderer information
+     */
     getInfo() {
-        if (!this.renderer) return null;
-        
-        const info = this.renderer.info;
         return {
-            geometries: info.memory.geometries,
-            textures: info.memory.textures,
-            triangles: info.render.triangles,
-            points: info.render.points,
-            lines: info.render.lines,
-            calls: info.render.calls,
-            frame: info.render.frame
+            memory: this.renderer.info.memory,
+            render: this.renderer.info.render,
+            capabilities: {
+                maxTextures: this.renderer.capabilities.maxTextures,
+                maxVertexTextures: this.renderer.capabilities.maxVertexTextures,
+                maxTextureSize: this.renderer.capabilities.maxTextureSize,
+                maxCubemapSize: this.renderer.capabilities.maxCubemapSize,
+                maxAttributes: this.renderer.capabilities.maxAttributes,
+                maxVertexUniforms: this.renderer.capabilities.maxVertexUniforms,
+                maxFragmentUniforms: this.renderer.capabilities.maxFragmentUniforms
+            },
+            extensions: this.renderer.extensions,
+            pixelRatio: this.renderer.getPixelRatio(),
+            size: this.renderer.getSize(new THREE.Vector2())
         };
     }
-    
-    getCapabilities() {
-        return this.capabilities;
+
+    /**
+     * Take screenshot of current render
+     * @param {string} format - Image format ('image/png', 'image/jpeg')
+     * @param {number} quality - Image quality (0-1, for JPEG)
+     * @returns {string} Data URL of screenshot
+     */
+    takeScreenshot(format = 'image/png', quality = 0.9) {
+        return this.renderer.domElement.toDataURL(format, quality);
     }
-    
+
+    /**
+     * Clear renderer
+     * @param {boolean} color - Clear color buffer
+     * @param {boolean} depth - Clear depth buffer
+     * @param {boolean} stencil - Clear stencil buffer
+     */
+    clear(color = true, depth = true, stencil = true) {
+        this.renderer.clear(color, depth, stencil);
+    }
+
+    /**
+     * Set clear color
+     * @param {number} color - Hex color value
+     * @param {number} alpha - Alpha value (0-1)
+     */
+    setClearColor(color, alpha = 1) {
+        this.renderer.setClearColor(color, alpha);
+    }
+
+    /**
+     * Dispose of resources
+     */
     dispose() {
-        if (this.renderer) {
-            this.renderer.dispose();
-            
-            // Remove canvas from container
-            if (this.renderer.domElement && this.renderer.domElement.parentNode) {
-                this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
-            }
-            
-            this.renderer = null;
+        // Remove event listeners
+        window.removeEventListener('resize', this.onWindowResize);
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+        
+        // Remove from DOM
+        if (this.renderer.domElement.parentNode) {
+            this.renderer.domElement.parentNode.removeChild(this.renderer.domElement);
         }
+        
+        // Dispose renderer
+        this.renderer.dispose();
+        this.renderer = null;
+        
+        console.log('🗑️ Renderer disposed');
     }
 }

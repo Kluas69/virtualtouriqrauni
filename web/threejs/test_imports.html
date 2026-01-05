@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Three.js Imports</title>
+</head>
+<body>
+    <div id="test">Testing Three.js imports...</div>
+    
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        console.log('Testing Three.js imports...');
+        
+        try {
+            const THREE = await import('three');
+            console.log('✅ Three.js core imported successfully:', THREE);
+            
+            const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
+            console.log('✅ GLTFLoader imported successfully:', GLTFLoader);
+            
+            const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+            console.log('✅ OrbitControls imported successfully:', OrbitControls);
+            
+            // Test GameEngine import
+            const { GameEngine } = await import('./src/engine/GameEngine.js');
+            console.log('✅ GameEngine imported successfully:', GameEngine);
+            
+            document.getElementById('test').innerHTML = '✅ All imports successful!';
+            
+        } catch (error) {
+            console.error('❌ Import failed:', error);
+            document.getElementById('test').innerHTML = '❌ Import failed: ' + error.message;
+        }
+    </script>
+</body>
+</html>

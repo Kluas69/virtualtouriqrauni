@@ -5,6 +5,11 @@ import 'package:flutter/material.dart';
 import 'webgl_service.dart';
 import '../logging/app_logger.dart';
 
+/// Creates the web implementation for web platforms
+WebGLService createWebGLService() {
+  return WebGLServiceWebSimple();
+}
+
 /// Simple web-specific implementation of WebGL service
 class WebGLServiceWebSimple implements WebGLService {
   @override
@@ -72,6 +77,16 @@ class WebGLServiceWebSimple implements WebGLService {
     // Create a stable view type that doesn't change
     final viewType = 'webgl-classroom-viewer-stable';
     
+    // Determine which HTML file to use based on the URL
+    String htmlFile;
+    if (url == 'classroom' || url.contains('classroom')) {
+      // Use the professional Three.js system for classroom
+      htmlFile = './threejs/classroom-viewer-working.html';
+    } else {
+      // Use the working viewer for other content
+      htmlFile = './threejs/classroom-viewer-working.html';
+    }
+    
     // Only register once to prevent multiple registrations
     try {
       // Register the HTML view factory
@@ -79,7 +94,7 @@ class WebGLServiceWebSimple implements WebGLService {
         viewType,
         (int viewId) {
           final iframe = html.IFrameElement()
-            ..src = './web/threejs/classroom-viewer-working.html'
+            ..src = htmlFile
             ..style.border = 'none'
             ..style.width = '100%'
             ..style.height = '100%'
@@ -90,14 +105,16 @@ class WebGLServiceWebSimple implements WebGLService {
           // Handle iframe load events
           iframe.onLoad.listen((_) {
             AppLogger.info('3D classroom viewer loaded successfully',
-              component: 'WebGLServiceWebSimple');
+              component: 'WebGLServiceWebSimple',
+              metadata: {'htmlFile': htmlFile, 'url': url});
             onLoaded?.call();
           });
           
           iframe.onError.listen((event) {
             AppLogger.error('3D classroom viewer failed to load',
               component: 'WebGLServiceWebSimple',
-              error: event);
+              error: event,
+              metadata: {'htmlFile': htmlFile, 'url': url});
             onError?.call('Failed to load 3D classroom viewer');
           });
           
@@ -105,7 +122,8 @@ class WebGLServiceWebSimple implements WebGLService {
           html.window.onMessage.listen((event) {
             if (event.data is Map && event.data['type'] == 'classroomLoaded') {
               AppLogger.info('Classroom model loaded in iframe',
-                component: 'WebGLServiceWebSimple');
+                component: 'WebGLServiceWebSimple',
+                metadata: {'success': event.data['success'], 'engine': event.data['engine']});
               onLoaded?.call();
             }
           });
