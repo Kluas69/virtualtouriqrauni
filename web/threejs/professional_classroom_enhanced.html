@@ -580,7 +580,7 @@
             }
         }
         
-        /* Mobile-specific controls */
+        /* Mobile-specific controls - Enhanced for FPS gaming */
         #mobile-controls {
             display: none;
             position: fixed;
@@ -594,43 +594,150 @@
             border: 2px solid rgba(0, 255, 255, 0.3);
         }
         
+        /* Mobile joystick areas - Only movement joystick */
+        .mobile-joystick-area {
+            position: fixed;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.3));
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            z-index: 150;
+            display: none;
+            pointer-events: auto;
+        }
+        
+        .mobile-joystick-knob {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.8), rgba(0, 128, 255, 0.9));
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4);
+        }
+        
+        #movement-joystick {
+            bottom: 40px;
+            left: 40px;
+        }
+        
+        /* Remove camera joystick - gesture only */
+        #camera-joystick {
+            display: none !important;
+        }
+        
+        /* Mobile action buttons */
+        .mobile-action-btn {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 128, 255, 0.4));
+            border: 2px solid rgba(0, 255, 255, 0.6);
+            color: white;
+            font-size: 24px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            cursor: pointer;
+        }
+        
+        .mobile-action-btn:active {
+            transform: scale(0.95);
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.5), rgba(0, 128, 255, 0.6));
+        }
+        
+        #jump-btn {
+            bottom: 40px;
+            right: 40px;
+        }
+        
+        #settings-btn-mobile {
+            top: 40px;
+            right: 40px;
+            font-size: 20px;
+        }
+        
+        /* Mobile instructions */
+        #mobile-instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            z-index: 300;
+            display: none;
+            text-align: center;
+            max-width: 80%;
+        }
+        
         @media (max-width: 768px) {
             #mobile-controls {
                 display: block;
             }
-        }
-        
-        .mobile-btn {
-            background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 128, 255, 0.3));
-            border: 2px solid rgba(0, 255, 255, 0.5);
-            color: white;
-            padding: 10px 15px;
-            margin: 5px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        /* Toggle button for mobile instructions */
-        #toggle-instructions {
-            display: none;
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 160;
-            background: rgba(0, 255, 255, 0.2);
-            border: 2px solid rgba(0, 255, 255, 0.4);
-            color: white;
-            padding: 10px;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 16px;
-        }
-        
-        @media (max-width: 768px) {
-            #toggle-instructions {
+            
+            .mobile-joystick-area {
                 display: block;
+            }
+            
+            .mobile-action-btn {
+                display: flex;
+            }
+            
+            /* Hide desktop controls on mobile */
+            #settings-button {
+                display: none;
+            }
+            
+            #settings-panel {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .mobile-joystick-area {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .mobile-joystick-knob {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .mobile-action-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+            
+            #movement-joystick {
+                bottom: 30px;
+                left: 30px;
+            }
+            
+            #jump-btn {
+                bottom: 30px;
+                right: 30px;
+            }
+            
+            #settings-btn-mobile {
+                top: 30px;
+                right: 30px;
+                font-size: 16px;
             }
         }
     </style>
@@ -845,15 +952,31 @@
         </div>
     </div>
 
+    <!-- Mobile Controls (Game-style) - Movement only -->
+    <div class="mobile-joystick-area" id="movement-joystick">
+        <div class="mobile-joystick-knob" id="movement-knob"></div>
+    </div>
+    
+    <div class="mobile-action-btn" id="jump-btn">⬆</div>
+    <div class="mobile-action-btn" id="settings-btn-mobile">⚙</div>
+    
+    <!-- Mobile Instructions -->
+    <div id="mobile-instructions">
+        <h3>🎮 Mobile Controls (PUBG-Style)</h3>
+        <p><strong>Left Joystick:</strong> Move around</p>
+        <p><strong>Swipe Screen:</strong> Fast camera rotation (PUBG-style)</p>
+        <p><strong>Jump Button:</strong> Jump/Fly up</p>
+        <p><strong>Settings Button:</strong> Game settings (top-right)</p>
+        <p><strong>Note:</strong> Optimized for fast gameplay</p>
+        <p>Tap anywhere to dismiss</p>
+    </div>
+
     <!-- Mobile Controls -->
     <div id="mobile-controls">
-        <button class="mobile-btn" onclick="toggleMobileInstructions()">📋 Help</button>
+        <button class="mobile-btn" onclick="showMobileInstructions()">📋 Help</button>
         <button class="mobile-btn" onclick="resetPlayer()">🔄 Reset</button>
         <button class="mobile-btn" onclick="takeScreenshot()">📸</button>
     </div>
-    
-    <!-- Toggle Instructions Button (Mobile) -->
-    <button id="toggle-instructions" onclick="toggleMobileInstructions()">📋</button>
     <div id="performance">
         <h3>📊 Performance</h3>
         <div class="perf-item">
@@ -1069,7 +1192,7 @@
             }
         }
         
-        // Enhanced performance monitoring
+        // Enhanced performance monitoring with Safari optimizations
         function updatePerformanceMonitor() {
             performanceMonitor.frameCount++;
             const currentTime = performance.now();
@@ -1081,31 +1204,66 @@
                 document.getElementById('fps-hud').textContent = performanceMonitor.fps;
                 document.getElementById('fps-counter').textContent = performanceMonitor.fps;
                 
-                // Performance-based quality adjustment
-                if (performanceMonitor.fps < 20 && qualityLevel > 0) {
-                    qualityLevel--;
-                    applyQualitySettings();
-                    console.log(`📉 Quality reduced to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
-                    showNotification(`📉 Quality reduced for better performance (FPS: ${performanceMonitor.fps})`);
-                } else if (performanceMonitor.fps > 50 && qualityLevel < 2) {
-                    qualityLevel++;
-                    applyQualitySettings();
-                    console.log(`📈 Quality increased to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
+                // Safari-specific performance management
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                const isMobile = isMobileDevice();
+                
+                if (isSafari && isMobile) {
+                    // Aggressive performance management for Safari mobile
+                    if (performanceMonitor.fps < 15 && qualityLevel > 0) {
+                        qualityLevel = 0; // Force lowest quality
+                        applyQualitySettings();
+                        console.log(`� iSafari: Quality forced to lowest (FPS: ${performanceMonitor.fps})`);
+                        showNotification(`📉 Quality reduced for Safari stability`);
+                    }
+                    
+                    // Memory cleanup for Safari
+                    if (performanceMonitor.frameCount % 300 === 0) { // Every 5 seconds at 60fps
+                        try {
+                            if (window.gc) {
+                                window.gc();
+                            }
+                            // Force garbage collection hints
+                            if (renderer && renderer.info) {
+                                renderer.info.reset();
+                            }
+                        } catch (e) {
+                            console.warn('Safari memory cleanup failed:', e);
+                        }
+                    }
+                } else {
+                    // Standard performance adjustment for other browsers
+                    if (performanceMonitor.fps < 20 && qualityLevel > 0) {
+                        qualityLevel--;
+                        applyQualitySettings();
+                        console.log(`📉 Quality reduced to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
+                        showNotification(`📉 Quality reduced for better performance (FPS: ${performanceMonitor.fps})`);
+                    } else if (performanceMonitor.fps > 50 && qualityLevel < 2) {
+                        qualityLevel++;
+                        applyQualitySettings();
+                        console.log(`📈 Quality increased to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
+                    }
                 }
                 
-                // Send performance data to Flutter
-                if (window.parent && window.parent !== window && renderer && renderer.info) {
+                // Send performance data to Flutter (reduced frequency for Safari)
+                const messageInterval = isSafari ? 10000 : 5000; // 10s for Safari, 5s for others
+                if (window.parent && window.parent !== window && renderer && renderer.info && 
+                    performanceMonitor.frameCount % (messageInterval / 16.67) === 0) {
                     const info = renderer.info;
-                    window.parent.postMessage({
-                        type: 'performance_update',
-                        fps: performanceMonitor.fps,
-                        triangles: info.render.triangles,
-                        drawCalls: info.render.calls,
-                        memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
-                        contextLossCount: contextLossCount,
-                        webglContexts: webglContexts.size,
-                        timestamp: Date.now()
-                    }, '*');
+                    try {
+                        window.parent.postMessage({
+                            type: 'performance_update',
+                            fps: performanceMonitor.fps,
+                            triangles: info.render.triangles,
+                            drawCalls: info.render.calls,
+                            memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
+                            contextLossCount: contextLossCount,
+                            webglContexts: webglContexts.size,
+                            timestamp: Date.now()
+                        }, '*');
+                    } catch (e) {
+                        console.warn('Performance message failed:', e);
+                    }
                 }
                 
                 performanceMonitor.frameCount = 0;
@@ -1146,6 +1304,361 @@
         const keys = {};
         const mouseMovement = { x: 0, y: 0 };
         
+        // Mobile Input System - PUBG-style gesture camera
+        const mobileInput = {
+            movement: { x: 0, y: 0 },
+            isJumping: false,
+            enabled: false,
+            // Touch tracking - optimized for Safari
+            touches: new Map(),
+            joysticks: {
+                movement: { active: false, startPos: null, currentPos: null }
+            },
+            // Screen touch for camera - PUBG-style fast and responsive
+            screenTouch: { 
+                active: false, 
+                lastPos: null, 
+                sensitivity: 0.004, // Increased for PUBG-like fast rotation
+                throttle: 0,
+                maxThrottle: 4 // Very responsive (240fps equivalent)
+            }
+        };
+        
+        // Mobile touch control setup - Fixed settings button
+        function setupMobileTouchControls() {
+            if (!isMobileDevice()) return;
+            
+            console.log('📱 Setting up mobile touch controls (PUBG-style camera)...');
+            
+            // Movement joystick only
+            const movementJoystick = document.getElementById('movement-joystick');
+            const movementKnob = document.getElementById('movement-knob');
+            
+            // Action buttons
+            const jumpBtn = document.getElementById('jump-btn');
+            const settingsBtn = document.getElementById('settings-btn-mobile');
+            
+            // Setup movement joystick
+            setupJoystick(movementJoystick, movementKnob, 'movement');
+            
+            // Setup jump button with multiple event types
+            const handleJump = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleMobileJump();
+                console.log('Jump button pressed');
+            };
+            
+            jumpBtn.addEventListener('touchstart', handleJump, { passive: false });
+            jumpBtn.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+            jumpBtn.addEventListener('click', handleJump);
+            jumpBtn.addEventListener('mousedown', handleJump);
+            
+            // Fix settings button with multiple event handlers
+            const handleSettings = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Settings button pressed');
+                try {
+                    toggleSettings();
+                    console.log('Settings toggled successfully');
+                } catch (error) {
+                    console.error('Settings toggle error:', error);
+                }
+            };
+            
+            // Multiple event listeners for settings button to ensure it works
+            settingsBtn.addEventListener('touchstart', handleSettings, { passive: false });
+            settingsBtn.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+            settingsBtn.addEventListener('click', handleSettings);
+            settingsBtn.addEventListener('mousedown', handleSettings);
+            
+            // Make settings button more responsive
+            settingsBtn.style.pointerEvents = 'auto';
+            settingsBtn.style.touchAction = 'manipulation';
+            
+            // Setup PUBG-style screen touch for camera rotation
+            setupScreenTouchControls();
+            
+            // Show mobile instructions initially
+            setTimeout(() => {
+                showMobileInstructions();
+            }, 1000);
+        }
+        
+        function setupJoystick(joystickElement, knobElement, type) {
+            // Only setup movement joystick now
+            if (type !== 'movement') return;
+            
+            let isActive = false;
+            let startPos = null;
+            let joystickRect = null;
+            let rafId = null;
+            
+            const handleStart = (e) => {
+                try {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isActive = true;
+                    joystickRect = joystickElement.getBoundingClientRect();
+                    const touch = e.touches ? e.touches[0] : e;
+                    startPos = {
+                        x: touch.clientX - joystickRect.left - joystickRect.width / 2,
+                        y: touch.clientY - joystickRect.top - joystickRect.height / 2
+                    };
+                    
+                    mobileInput.joysticks[type].active = true;
+                    mobileInput.joysticks[type].startPos = startPos;
+                    
+                    joystickElement.style.opacity = '1';
+                } catch (error) {
+                    console.warn('Joystick start error:', error);
+                    isActive = false;
+                }
+            };
+            
+            const handleMove = (e) => {
+                if (!isActive) return;
+                
+                try {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const touch = e.touches ? e.touches[0] : e;
+                    const currentPos = {
+                        x: touch.clientX - joystickRect.left - joystickRect.width / 2,
+                        y: touch.clientY - joystickRect.top - joystickRect.height / 2
+                    };
+                    
+                    // Calculate distance and angle
+                    const distance = Math.sqrt(currentPos.x * currentPos.x + currentPos.y * currentPos.y);
+                    const maxDistance = joystickRect.width / 2 - 25; // Account for knob size
+                    
+                    let normalizedX = currentPos.x / maxDistance;
+                    let normalizedY = currentPos.y / maxDistance;
+                    
+                    // Clamp to circle
+                    if (distance > maxDistance) {
+                        const angle = Math.atan2(currentPos.y, currentPos.x);
+                        currentPos.x = Math.cos(angle) * maxDistance;
+                        currentPos.y = Math.sin(angle) * maxDistance;
+                        normalizedX = currentPos.x / maxDistance;
+                        normalizedY = currentPos.y / maxDistance;
+                    }
+                    
+                    // Update knob position with RAF for smooth animation
+                    if (rafId) cancelAnimationFrame(rafId);
+                    rafId = requestAnimationFrame(() => {
+                        knobElement.style.transform = `translate(-50%, -50%) translate(${currentPos.x}px, ${currentPos.y}px)`;
+                    });
+                    
+                    // Update input values
+                    mobileInput[type].x = normalizedX;
+                    mobileInput[type].y = normalizedY;
+                    
+                    // Convert to movement flags
+                    player.moveForward = normalizedY < -0.1;
+                    player.moveBackward = normalizedY > 0.1;
+                    player.moveLeft = normalizedX < -0.1;
+                    player.moveRight = normalizedX > 0.1;
+                    
+                } catch (error) {
+                    console.warn('Joystick move error:', error);
+                    handleEnd(e);
+                }
+            };
+            
+            const handleEnd = (e) => {
+                try {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    isActive = false;
+                    
+                    // Cancel any pending animation frame
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                    
+                    // Reset knob position
+                    knobElement.style.transform = 'translate(-50%, -50%)';
+                    joystickElement.style.opacity = '0.8';
+                    
+                    // Reset input values
+                    mobileInput[type].x = 0;
+                    mobileInput[type].y = 0;
+                    mobileInput.joysticks[type].active = false;
+                    
+                    // Reset movement flags
+                    player.moveForward = false;
+                    player.moveBackward = false;
+                    player.moveLeft = false;
+                    player.moveRight = false;
+                    
+                } catch (error) {
+                    console.warn('Joystick end error:', error);
+                }
+            };
+            
+            // Touch events with error handling
+            joystickElement.addEventListener('touchstart', handleStart, { passive: false });
+            joystickElement.addEventListener('touchmove', handleMove, { passive: false });
+            joystickElement.addEventListener('touchend', handleEnd, { passive: false });
+            joystickElement.addEventListener('touchcancel', handleEnd, { passive: false }); // Important for Safari
+        }
+        
+        function setupScreenTouchControls() {
+            const container = document.getElementById('container');
+            
+            let isScreenTouching = false;
+            let lastTouchPos = null;
+            let touchStartTime = 0;
+            let rafId = null;
+            
+            // PUBG-style camera rotation - fast and responsive
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            const pubgSensitivity = isSafari ? 0.003 : 0.004; // PUBG-like sensitivity
+            
+            container.addEventListener('touchstart', (e) => {
+                // Only handle single touch for camera rotation
+                if (e.touches.length === 1) {
+                    const touch = e.touches[0];
+                    
+                    // Check if touch is not on control areas
+                    const movementJoystick = document.getElementById('movement-joystick');
+                    const jumpBtn = document.getElementById('jump-btn');
+                    const settingsBtn = document.getElementById('settings-btn-mobile');
+                    
+                    const movementRect = movementJoystick.getBoundingClientRect();
+                    const jumpRect = jumpBtn.getBoundingClientRect();
+                    const settingsRect = settingsBtn.getBoundingClientRect();
+                    
+                    const touchX = touch.clientX;
+                    const touchY = touch.clientY;
+                    
+                    // Expand button areas slightly for better touch detection
+                    const expandBy = 10;
+                    const isOutsideControls = 
+                        !isPointInExpandedRect(touchX, touchY, movementRect, expandBy) &&
+                        !isPointInExpandedRect(touchX, touchY, jumpRect, expandBy) &&
+                        !isPointInExpandedRect(touchX, touchY, settingsRect, expandBy);
+                    
+                    if (isOutsideControls) {
+                        isScreenTouching = true;
+                        lastTouchPos = { x: touchX, y: touchY };
+                        touchStartTime = Date.now();
+                        
+                        // Enable FPS mode if not already enabled
+                        if (!mobileInput.enabled) {
+                            enableMobileFPSMode();
+                        }
+                        
+                        // Prevent default to avoid Safari bounce/zoom
+                        e.preventDefault();
+                    }
+                }
+            }, { passive: false });
+            
+            container.addEventListener('touchmove', (e) => {
+                if (isScreenTouching && e.touches.length === 1) {
+                    e.preventDefault(); // Critical for Safari
+                    
+                    // Very responsive throttle for PUBG-like controls
+                    const now = performance.now();
+                    if (now - mobileInput.screenTouch.throttle < mobileInput.screenTouch.maxThrottle) {
+                        return;
+                    }
+                    mobileInput.screenTouch.throttle = now;
+                    
+                    const touch = e.touches[0];
+                    const currentPos = { x: touch.clientX, y: touch.clientY };
+                    
+                    if (lastTouchPos) {
+                        const deltaX = currentPos.x - lastTouchPos.x;
+                        const deltaY = currentPos.y - lastTouchPos.y;
+                        
+                        // Apply PUBG-style fast camera rotation
+                        const sensitivity = pubgSensitivity;
+                        
+                        // Increased max delta for very fast rotation like PUBG
+                        const maxDelta = 150; // Increased from 100 for PUBG-like speed
+                        const clampedDeltaX = Math.max(-maxDelta, Math.min(maxDelta, deltaX));
+                        const clampedDeltaY = Math.max(-maxDelta, Math.min(maxDelta, deltaY));
+                        
+                        // Apply with PUBG-style sensitivity curve
+                        const sensitivityMultiplier = Math.min(Math.abs(clampedDeltaX) / 50, 2); // Speed up for fast swipes
+                        mouseMovement.x += clampedDeltaX * sensitivity * (1 + sensitivityMultiplier * 0.5);
+                        mouseMovement.y += clampedDeltaY * sensitivity * (1 + sensitivityMultiplier * 0.5);
+                    }
+                    
+                    lastTouchPos = currentPos;
+                }
+            }, { passive: false });
+            
+            container.addEventListener('touchend', (e) => {
+                if (isScreenTouching) {
+                    const touchDuration = Date.now() - touchStartTime;
+                    
+                    // If it was a quick tap, show/hide instructions
+                    if (touchDuration < 200 && !mobileInput.enabled) {
+                        showMobileInstructions();
+                    }
+                    
+                    isScreenTouching = false;
+                    lastTouchPos = null;
+                    
+                    // Cancel any pending animation frame
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                        rafId = null;
+                    }
+                }
+            }, { passive: false });
+            
+            // Add touchcancel for Safari
+            container.addEventListener('touchcancel', (e) => {
+                isScreenTouching = false;
+                lastTouchPos = null;
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                }
+            }, { passive: false });
+        }
+        
+        // Helper function for expanded button detection
+        function isPointInExpandedRect(x, y, rect, expandBy = 0) {
+            return x >= (rect.left - expandBy) && 
+                   x <= (rect.right + expandBy) && 
+                   y >= (rect.top - expandBy) && 
+                   y <= (rect.bottom + expandBy);
+        }
+        
+        function isPointInRect(x, y, rect) {
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+        
+        function handleMobileJump() {
+            if (player.onGround) {
+                player.canJump = true;
+                mobileInput.isJumping = true;
+            }
+        }
+        
+        function showMobileInstructions() {
+            const instructions = document.getElementById('mobile-instructions');
+            instructions.style.display = 'block';
+            
+            // Auto-hide after 5 seconds or on tap
+            setTimeout(() => {
+                instructions.style.display = 'none';
+            }, 5000);
+            
+            instructions.addEventListener('touchstart', () => {
+                instructions.style.display = 'none';
+            });
+        }
+        
         // Make functions global for button access
         window.resetPlayer = resetPlayer;
         window.toggleCameraMode = toggleCameraMode;
@@ -1161,6 +1674,7 @@
         window.togglePerformance = togglePerformance;
         window.toggleFullscreen = toggleFullscreen;
         window.toggleMobileInstructions = toggleMobileInstructions;
+        window.showMobileInstructions = showMobileInstructions;
         
         // New UI functions
         window.toggleSettings = toggleSettings;
@@ -1324,6 +1838,14 @@
                     document.getElementById('loading').classList.add('hidden');
                     updateStatusInfo('Ready - Professional Classroom loaded!');
                     showNotification('🎮 Professional Classroom Ready!');
+                    
+                    // Auto-enable FPS mode for mobile devices
+                    if (isMobileDevice()) {
+                        setTimeout(() => {
+                            enableMobileFPSMode();
+                            setupMobileTouchControls();
+                        }, 1000);
+                    }
                 }, 800);
                 
                 console.log('🎉 Professional Classroom Viewer initialized successfully!');
@@ -1548,33 +2070,75 @@
         function startProfessionalRenderLoop() {
             console.log('🎮 Starting Professional Render Loop...');
             
+            // Safari-specific error handling
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            let errorCount = 0;
+            const maxErrors = 5;
+            
             function animate() {
-                requestAnimationFrame(animate);
-                
-                const deltaTime = clock.getDelta();
-                
-                // Update animations if available
-                if (mixer) {
-                    mixer.update(deltaTime);
+                try {
+                    requestAnimationFrame(animate);
+                    
+                    const deltaTime = clock.getDelta();
+                    
+                    // Clamp deltaTime to prevent large jumps (Safari stability)
+                    const clampedDeltaTime = Math.min(deltaTime, 0.1);
+                    
+                    // Update animations if available
+                    if (mixer) {
+                        mixer.update(clampedDeltaTime);
+                    }
+                    
+                    // Update player and camera (works for both desktop and mobile)
+                    if (isPointerLocked || mobileInput.enabled) {
+                        updatePlayer(clampedDeltaTime);
+                        updateCamera();
+                    }
+                    
+                    // Update orbit controls (only in orbit mode and not mobile)
+                    if (orbitMode && !isPointerLocked && !mobileInput.enabled) {
+                        controls.update();
+                    }
+                    
+                    // CRITICAL: Enhanced performance monitoring
+                    updatePerformanceMonitor();
+                    updatePerformanceStats();
+                    
+                    // Professional rendering with error handling
+                    if (renderer && scene && camera) {
+                        renderer.render(scene, camera);
+                    }
+                    
+                    // Reset error count on successful frame
+                    errorCount = 0;
+                    
+                } catch (error) {
+                    errorCount++;
+                    console.error(`Render loop error ${errorCount}/${maxErrors}:`, error);
+                    
+                    if (errorCount >= maxErrors) {
+                        console.error('Too many render errors, stopping animation loop');
+                        showError('Rendering failed. Please refresh the page.');
+                        return;
+                    }
+                    
+                    // Try to recover
+                    if (isSafari) {
+                        // Safari-specific recovery
+                        try {
+                            if (qualityLevel > 0) {
+                                qualityLevel = 0;
+                                applyQualitySettings();
+                                console.log('Safari: Reduced quality for error recovery');
+                            }
+                        } catch (recoveryError) {
+                            console.error('Recovery failed:', recoveryError);
+                        }
+                    }
+                    
+                    // Continue animation loop
+                    requestAnimationFrame(animate);
                 }
-                
-                // Update player and camera (only in FPS mode)
-                if (isPointerLocked) {
-                    updatePlayer(deltaTime);
-                    updateCamera();
-                }
-                
-                // Update orbit controls (only in orbit mode)
-                if (orbitMode && !isPointerLocked) {
-                    controls.update();
-                }
-                
-                // CRITICAL: Enhanced performance monitoring
-                updatePerformanceMonitor();
-                updatePerformanceStats();
-                
-                // Professional rendering
-                renderer.render(scene, camera);
             }
             
             animate();
@@ -1735,30 +2299,80 @@
             const qualities = ['low', 'medium', 'high', 'ultra'];
             const qualityName = qualities[qualityLevel] || 'medium';
             
+            // Mobile-specific optimizations - Safari focused
+            const isMobile = isMobileDevice();
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
             switch(qualityLevel) {
-                case 0: // Low
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1));
-                    renderer.shadowMap.enabled = true; // Keep shadows even on low quality
+                case 0: // Low - Heavily optimized for Safari mobile
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 0.8 : 1));
+                    renderer.shadowMap.enabled = false; // Disable shadows completely on mobile
+                    renderer.antialias = false; // Disable antialiasing for performance
+                    if (scene.fog) scene.fog.far = isMobile ? 30 : 50; // Very short fog distance
                     break;
-                case 1: // Medium
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-                    renderer.shadowMap.enabled = true;
+                case 1: // Medium - Safari optimized
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.0 : 1.2));
+                    renderer.shadowMap.enabled = !isSafari; // Disable shadows on Safari
+                    renderer.antialias = !isMobile; // No antialiasing on mobile
+                    if (scene.fog) scene.fog.far = isMobile ? 60 : 100;
                     break;
-                case 2: // High
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                    renderer.shadowMap.enabled = true;
+                case 2: // High - Limited on mobile
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.2 : 1.5));
+                    renderer.shadowMap.enabled = !isMobile; // No shadows on mobile
+                    renderer.antialias = !isMobile;
+                    if (scene.fog) scene.fog.far = isMobile ? 100 : 150;
                     break;
-                case 3: // Ultra
+                case 3: // Ultra - Desktop only
+                    if (isMobile) {
+                        qualityLevel = 1; // Force medium quality on mobile instead of ultra
+                        applyQualitySettings();
+                        return;
+                    }
                     renderer.setPixelRatio(window.devicePixelRatio);
                     renderer.shadowMap.enabled = true;
+                    if (scene.fog) scene.fog.far = 200;
                     break;
+            }
+            
+            // Safari-specific performance optimizations
+            if (isSafari && isMobile) {
+                // Force low quality on Safari mobile
+                if (qualityLevel > 0) {
+                    qualityLevel = 0;
+                    applyQualitySettings();
+                    return;
+                }
+                
+                // Additional Safari optimizations
+                renderer.powerPreference = "high-performance";
+                renderer.precision = "lowp"; // Use low precision for better performance
+                
+                // Reduce texture quality aggressively on Safari
+                if (classroomModel) {
+                    classroomModel.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            if (child.material.map) {
+                                child.material.map.minFilter = THREE.NearestFilter;
+                                child.material.map.magFilter = THREE.NearestFilter;
+                                child.material.map.generateMipmaps = false;
+                            }
+                            // Reduce material complexity
+                            if (child.material.normalMap) {
+                                child.material.normalMap = null;
+                            }
+                            if (child.material.roughnessMap) {
+                                child.material.roughnessMap = null;
+                            }
+                        }
+                    });
+                }
             }
             
             // Update UI
             const qualityNames = { 0: 'Low', 1: 'Medium', 2: 'High', 3: 'Ultra' };
             document.getElementById('quality-info').textContent = qualityNames[qualityLevel];
             
-            console.log(`🎯 Quality applied: ${qualityNames[qualityLevel]}`);
+            console.log(`🎯 Quality applied: ${qualityNames[qualityLevel]} (Mobile: ${isMobile}, Safari: ${isSafari})`);
         }
         
         // ===== OLD PROFESSIONAL SYSTEMS REMOVED =====
@@ -1780,13 +2394,22 @@
                 // Disable orbit controls in FPS mode
                 controls.enabled = false;
             } else {
-                crosshair.classList.remove('visible');
+                // Don't hide crosshair if mobile FPS mode is active
+                if (!mobileInput.enabled) {
+                    crosshair.classList.remove('visible');
+                }
                 container.classList.remove('pointer-locked');
-                updateNavInfo(orbitMode ? 'Orbit Mode' : 'Inactive');
-                updateStatusInfo(orbitMode ? 'Orbit controls active' : 'Click to activate navigation');
                 
-                // Re-enable orbit controls
-                controls.enabled = orbitMode;
+                // Update UI based on current mode
+                if (mobileInput.enabled) {
+                    updateNavInfo('Mobile FPS Mode');
+                    updateStatusInfo('Mobile FPS mode - Use joysticks to move and look');
+                } else {
+                    updateNavInfo(orbitMode ? 'Orbit Mode' : 'Inactive');
+                    updateStatusInfo(orbitMode ? 'Orbit controls active' : 'Click to activate navigation');
+                    // Re-enable orbit controls only if not in mobile mode
+                    controls.enabled = orbitMode;
+                }
             }
             
             console.log('🎯 Pointer lock:', isPointerLocked ? 'enabled' : 'disabled');
@@ -1816,7 +2439,7 @@
         
         // ===== OPTIMIZED GAME-LIKE PLAYER MOVEMENT SYSTEM =====
         function updatePlayer(deltaTime) {
-            if (!isPointerLocked) return;
+            if (!isPointerLocked && !mobileInput.enabled) return;
             
             const moveVector = new THREE.Vector3();
             let targetSpeed = player.speed;
@@ -1831,14 +2454,24 @@
                     break;
             }
             
-            // Speed boost with Shift (realistic sprint multiplier)
-            if (keys['ShiftLeft']) targetSpeed *= 1.8;
+            // Speed boost with Shift (realistic sprint multiplier) - only for keyboard
+            if (keys['ShiftLeft'] && !mobileInput.enabled) targetSpeed *= 1.8;
             
-            // Game-like movement input
+            // Game-like movement input (works for both keyboard and mobile)
             if (player.moveForward) moveVector.z -= 1;
             if (player.moveBackward) moveVector.z += 1;
             if (player.moveLeft) moveVector.x -= 1;
             if (player.moveRight) moveVector.x += 1;
+            
+            // For mobile input, use analog values for smoother movement
+            if (mobileInput.enabled && (Math.abs(mobileInput.movement.x) > 0.1 || Math.abs(mobileInput.movement.y) > 0.1)) {
+                moveVector.x = mobileInput.movement.x;
+                moveVector.z = mobileInput.movement.y;
+                
+                // Apply speed multiplier based on joystick magnitude
+                const magnitude = Math.sqrt(moveVector.x * moveVector.x + moveVector.z * moveVector.z);
+                targetSpeed *= Math.min(magnitude, 1.0); // Scale speed by joystick input
+            }
             
             // Apply movement relative to camera direction (FPS-style)
             if (moveVector.length() > 0) {
@@ -1869,15 +2502,20 @@
                 player.velocity.z = THREE.MathUtils.lerp(player.velocity.z, 0, player.friction * deltaTime);
             }
             
-            // Game-like jumping with realistic physics
+            // Game-like jumping with realistic physics (works for both keyboard and mobile)
             if (player.canJump && player.onGround) {
                 player.velocity.y = player.jumpPower;
                 player.onGround = false;
                 player.canJump = false;
+                
+                // Reset mobile jump flag
+                if (mobileInput.isJumping) {
+                    mobileInput.isJumping = false;
+                }
             }
             
-            // Fly controls (for special modes)
-            if (keys['ControlLeft']) {
+            // Fly controls (for special modes) - keyboard only
+            if (keys['ControlLeft'] && !mobileInput.enabled) {
                 player.velocity.y -= 8 * deltaTime; // Fly down
             }
             
@@ -1941,9 +2579,14 @@
             );
         }
         
-        // ===== GAME-LIKE CAMERA SYSTEM =====
+        // ===== GAME-LIKE CAMERA SYSTEM - PUBG-style fast rotation =====
         function updateCamera() {
-            if (!isPointerLocked) return;
+            if (!isPointerLocked && !mobileInput.enabled) return;
+            
+            // PUBG-style camera limits - allow faster rotation
+            const maxMovement = 0.25; // Increased significantly for PUBG-like speed
+            mouseMovement.x = Math.max(-maxMovement, Math.min(maxMovement, mouseMovement.x));
+            mouseMovement.y = Math.max(-maxMovement, Math.min(maxMovement, mouseMovement.y));
             
             // Update yaw (left/right rotation)
             cameraSystem.yaw -= mouseMovement.x;
@@ -1987,6 +2630,54 @@
                     document.getElementById('texture-count').textContent = renderStats.textures;
                 }
             }
+        }
+        
+        // ===== MOBILE SUPPORT FUNCTIONS =====
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0);
+        }
+        
+        function enableMobileFPSMode() {
+            // Switch to FPS mode for mobile
+            orbitMode = false;
+            controls.enabled = false;
+            mobileInput.enabled = true;
+            
+            // Enable crosshair for mobile FPS mode
+            const crosshair = document.getElementById('crosshair');
+            crosshair.classList.add('visible');
+            
+            // Safari-specific optimizations
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            if (isSafari) {
+                // Force lowest quality on Safari for stability
+                qualityLevel = 0;
+                applyQualitySettings();
+                
+                // Reduce camera sensitivity for Safari
+                cameraSystem.sensitivity = 0.001;
+                
+                // Disable fog on Safari for performance
+                if (scene.fog) {
+                    scene.fog = null;
+                }
+            } else {
+                // Set mobile-optimized quality for other browsers
+                if (qualityLevel > 1) {
+                    qualityLevel = 1; // Force medium quality on mobile
+                    applyQualitySettings();
+                }
+            }
+            
+            // Update UI
+            updateNavInfo('Mobile FPS Mode');
+            updateCameraHUD('Mobile FPS');
+            updateStatusInfo('Mobile FPS mode - Use joysticks and screen touch');
+            showNotification('📱 Mobile FPS Mode Activated!');
+            
+            console.log(`📱 Mobile FPS mode enabled with Safari optimizations: ${isSafari}`);
         }
         
         // ===== CONTROL FUNCTIONS =====
@@ -2038,11 +2729,18 @@
         }
         
         function toggleCameraMode() {
+            // Don't allow camera mode toggle on mobile - keep in FPS mode
+            if (isMobileDevice() && mobileInput.enabled) {
+                showNotification('📱 Camera mode locked to FPS on mobile');
+                return;
+            }
+            
             orbitMode = !orbitMode;
             
             if (orbitMode) {
                 // Switch to orbit mode
                 controls.enabled = true;
+                mobileInput.enabled = false;
                 updateNavInfo('Orbit Mode');
                 updateCameraHUD('Orbit');
                 updateStatusInfo('Orbit controls - Drag to rotate, scroll to zoom');
@@ -2059,6 +2757,12 @@
                 updateCameraHUD('FPS');
                 updateStatusInfo('FPS mode - Click to activate, WASD to move');
                 showNotification('🎯 FPS Camera Mode - Click to activate');
+                
+                // Enable mobile input if on mobile device
+                if (isMobileDevice()) {
+                    mobileInput.enabled = true;
+                    enableMobileFPSMode();
+                }
             }
         }
         
@@ -2118,8 +2822,23 @@
         
         // ===== NEW UI FUNCTIONS =====
         function toggleSettings() {
+            console.log('toggleSettings called');
             const panel = document.getElementById('settings-panel');
-            panel.classList.toggle('open');
+            if (!panel) {
+                console.error('Settings panel not found');
+                return;
+            }
+            
+            const isOpen = panel.classList.contains('open');
+            console.log('Settings panel currently open:', isOpen);
+            
+            if (isOpen) {
+                panel.classList.remove('open');
+                console.log('Settings panel closed');
+            } else {
+                panel.classList.add('open');
+                console.log('Settings panel opened');
+            }
         }
         
         function togglePerformanceHUD() {

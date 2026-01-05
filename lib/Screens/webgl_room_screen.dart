@@ -29,6 +29,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
   bool _hasError = false;
   String? _errorMessage;
   late WebGLServiceWebSimple _webglService;
+  html.IFrameElement? _iframe;
   
   @override
   void initState() {
@@ -295,7 +296,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
     ui_web.platformViewRegistry.registerViewFactory(
       viewType,
       (int viewId) {
-        final iframe = html.IFrameElement()
+        _iframe = html.IFrameElement()
           ..src = url
           ..style.border = 'none'
           ..style.width = '100%'
@@ -306,15 +307,15 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
           ..setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
 
         // Add load event listener
-        iframe.onLoad.listen((_) {
+        _iframe!.onLoad.listen((_) {
           AppLogger.info('3D viewer iframe loaded successfully', component: _logComponent);
         });
 
-        iframe.onError.listen((event) {
+        _iframe!.onError.listen((event) {
           AppLogger.error('3D viewer iframe failed to load: $event', component: _logComponent);
         });
 
-        return iframe;
+        return _iframe!;
       },
     );
 
