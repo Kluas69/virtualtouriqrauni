@@ -38,14 +38,39 @@ export class PerformanceSystem {
             percentage: 0
         };
         
-        // Quality scaling
+        // Quality scaling with functional settings
         this.currentQuality = 'high';
         this.qualityLevels = new Map([
-            ['ultra', { renderScale: 1.2, shadowQuality: 'high', textureQuality: 'high', effectsEnabled: true }],
-            ['high', { renderScale: 1.0, shadowQuality: 'high', textureQuality: 'high', effectsEnabled: true }],
-            ['medium', { renderScale: 0.8, shadowQuality: 'medium', textureQuality: 'medium', effectsEnabled: true }],
-            ['low', { renderScale: 0.6, shadowQuality: 'low', textureQuality: 'low', effectsEnabled: false }],
-            ['potato', { renderScale: 0.4, shadowQuality: 'off', textureQuality: 'low', effectsEnabled: false }]
+            ['low', { 
+                renderScale: 0.6, 
+                shadowQuality: 'off', 
+                textureQuality: 'low', 
+                effectsEnabled: false,
+                targetFPS: 30,
+                pixelRatio: 1.0,
+                antialias: false,
+                postProcessing: false
+            }],
+            ['medium', { 
+                renderScale: 0.8, 
+                shadowQuality: 'off', // Shadows disabled globally
+                textureQuality: 'medium', 
+                effectsEnabled: true,
+                targetFPS: 45,
+                pixelRatio: 1.5,
+                antialias: true,
+                postProcessing: true
+            }],
+            ['high', { 
+                renderScale: 1.0, 
+                shadowQuality: 'off', // Shadows disabled globally
+                textureQuality: 'high', 
+                effectsEnabled: true,
+                targetFPS: 60,
+                pixelRatio: 2.0,
+                antialias: true,
+                postProcessing: true
+            }]
         ]);
         
         // Profiling
@@ -147,14 +172,18 @@ export class PerformanceSystem {
                 initialQuality = 'medium';
             }
         } else {
-            // Desktop - can handle higher quality
-            if (this.deviceInfo.memoryGB >= 16 && this.deviceInfo.cores >= 8) {
-                initialQuality = 'ultra';
+            // Desktop - start with high quality since shadows are disabled
+            if (this.deviceInfo.memoryGB >= 8 && this.deviceInfo.cores >= 4) {
+                initialQuality = 'high';
+            } else if (this.deviceInfo.memoryGB < 4) {
+                initialQuality = 'low';
+            } else {
+                initialQuality = 'medium';
             }
         }
         
         this.setQuality(initialQuality);
-        console.log(`🎯 Initial quality set to: ${initialQuality}`);
+        console.log(`🎯 Initial quality set to: ${initialQuality} (optimized for baked lighting)`);
     }
 
     /**
@@ -347,7 +376,7 @@ export class PerformanceSystem {
      * Scale quality down
      */
     scaleQualityDown() {
-        const qualityLevels = Array.from(this.qualityLevels.keys());
+        const qualityLevels = ['high', 'medium', 'low']; // Simplified quality levels
         const currentIndex = qualityLevels.indexOf(this.currentQuality);
         
         if (currentIndex < qualityLevels.length - 1) {
@@ -368,7 +397,7 @@ export class PerformanceSystem {
      * Scale quality up
      */
     scaleQualityUp() {
-        const qualityLevels = Array.from(this.qualityLevels.keys());
+        const qualityLevels = ['high', 'medium', 'low']; // Simplified quality levels
         const currentIndex = qualityLevels.indexOf(this.currentQuality);
         
         if (currentIndex > 0) {

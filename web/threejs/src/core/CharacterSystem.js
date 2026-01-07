@@ -13,6 +13,8 @@ export class CharacterSystem {
             visible: false, // Hidden by default for first-person
             debugMode: false,
             enableAnimations: false,
+            autoSpawn: true, // AUTOMATIC SPAWNING ENABLED
+            spawnDelay: 1000, // 1 second delay after scene load
             ...options
         };
         
@@ -21,6 +23,7 @@ export class CharacterSystem {
         this.boundingBox = new THREE.Box3();
         this.position = new THREE.Vector3(0, 1.6, 5);
         this.rotation = new THREE.Euler(0, 0, 0);
+        this.spawned = false;
         
         // Animation system
         this.mixer = null;
@@ -32,7 +35,12 @@ export class CharacterSystem {
         
         this.createCharacter();
         
-        console.log('✅ CharacterSystem initialized');
+        // AUTO-SPAWN: Automatically spawn character after delay
+        if (this.options.autoSpawn) {
+            this.scheduleAutoSpawn();
+        }
+        
+        console.log('✅ CharacterSystem initialized with auto-spawn enabled');
     }
 
     /**
@@ -66,6 +74,46 @@ export class CharacterSystem {
         }
         
         console.log(`👤 Character created: ${type}`);
+    }
+    
+    /**
+     * Schedule automatic character spawning
+     */
+    scheduleAutoSpawn() {
+        console.log(`⏰ Auto-spawn scheduled in ${this.options.spawnDelay}ms`);
+        
+        setTimeout(() => {
+            this.spawnCharacter();
+        }, this.options.spawnDelay);
+    }
+    
+    /**
+     * Spawn character automatically (no click required)
+     */
+    spawnCharacter() {
+        if (this.spawned) {
+            console.log('👤 Character already spawned');
+            return;
+        }
+        
+        // Set character to spawn position
+        this.updatePosition(this.position);
+        this.updateRotation(this.rotation);
+        
+        // Mark as spawned
+        this.spawned = true;
+        
+        // Enable debug helpers if needed
+        if (this.options.debugMode && this.debugHelpers.length === 0) {
+            this.createDebugHelpers();
+        }
+        
+        console.log('🎯 Character automatically spawned at position:', this.position);
+        
+        // Trigger spawn callback if available
+        if (window.classroomViewer && window.classroomViewer.onCharacterSpawned) {
+            window.classroomViewer.onCharacterSpawned(this.position, this.rotation);
+        }
     }
 
     /**

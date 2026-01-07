@@ -10,7 +10,7 @@ export class Renderer {
         this.options = {
             antialias: true,
             powerPreference: 'high-performance',
-            enableShadows: true,
+            enableShadows: false, // DISABLED - using baked lighting from .glb models
             shadowMapType: THREE.PCFSoftShadowMap,
             pixelRatio: Math.min(window.devicePixelRatio, 2),
             outputColorSpace: THREE.SRGBColorSpace,
@@ -40,11 +40,12 @@ export class Renderer {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(this.options.pixelRatio);
         
-        // Configure shadows
-        if (this.options.enableShadows) {
-            this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMap.type = this.options.shadowMapType;
-        }
+        // Configure shadows (DISABLED for performance - using baked lighting)
+        this.renderer.shadowMap.enabled = false;
+        
+        // Enhanced rendering settings for better graphics
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.2;
         
         // Set color space
         this.renderer.outputColorSpace = this.options.outputColorSpace;

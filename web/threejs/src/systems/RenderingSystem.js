@@ -11,7 +11,7 @@ export class RenderingSystem {
         this.container = container;
         this.options = {
             antialias: true,
-            enableShadows: true,
+            enableShadows: false, // Disabled - using baked lighting from .glb models
             enablePostProcessing: true,
             qualityLevel: 'high',
             powerPreference: 'high-performance',
@@ -30,6 +30,13 @@ export class RenderingSystem {
         this.camera = null;
         this.renderer = null;
         this.composer = null;
+        
+        // Quality management system
+        this.qualityManager = {
+            current: 'high',
+            autoAdjust: true,
+            deviceCapabilities: null
+        };
         
         // Rendering passes
         this.renderPass = null;
@@ -136,7 +143,7 @@ export class RenderingSystem {
     }
     
     /**
-     * Create WebGL renderer with professional settings
+     * Create WebGL renderer with optimized settings for baked lighting
      */
     createRenderer() {
         this.renderer = new THREE.WebGLRenderer({
@@ -154,16 +161,12 @@ export class RenderingSystem {
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.qualitySettings.maxPixelRatio));
         
-        // Enable shadows
-        if (this.options.enableShadows) {
-            this.renderer.shadowMap.enabled = true;
-            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            this.renderer.shadowMap.autoUpdate = true;
-        }
+        // SHADOWS DISABLED - Using baked lighting from .glb models
+        this.renderer.shadowMap.enabled = false;
         
-        // Set tone mapping for HDR
+        // Enhanced tone mapping for better visuals
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.0;
+        this.renderer.toneMappingExposure = 1.2; // Slightly brighter for better visibility
         
         // Enable physically correct lights
         this.renderer.useLegacyLights = false;
@@ -171,49 +174,46 @@ export class RenderingSystem {
         // Output encoding for proper color space
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         
+        // Enhanced rendering settings for better graphics
+        this.renderer.gammaFactor = 2.2;
+        this.renderer.physicallyCorrectLights = true;
+        
         // Append to container
         this.container.appendChild(this.renderer.domElement);
         
-        console.log('🖥️ Professional WebGL renderer created');
+        console.log('🖥️ Optimized WebGL renderer created (shadows disabled, baked lighting)');
     }
     
     /**
-     * Setup professional lighting system
+     * Setup optimized lighting system (no shadows - using baked lighting)
      */
     setupLighting() {
-        // Ambient light for base illumination
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+        // Enhanced ambient light for better base illumination
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Increased intensity
         this.scene.add(ambientLight);
         this.lights.set('ambient', ambientLight);
         
-        // Directional light (sun) with shadows
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        // Directional light (sun) WITHOUT shadows for performance
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2); // Increased intensity
         directionalLight.position.set(10, 10, 5);
-        directionalLight.castShadow = true;
-        
-        // Configure shadow camera
-        directionalLight.shadow.mapSize.width = this.qualitySettings.shadowMapSize;
-        directionalLight.shadow.mapSize.height = this.qualitySettings.shadowMapSize;
-        directionalLight.shadow.camera.near = 0.5;
-        directionalLight.shadow.camera.far = 50;
-        directionalLight.shadow.camera.left = -20;
-        directionalLight.shadow.camera.right = 20;
-        directionalLight.shadow.camera.top = 20;
-        directionalLight.shadow.camera.bottom = -20;
-        
-        // Shadow bias for quality
-        directionalLight.shadow.bias = -0.0001;
-        directionalLight.shadow.normalBias = 0.02;
+        directionalLight.castShadow = false; // DISABLED - using baked lighting
         
         this.scene.add(directionalLight);
         this.lights.set('directional', directionalLight);
         
-        // Hemisphere light for natural outdoor lighting
-        const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x8B4513, 0.4);
+        // Enhanced hemisphere light for natural outdoor lighting
+        const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x8B4513, 0.6); // Increased intensity
         this.scene.add(hemisphereLight);
         this.lights.set('hemisphere', hemisphereLight);
         
-        console.log('💡 Professional lighting system setup');
+        // Additional fill light for better visibility
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        fillLight.position.set(-5, 5, -5);
+        fillLight.castShadow = false;
+        this.scene.add(fillLight);
+        this.lights.set('fill', fillLight);
+        
+        console.log('💡 Optimized lighting system setup (shadows disabled, enhanced illumination)');
     }
     
     /**
@@ -408,47 +408,47 @@ export class RenderingSystem {
     }
     
     /**
-     * Get quality settings for different levels
+     * Get quality settings for different levels with optimized performance
      * @param {string} level - Quality level
      * @returns {Object} Quality settings
      */
     getQualitySettings(level) {
         const settings = {
             low: {
-                shadowMapSize: 512,
+                shadowMapSize: 0, // Shadows disabled
                 antialias: false,
                 postProcessing: false,
                 ssao: false,
                 bloom: false,
                 maxPixelRatio: 1.0,
-                renderScale: 0.75
+                renderScale: 0.75,
+                textureQuality: 'low',
+                geometryLOD: 'low',
+                targetFPS: 30
             },
             medium: {
-                shadowMapSize: 1024,
+                shadowMapSize: 0, // Shadows disabled
                 antialias: true,
                 postProcessing: true,
                 ssao: false,
                 bloom: true,
                 maxPixelRatio: 1.5,
-                renderScale: 0.85
+                renderScale: 0.85,
+                textureQuality: 'medium',
+                geometryLOD: 'medium',
+                targetFPS: 45
             },
             high: {
-                shadowMapSize: 2048,
+                shadowMapSize: 0, // Shadows disabled
                 antialias: true,
                 postProcessing: true,
                 ssao: true,
                 bloom: true,
                 maxPixelRatio: 2.0,
-                renderScale: 1.0
-            },
-            ultra: {
-                shadowMapSize: 4096,
-                antialias: true,
-                postProcessing: true,
-                ssao: true,
-                bloom: true,
-                maxPixelRatio: 3.0,
-                renderScale: 1.0
+                renderScale: 1.0,
+                textureQuality: 'high',
+                geometryLOD: 'high',
+                targetFPS: 60
             }
         };
         
@@ -456,7 +456,71 @@ export class RenderingSystem {
     }
     
     /**
-     * Apply quality settings to renderer
+     * Detect device capabilities and set optimal quality
+     */
+    async detectAndSetOptimalQuality() {
+        const deviceInfo = {
+            isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            isLowEnd: false,
+            memoryGB: 4, // Default assumption
+            cores: navigator.hardwareConcurrency || 4,
+            webglVersion: 'unknown',
+            maxTextureSize: 2048
+        };
+        
+        // Detect WebGL capabilities
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+            
+            if (gl) {
+                deviceInfo.webglVersion = gl.getParameter(gl.VERSION);
+                deviceInfo.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+                
+                // Estimate if device is low-end based on WebGL info
+                const renderer = gl.getParameter(gl.RENDERER).toLowerCase();
+                deviceInfo.isLowEnd = renderer.includes('mali') || 
+                                      renderer.includes('adreno 3') || 
+                                      renderer.includes('powervr');
+            }
+        } catch (error) {
+            console.warn('⚠️ Could not detect WebGL capabilities:', error);
+        }
+        
+        // Estimate memory if available
+        if (navigator.deviceMemory) {
+            deviceInfo.memoryGB = navigator.deviceMemory;
+        }
+        
+        // Set optimal quality based on device capabilities
+        let optimalQuality = 'high';
+        
+        if (deviceInfo.isMobile) {
+            if (deviceInfo.isLowEnd || deviceInfo.memoryGB < 3) {
+                optimalQuality = 'low';
+            } else if (deviceInfo.memoryGB < 6) {
+                optimalQuality = 'medium';
+            }
+        } else {
+            // Desktop - start with high quality since shadows are disabled
+            if (deviceInfo.memoryGB >= 8 && deviceInfo.cores >= 4) {
+                optimalQuality = 'high';
+            } else if (deviceInfo.memoryGB < 4) {
+                optimalQuality = 'low';
+            } else {
+                optimalQuality = 'medium';
+            }
+        }
+        
+        this.qualityManager.deviceCapabilities = deviceInfo;
+        this.setQualityLevel(optimalQuality);
+        
+        console.log('🔍 Device capabilities detected:', deviceInfo);
+        console.log(`🎯 Optimal quality set to: ${optimalQuality}`);
+    }
+    
+    /**
+     * Apply quality settings to renderer (optimized for baked lighting)
      */
     applyQualitySettings() {
         // Update pixel ratio
@@ -464,12 +528,7 @@ export class RenderingSystem {
             Math.min(window.devicePixelRatio, this.qualitySettings.maxPixelRatio)
         );
         
-        // Update shadow map size
-        if (this.lights.has('directional')) {
-            const light = this.lights.get('directional');
-            light.shadow.mapSize.width = this.qualitySettings.shadowMapSize;
-            light.shadow.mapSize.height = this.qualitySettings.shadowMapSize;
-        }
+        // Shadows are disabled - no shadow map updates needed
         
         // Update post-processing effects
         if (this.composer) {
@@ -481,7 +540,32 @@ export class RenderingSystem {
             }
         }
         
-        console.log(`🎯 Quality settings applied: ${this.options.qualityLevel}`);
+        // Apply texture quality settings
+        this.applyTextureQuality(this.qualitySettings.textureQuality);
+        
+        console.log(`🎯 Quality settings applied: ${this.options.qualityLevel} (shadows disabled)`);
+    }
+    
+    /**
+     * Apply texture quality settings
+     * @param {string} quality - Texture quality level
+     */
+    applyTextureQuality(quality) {
+        const qualityMap = {
+            low: { anisotropy: 1, maxTextureSize: 512 },
+            medium: { anisotropy: 4, maxTextureSize: 1024 },
+            high: { anisotropy: 8, maxTextureSize: 2048 },
+            ultra: { anisotropy: 16, maxTextureSize: 4096 }
+        };
+        
+        const settings = qualityMap[quality] || qualityMap.medium;
+        
+        // Apply to renderer capabilities
+        if (this.renderer.capabilities) {
+            this.renderer.capabilities.getMaxAnisotropy = () => settings.anisotropy;
+        }
+        
+        console.log(`🖼️ Texture quality set to: ${quality}`);
     }
     
     /**
