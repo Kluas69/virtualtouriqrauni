@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'webgl_service.dart';
 import '../logging/app_logger.dart';
 import 'null_safety_layer.dart';
-import 'webgl_context_manager.dart';
+import '../memory/memory_manager.dart';
+import 'security_manager.dart';
 
 /// Creates the web implementation for web platforms
 WebGLService createWebGLService() {
@@ -15,7 +16,8 @@ WebGLService createWebGLService() {
 /// Simple web-specific implementation of WebGL service
 class WebGLServiceWebSimple implements WebGLService {
   static const String _logComponent = 'WebGLServiceWebSimple';
-  late final WebGLContextManager _contextManager;
+  late final MemoryManager _memoryManager;
+  late final SecurityManager _securityManager;
   QualityLevel _currentQuality = QualityLevel.high;
   final StreamController<WebGLPerformanceMetrics> _performanceController = StreamController<WebGLPerformanceMetrics>.broadcast();
   
@@ -23,9 +25,13 @@ class WebGLServiceWebSimple implements WebGLService {
   Future<void> initialize() async {
     try {
       AppLogger.info('Initializing WebGL service for web', component: _logComponent);
-      _contextManager = WebGLContextManager.instance;
-      await _contextManager.initialize();
-      AppLogger.info('WebGL service initialized successfully', component: _logComponent);
+      _memoryManager = MemoryManager();
+      await _memoryManager.initialize();
+      
+      // Initialize security manager with secure configuration
+      _securityManager = SecurityManager();
+      
+      AppLogger.info('WebGL service initialized successfully with security manager', component: _logComponent);
     } catch (e, stackTrace) {
       AppLogger.error('Failed to initialize WebGL service: $e', 
         component: _logComponent, 
@@ -78,37 +84,30 @@ class WebGLServiceWebSimple implements WebGLService {
   /// Create iframe element for the platform view
   html.Element _createIframeElement(String src, String id, Map<String, String>? additionalStyles) {
     try {
-      AppLogger.info('Creating iframe element for: $src', component: _logComponent);
+      AppLogger.info('Creating secure iframe element for: $src', component: _logComponent);
       
-      final iframe = NullSafetyLayer.createSafeIframe(
+      // Use SecurityManager to create secure iframe
+      final iframe = _securityManager.createSecureIframe(
         src: src,
         id: id,
-        styles: {
+        additionalStyles: {
           'width': '100%',
           'height': '100%',
           'border': 'none',
           'background': '#000',
           ...?additionalStyles,
         },
-        attributes: {
-          'allowfullscreen': 'true',
-          'webkitallowfullscreen': 'true',
-          'mozallowfullscreen': 'true',
-          'allow': 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
-        },
       );
       
       if (iframe != null) {
-        // Skip iframe validation - let the browser handle compatibility
-        AppLogger.info('Iframe created successfully, skipping validation', component: _logComponent);
+        AppLogger.info('Secure iframe created successfully', component: _logComponent);
         
         // Set fullscreen capability
         _setupIframeEventHandlers(iframe);
         
-        AppLogger.info('Successfully created iframe element', component: _logComponent);
         return iframe;
       } else {
-        AppLogger.warning('Failed to create iframe, creating fallback', component: _logComponent);
+        AppLogger.warning('Failed to create secure iframe, creating fallback', component: _logComponent);
         return _createFallbackElement(src);
       }
     } catch (e, stackTrace) {
@@ -463,7 +462,8 @@ class WebGLServiceWebSimple implements WebGLService {
     try {
       AppLogger.info('Disposing WebGL service resources', component: _logComponent);
       _performanceController.close();
-      _contextManager.dispose();
+      _memoryManager.dispose();
+      _securityManager.dispose();
       AppLogger.info('WebGL service disposed successfully', component: _logComponent);
     } catch (e, stackTrace) {
       AppLogger.error('Exception during disposal: $e', 

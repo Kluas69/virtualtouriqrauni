@@ -4,17 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:virtualtouriu/themes/themes.dart';
-import 'package:virtualtouriu/Screens/location_detail_screen.dart';
+import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/glassmorphic_container.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/core/widgets/empty_state.dart';
 import 'package:virtualtouriu/core/widgets/loading_state.dart';
 import 'package:virtualtouriu/core/widgets/error_state.dart';
-import 'package:virtualtouriu/core/utils/image_utils.dart';
 import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/core/logging/app_logger.dart';
+import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
+import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -24,7 +26,7 @@ class CategoriesScreen extends StatefulWidget {
 }
 
 class _CategoriesScreenState extends State<CategoriesScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, PerformanceOptimizedWidget {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
   final _scrollController = ScrollController();
@@ -250,10 +252,6 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDark;
     final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-    final isTablet = size.width >= 600 && size.width < 900;
-    final isDesktop = size.width >= 900;
 
     return FutureBuilder<void>(
       future: _initializationFuture,
@@ -274,15 +272,6 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           );
         }
 
-        // Additional safety check for mobile devices
-        if (isMobile && !_memoryOptimized) {
-          return Scaffold(
-            backgroundColor:
-                isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
-            body: LoadingState(isDark: isDark, message: 'Optimizing for mobile...'),
-          );
-        }
-
         // Additional check to ensure all data is loaded before rendering
         if (AppConstants.locationCards.isEmpty) {
           return Scaffold(
@@ -295,27 +284,31 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         return Scaffold(
           backgroundColor:
               isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
-          body: Stack(
-            children: [
-              _buildBackground(isDark),
-              SafeArea(
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
+          body: AdaptiveLayout(
+            builder: (context, config) {
+              return Stack(
+                children: [
+                  _buildBackground(isDark),
+                  SafeArea(
+                    child: CustomScrollView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      cacheExtent: config.isMobile ? 800 : 1200, // Responsive cache
+                      slivers: [
+                        _buildAppBar(isDark, themeProvider),
+                        _buildHeroSection(isDark, config),
+                        _buildSearchBar(theme, isDark, config),
+                        _buildQuickFilters(theme, isDark, config),
+                        _buildLocationGrid(theme, config),
+                        const SliverToBoxAdapter(child: SizedBox(height: 80)),
+                      ],
+                    ),
                   ),
-                  cacheExtent: isMobile ? 800 : 1200, // Increased cache
-                  slivers: [
-                    _buildAppBar(isDark, themeProvider),
-                    _buildHeroSection(isDark, isDesktop, size, isMobile),
-                    _buildSearchBar(theme, isDark, isDesktop, size, isMobile),
-                    _buildQuickFilters(theme, isDark, size),
-                    _buildLocationGrid(theme, isDesktop, isTablet, isMobile),
-                    const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                  ],
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         );
       },
@@ -454,19 +447,12 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
   Widget _buildHeroSection(
     bool isDark,
-    bool isDesktop,
-    Size size,
-    bool isMobile,
+    AdaptiveConfig config,
   ) {
-    final heroContent = Padding(
+    final heroContent = ResponsiveContainer(
       padding: EdgeInsets.symmetric(
-        horizontal: size.width * (isDesktop ? 0.08 : 0.06),
-        vertical:
-            isDesktop
-                ? 48
-                : isMobile
-                ? 24
-                : 32,
+        horizontal: ResponsiveSpacing.medium(config),
+        vertical: config.isDesktop ? 48 : config.isMobile ? 24 : 32,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,68 +462,35 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             fontSize: 12,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           ),
-          SizedBox(
-            height:
-                isDesktop
-                    ? 24
-                    : isMobile
-                    ? 16
-                    : 20,
-          ),
+          SizedBox(height: ResponsiveSpacing.medium(config)),
           _buildGradientText(
             context,
             'Discover IQRA\nUniversity',
-            isDesktop
-                ? 64
-                : isMobile
-                ? 36
-                : 42,
+            ResponsiveTypography.headline1(config),
           ),
-          SizedBox(
-            height:
-                isDesktop
-                    ? 20
-                    : isMobile
-                    ? 12
-                    : 16,
-          ),
-          Text(
+          SizedBox(height: ResponsiveSpacing.small(config)),
+          ResponsiveText(
             'Experience every corner of our campus through immersive 360° panoramic views.',
-            style: GoogleFonts.roboto(
-              fontSize:
-                  isDesktop
-                      ? 18
-                      : isMobile
-                      ? 14
-                      : 16,
+            fontSizeBuilder: (config) => ResponsiveTypography.body1(config),
+            style: TextStyle(
               height: 1.7,
-              color: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.color?.withValues(alpha: 0.75),
+              color: Theme.of(context).textTheme.bodyLarge?.color?.withValues(alpha: 0.75),
               letterSpacing: 0.3,
             ),
           ),
-          // Add extra spacing to prevent overlap with search bar - FIXED OVERLAY ISSUE
-          SizedBox(
-            height:
-                isDesktop
-                    ? 80  // Increased from 60 to prevent text overlay with search bar
-                    : isMobile
-                    ? 40
-                    : 70, // Increased from 50 to prevent text overlay with search bar
-          ),
+          // Add extra spacing to prevent overlap with search bar
+          SizedBox(height: ResponsiveSpacing.extraLarge(config)),
         ],
       ),
     );
 
     return SliverToBoxAdapter(
-      child:
-          _showParallax && !isMobile
-              ? Transform.translate(
-                offset: Offset(0, _scrollOffset * 0.3),
-                child: heroContent,
-              )
-              : heroContent,
+      child: _showParallax && !config.isMobile
+          ? Transform.translate(
+              offset: Offset(0, _scrollOffset * 0.3),
+              child: heroContent,
+            )
+          : heroContent,
     );
   }
 
@@ -570,9 +523,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   Widget _buildSearchBar(
     ThemeData theme,
     bool isDark,
-    bool isDesktop,
-    Size size,
-    bool isMobile,
+    AdaptiveConfig config,
   ) {
     return SliverPersistentHeader(
       pinned: true,
@@ -581,9 +532,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         maxHeight: 80,
         child: Container(
           color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
-          child: Padding(
+          child: ResponsiveContainer(
             padding: EdgeInsets.symmetric(
-              horizontal: size.width * (isDesktop ? 0.08 : 0.06),
+              horizontal: ResponsiveSpacing.medium(config),
               vertical: 12,
             ),
             child: AnimatedContainer(
@@ -627,7 +578,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                   _debounceTimer?.cancel();
                   _debounceTimer = Timer(const Duration(milliseconds: 300), () {
                     if (mounted) {
-                      setState(() {
+                      safeSetState(() {
                         _searchQuery = value;
                       });
                     }
@@ -640,7 +591,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 ),
                 decoration: InputDecoration(
                   hintText:
-                      isMobile
+                      config.isMobile
                           ? 'Search...'
                           : 'Search locations, facilities, buildings...',
                   hintStyle: GoogleFonts.roboto(
@@ -670,7 +621,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                 onTap: () {
                                   _searchController.clear();
                                   if (mounted) {
-                                    setState(() {
+                                    safeSetState(() {
                                       _searchQuery = '';
                                     });
                                   }
@@ -702,37 +653,37 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     );
   }
 
-  Widget _buildQuickFilters(ThemeData theme, bool isDark, Size size) {
+  Widget _buildQuickFilters(ThemeData theme, bool isDark, AdaptiveConfig config) {
     final filters = ['All', 'Classrooms', 'Labs', 'Facilities', 'Outdoor'];
 
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Container(
-          height: 50,
+          height: 40, // Reduced height for smaller buttons
           margin: const EdgeInsets.only(top: 16, bottom: 8),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: size.width * 0.06),
             physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(horizontal: ResponsiveSpacing.medium(config)),
             itemCount: filters.length,
             itemBuilder: (context, index) {
               final filter = filters[index];
               final isSelected = _selectedFilter == filter;
               return Padding(
-                padding: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.only(right: 8), // Reduced spacing
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
-                      setState(() {
+                      safeSetState(() {
                         _selectedFilter = filter;
                       });
                     },
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(20), // Smaller radius
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                        horizontal: 16, // Reduced padding
+                        vertical: 8,   // Reduced padding
                       ),
                       decoration: BoxDecoration(
                         color:
@@ -741,7 +692,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                 : isDark
                                 ? Colors.white.withValues(alpha: 0.06)
                                 : Colors.black.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20), // Smaller radius
                         border: Border.all(
                           color:
                               isSelected
@@ -749,18 +700,19 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                   : isDark
                                   ? Colors.white.withValues(alpha: 0.1)
                                   : Colors.black.withValues(alpha: 0.08),
+                          width: 1,
                         ),
                       ),
                       child: Text(
                         filter,
                         style: GoogleFonts.roboto(
-                          fontSize: 14,
+                          fontSize: 12, // Smaller font size
                           fontWeight: FontWeight.w600,
                           color:
                               isSelected
                                   ? Colors.white
                                   : theme.textTheme.bodyMedium?.color,
-                          letterSpacing: 0.3,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
@@ -776,9 +728,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
   Widget _buildLocationGrid(
     ThemeData theme,
-    bool isDesktop,
-    bool isTablet,
-    bool isMobile,
+    AdaptiveConfig config,
   ) {
     final filteredLocations = _getFilteredLocations();
 
@@ -802,23 +752,59 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       );
     }
 
-    final crossAxisCount =
-        isDesktop
-            ? 4
-            : isTablet
-            ? 3
-            : 2;
-    final size = MediaQuery.of(context).size;
+    // Use different layouts for mobile vs desktop/tablet
+    if (config.isMobile) {
+      return _buildMobileCardGrid(filteredLocations, theme, config);
+    } else {
+      return _buildDesktopGrid(filteredLocations, theme, config);
+    }
+  }
 
+  Widget _buildMobileCardGrid(
+    List<MapEntry<int, LocationCardData>> filteredLocations,
+    ThemeData theme,
+    AdaptiveConfig config,
+  ) {
     return SliverPadding(
       padding: EdgeInsets.symmetric(
-        horizontal: size.width * (isDesktop ? 0.08 : 0.04),
+        horizontal: ResponsiveSpacing.medium(config),
+        vertical: 24,
+      ),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final entry = filteredLocations[index];
+            return RepaintBoundary(
+              key: ValueKey(entry.key),
+              child: _buildMobileCard(
+                context,
+                entry.key,
+                theme,
+                entry.value,
+                config,
+              ),
+            );
+          },
+          childCount: filteredLocations.length,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopGrid(
+    List<MapEntry<int, LocationCardData>> filteredLocations,
+    ThemeData theme,
+    AdaptiveConfig config,
+  ) {
+    return SliverPadding(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveSpacing.medium(config),
         vertical: 24,
       ),
       sliver: SliverMasonryGrid.count(
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: isDesktop ? 20 : 16,
-        crossAxisSpacing: isDesktop ? 20 : 16,
+        crossAxisCount: config.gridColumns,
+        mainAxisSpacing: ResponsiveSpacing.small(config),
+        crossAxisSpacing: ResponsiveSpacing.small(config),
         itemBuilder: (context, index) {
           final entry = filteredLocations[index];
           return RepaintBoundary(
@@ -828,11 +814,181 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               entry.key,
               theme,
               entry.value,
-              isMobile,
+              config,
             ),
           );
         },
         childCount: filteredLocations.length,
+      ),
+    );
+  }
+
+  Widget _buildMobileCard(
+    BuildContext context,
+    int index,
+    ThemeData theme,
+    LocationCardData data,
+    AdaptiveConfig config,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            await NavigationHelpers.navigateToLocation(context, data);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark 
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark 
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Image Section
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 70,
+                    height: 70,
+                    child: OptimizedImage(
+                      imagePath: data.imagePath,
+                      fit: BoxFit.cover,
+                      width: 70,
+                      height: 70,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Content Section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title
+                      Text(
+                        data.title,
+                        style: GoogleFonts.roboto(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : const Color(0xFF1A1A1A),
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      // Description
+                      Text(
+                        data.description,
+                        style: GoogleFonts.roboto(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: isDark 
+                              ? Colors.white.withValues(alpha: 0.7)
+                              : const Color(0xFF666666),
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // Bottom Row
+                      Row(
+                        children: [
+                          // Tag Badge
+                          if (data.tag.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.primaryColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                data.tag.toUpperCase(),
+                                style: GoogleFonts.roboto(
+                                  color: theme.primaryColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          const Spacer(),
+                          // 360° Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark 
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.threesixty_rounded,
+                                  color: isDark ? Colors.white : Colors.black,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '360°',
+                                  style: GoogleFonts.roboto(
+                                    color: isDark ? Colors.white : Colors.black,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Arrow Icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    color: theme.primaryColor,
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -842,9 +998,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     int index,
     ThemeData theme,
     LocationCardData data,
-    bool isMobile,
+    AdaptiveConfig config,
   ) {
-    final isHovered = !isMobile && _hoveredIndex == index;
+    final isHovered = !config.isMobile && _hoveredIndex == index;
     final baseHeight =
         index % 3 == 0
             ? 360.0
@@ -854,7 +1010,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
 
     return MouseRegion(
       onEnter:
-          isMobile
+          config.isMobile
               ? null
               : (_) {
                 if (!_isScrolling) {
@@ -865,7 +1021,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 }
               },
       onExit:
-          isMobile
+          config.isMobile
               ? null
               : (_) {
                 _debounceTimer?.cancel();
@@ -875,34 +1031,18 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               },
       child: GestureDetector(
         onTap: () async {
-          final size = MediaQuery.of(context).size;
-          // CRITICAL FIX: Remove SmartLoadingNavigation for mobile to prevent stuck loading
-          // Use direct navigation for all platforms to avoid loading popup issues
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder:
-                  (context, animation, _) => FadeTransition(
-                    opacity: animation,
-                    child: LocationDetailScreen(
-                      locationName: data.title,
-                      imagePath: data.imagePath,
-                      locationData: data,
-                    ),
-                  ),
-              transitionDuration: const Duration(milliseconds: 300),
-            ),
-          );
+          // Use centralized navigation helper
+          await NavigationHelpers.navigateToLocation(context, data);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
           height: baseHeight,
           transform:
-              isMobile
+              config.isMobile
                   ? Matrix4.identity()
                   : (Matrix4.identity()
-                    ..translate(0.0, isHovered ? -8.0 : 0.0)),
+                    ..setTranslation(Vector3(0.0, isHovered ? -8.0 : 0.0, 0.0))),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
@@ -922,42 +1062,24 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Always show images - removed scroll-based placeholder logic for better UX
-                isMobile
-                    ? ResponsiveImageLoader.loadOptimizedImage(
-                      imagePath: data.imagePath,
-                      fit: BoxFit.cover,
-                    )
-                    : AnimatedScale(
-                      scale: isHovered ? 1.08 : 1.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Image.asset(
-                        data.imagePath,
+                // Use optimized image loading
+                config.isMobile
+                    ? OptimizedImage(
+                        imagePath: data.imagePath,
                         fit: BoxFit.cover,
-                        cacheWidth: 600,
-                        cacheHeight: 600,
-                        errorBuilder:
-                            (context, error, stackTrace) => Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    theme.primaryColor.withValues(alpha: 0.4),
-                                    theme.primaryColor.withValues(alpha: 0.1),
-                                  ],
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.image_not_supported_rounded,
-                                  size: 56,
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                ),
-                              ),
-                            ),
+                        width: config.contentWidth / config.gridColumns,
+                        height: baseHeight,
+                      )
+                    : AnimatedScale(
+                        scale: isHovered ? 1.08 : 1.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: OptimizedImage(
+                          imagePath: data.imagePath,
+                          fit: BoxFit.cover,
+                          width: config.contentWidth / config.gridColumns,
+                          height: baseHeight,
+                        ),
                       ),
-                    ),
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -971,7 +1093,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                     ),
                   ),
                 ),
-                _buildCardContent(data, theme, isHovered, isMobile),
+                _buildCardContent(data, theme, isHovered, config),
                 _build360Badge(),
               ],
             ),
@@ -985,7 +1107,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
     LocationCardData data,
     ThemeData theme,
     bool isHovered,
-    bool isMobile,
+    AdaptiveConfig config,
   ) {
     return Positioned(
       bottom: 0,
@@ -1042,7 +1164,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            if (isHovered && !isMobile)
+            if (isHovered && !config.isMobile)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Container(

@@ -1,6 +1,26 @@
 import 'package:flutter/material.dart';
-import '../design/spacing.dart';
-import '../design/animation_config.dart';
+
+/// Spacing constants for consistent button layout
+class Spacing {
+  static const double xs = 4.0;
+  static const double sm = 8.0;
+  static const double md = 16.0;
+  static const double lg = 24.0;
+  static const double xl = 32.0;
+  
+  // Spacing widgets for convenience
+  static const Widget hGapXS = SizedBox(width: xs);
+  static const Widget hGapSM = SizedBox(width: sm);
+  static const Widget hGapMD = SizedBox(width: md);
+  static const Widget hGapLG = SizedBox(width: lg);
+  static const Widget hGapXL = SizedBox(width: xl);
+  
+  static const Widget vGapXS = SizedBox(height: xs);
+  static const Widget vGapSM = SizedBox(height: sm);
+  static const Widget vGapMD = SizedBox(height: md);
+  static const Widget vGapLG = SizedBox(height: lg);
+  static const Widget vGapXL = SizedBox(height: xl);
+}
 
 /// Google Material Design 3.0 Button Component
 /// 
@@ -74,7 +94,7 @@ class _GoogleStyleButtonState extends State<GoogleStyleButton>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: AnimationConfig.short4,
+      duration: const Duration(milliseconds: 200),
       vsync: this,
     );
     
@@ -83,7 +103,7 @@ class _GoogleStyleButtonState extends State<GoogleStyleButton>
       end: 0.95,
     ).animate(CurvedAnimation(
       parent: _animationController,
-      curve: AnimationConfig.standard,
+      curve: Curves.easeInOut,
     ));
   }
 

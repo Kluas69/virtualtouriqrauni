@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../animation/animation_config.dart';
 import '../state/futuristic_ui_state.dart';
-import 'enhanced_glassmorphic_container.dart';
+import 'unified_glassmorphic_container.dart';
 
 /// Language selector with animated flags and RTL support
 class LanguageSelector extends StatefulWidget {
@@ -80,19 +80,21 @@ class _LanguageSelectorState extends State<LanguageSelector>
 
   void _setupKeyboardListener() {
     // Listen for Ctrl+Shift+L keyboard shortcut
-    RawKeyboard.instance.addListener(_handleKeyEvent);
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
   }
 
-  void _handleKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent) {
-      final isCtrlPressed = event.isControlPressed;
-      final isShiftPressed = event.isShiftPressed;
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
+      final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
       final isLPressed = event.logicalKey == LogicalKeyboardKey.keyL;
       
       if (isCtrlPressed && isShiftPressed && isLPressed) {
         _toggleDropdown();
+        return true;
       }
     }
+    return false;
   }
 
   void _handleHover(bool isHovered) {
@@ -165,9 +167,8 @@ class _LanguageSelectorState extends State<LanguageSelector>
   Widget _buildLanguageDropdown() {
     return Material(
       color: Colors.transparent,
-      child: LanguageSelectorGlassmorphicContainer(
+      child: UnifiedGlassmorphicContainer.languageSelector(
         isDark: widget.isDark,
-        isOpen: _isDropdownOpen,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: Language.supportedLanguages
@@ -271,7 +272,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
 
   @override
   void dispose() {
-    RawKeyboard.instance.removeListener(_handleKeyEvent);
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _overlayEntry?.remove();
     _animationController.dispose();
     super.dispose();
@@ -295,9 +296,8 @@ class _LanguageSelectorState extends State<LanguageSelector>
                     scale: _scaleAnimation.value,
                     child: Transform.rotate(
                       angle: _rotationAnimation.value,
-                      child: LanguageSelectorGlassmorphicContainer(
+                      child: UnifiedGlassmorphicContainer.languageSelector(
                         isDark: widget.isDark,
-                        isOpen: _isDropdownOpen,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,

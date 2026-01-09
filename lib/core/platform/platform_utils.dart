@@ -1,50 +1,67 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'platform_factory.dart';
-import 'platform_service.dart';
 
 /// Utility functions for platform detection and feature availability
 /// 
 /// This class provides convenient static methods for checking platform
 /// capabilities and accessing platform-specific functionality.
 class PlatformUtils {
-  static PlatformService get _service => PlatformFactory.instance;
-  
   /// Check if running on web platform
-  static bool get isWeb => _service.isWebPlatform;
+  static bool get isWeb => kIsWeb;
   
-  /// Check if running on mobile platform
-  static bool get isMobile => _service.isMobilePlatform;
+  /// Check if running on mobile platform (iOS or Android)
+  static bool get isMobile => !kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.android);
   
   /// Check if running on desktop platform
-  static bool get isDesktop => _service.isDesktopPlatform;
+  static bool get isDesktop => !kIsWeb && !isMobile;
   
   /// Get user agent string (web only, empty on other platforms)
-  static String get userAgent => _service.userAgent;
+  static String get userAgent {
+    if (kIsWeb) {
+      // This would need dart:html for actual implementation
+      return 'Web Platform';
+    }
+    return '';
+  }
   
-  /// Check if WebGL is available
-  static Future<bool> get isWebGLAvailable => _service.initializeWebGL();
+  /// Check if WebGL is available (simplified)
+  static Future<bool> get isWebGLAvailable async => kIsWeb;
   
-  /// Check if a specific feature is available
-  static bool isFeatureAvailable(String feature) => _service.isFeatureAvailable(feature);
+  /// Check if a specific feature is available (simplified)
+  static bool isFeatureAvailable(String feature) {
+    switch (feature) {
+      case 'webgl':
+        return kIsWeb;
+      case 'camera':
+        return !kIsWeb;
+      case 'sensors':
+        return !kIsWeb;
+      default:
+        return false;
+    }
+  }
   
   /// Get screen dimensions
-  static Size getScreenSize() => _service.getScreenSize();
+  static Size getScreenSize() {
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    return view.physicalSize / view.devicePixelRatio;
+  }
   
   /// Initialize WebGL (web only)
-  static Future<bool> initializeWebGL() => _service.initializeWebGL();
+  static Future<bool> initializeWebGL() async => kIsWeb;
   
-  /// Register web view (web only)
+  /// Register web view (web only) - simplified
   static void registerWebView(String viewType, Function factory) {
-    _service.registerWebView(viewType, factory);
+    // Simplified implementation
   }
   
-  /// Post message to web context (web only)
+  /// Post message to web context (web only) - simplified
   static void postMessage(Map<String, dynamic> message) {
-    _service.postMessage(message);
+    // Simplified implementation
   }
   
-  /// Get message stream from web context (web only)
-  static Stream<Map<String, dynamic>> get messageStream => _service.messageStream;
+  /// Get message stream from web context (web only) - simplified
+  static Stream<Map<String, dynamic>> get messageStream => const Stream.empty();
   
   /// Check if device is likely mobile based on screen size
   static bool get isMobileScreen {

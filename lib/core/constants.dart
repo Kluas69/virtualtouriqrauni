@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
 import 'platform/platform_utils.dart';
 import 'logging/app_logger.dart';
+import 'assets/app_assets.dart';
 
 class LocationCardData {
   final String tag;
@@ -39,10 +39,10 @@ class AppConstants {
   static bool get isMobile => PlatformUtils.isMobile || PlatformUtils.isMobileScreen;
 
   // MOBILE OPTIMIZATION: Image cache sizes based on device
-  static int get imageCacheWidth => isMobile ? 400 : 800;
-  static int get imageCacheHeight => isMobile ? 300 : 600;
-  static int get thumbnailCacheWidth => isMobile ? 200 : 400;
-  static int get thumbnailCacheHeight => isMobile ? 150 : 300;
+  static int get imageCacheWidth => isMobile ? AppAssets.mobileImageCacheWidth : AppAssets.defaultImageCacheWidth;
+  static int get imageCacheHeight => isMobile ? AppAssets.mobileImageCacheHeight : AppAssets.defaultImageCacheHeight;
+  static int get thumbnailCacheWidth => isMobile ? AppAssets.mobileThumbnailCacheWidth : AppAssets.thumbnailCacheWidth;
+  static int get thumbnailCacheHeight => isMobile ? AppAssets.mobileThumbnailCacheHeight : AppAssets.thumbnailCacheHeight;
 
   static Future<void> initialize() async {
     try {
@@ -129,8 +129,7 @@ class AppConstants {
 
       // Load JSON data with shorter timeout and better error handling
       try {
-        final String jsonString = await rootBundle
-            .loadString('assets/app_data.json')
+        final String jsonString = await AssetLoader.loadStringAsset(AppAssets.appDataJson)
             .timeout(const Duration(seconds: 5), onTimeout: () {
               AppLogger.warning('JSON loading timed out, using defaults', 
                 component: 'AppConstants');
@@ -215,18 +214,6 @@ class AppConstants {
   }
 
   static String? webglUrlFor(String locationName) {
-    // FIXED: Removed mobile check – return URL on all devices
-    // Updated to use Three.js server with room-based navigation
-    // CRITICAL FIX: Use URL-safe room IDs instead of location names with spaces
-    switch (locationName) {
-      case 'Class Rooms':
-        return 'classroom'; // URL-safe room ID
-      case 'Library':
-        return 'library'; // URL-safe room ID
-      case 'Auditorium':
-        return 'auditorium'; // URL-safe room ID
-      default:
-        return null;
-    }
+    return AppAssets.getWebGLUrl(locationName);
   }
 }

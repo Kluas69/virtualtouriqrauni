@@ -46,6 +46,9 @@ dependencies:
   webview_flutter: ^4.4.2
   webview_flutter_web: ^0.2.2+3 # Required for web support
 
+  # Web APIs (replaces dart:html)
+  web: ^1.1.0
+
   # Optional: Alternative webview (if you prefer inappwebview)
   # flutter_inappwebview: ^5.7.0  # Currently commented — choose one webview solution
 
@@ -67,11 +70,21 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets Configuration
+  # Consolidated Assets Configuration
   assets:
-    - lib/images/
-    - lib/images/panoramas/
+    # Data files
     - assets/app_data.json
+    
+    # Main images directory (includes all location images)
+    - lib/images/
+    
+    # Panorama images directory
+    - lib/images/panoramas/
+    
+    # 3D Models
+    - assets/models/
+    
+    # Individual location images (for explicit reference)
     - lib/images/library.jpg
     - lib/images/ground.jpg
     - lib/images/auditorium.jpg
@@ -82,3 +95,6 @@ flutter:
     - lib/images/playground.jpg
     - lib/images/swimming.jpg
     - lib/images/webinarroom.jpg
+    - lib/images/backgroundiu.jpg
+    - lib/images/Main.jpg
+    - lib/images/main2.jpg

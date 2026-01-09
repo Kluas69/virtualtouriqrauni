@@ -15,6 +15,7 @@ export class InputSystem {
             deadzone: 0.1,
             sensitivity: 1.0,
             enableGestures: true,
+            mobilePerformanceOptimizer: null, // Reference to mobile performance optimizer
             ...options
         };
         
@@ -226,60 +227,104 @@ export class InputSystem {
      * Setup touch input handling
      */
     setupTouch() {
-        const touchstartHandler = (event) => {
-            event.preventDefault();
+        let throttledTouchStartHandler = null;
+        let throttledTouchMoveHandler = null;
+        let throttledTouchEndHandler = null;
+        
+        // Create throttled handlers using mobile performance optimizer if available
+        if (this.options.mobilePerformanceOptimizer) {
+            const optimizer = this.options.mobilePerformanceOptimizer;
             
-            for (const touch of event.changedTouches) {
-                this.touches.set(touch.identifier, {
-                    position: { x: touch.clientX, y: touch.clientY },
-                    startPosition: { x: touch.clientX, y: touch.clientY },
-                    timestamp: performance.now()
-                });
-            }
+            throttledTouchStartHandler = optimizer.throttleTouchEvents((event) => {
+                this.handleTouchStart(event);
+            });
             
-            this.updateGestures(event);
-            this.triggerCallback('touchstart', event);
+            throttledTouchMoveHandler = optimizer.throttleTouchEvents((event) => {
+                this.handleTouchMove(event);
+            });
+            
+            throttledTouchEndHandler = optimizer.throttleTouchEvents((event) => {
+                this.handleTouchEnd(event);
+            });
+            
+            console.log('👆 Touch input initialized with mobile performance optimization');
+        } else {
+            // Fallback to direct handlers
+            throttledTouchStartHandler = { handler: (event) => this.handleTouchStart(event) };
+            throttledTouchMoveHandler = { handler: (event) => this.handleTouchMove(event) };
+            throttledTouchEndHandler = { handler: (event) => this.handleTouchEnd(event) };
+            
+            console.log('👆 Touch input initialized with fallback handling');
+        }
+        
+        document.addEventListener('touchstart', throttledTouchStartHandler.handler, { passive: false });
+        document.addEventListener('touchmove', throttledTouchMoveHandler.handler, { passive: false });
+        document.addEventListener('touchend', throttledTouchEndHandler.handler, { passive: false });
+        
+        this.eventListeners.set('touchstart', throttledTouchStartHandler.handler);
+        this.eventListeners.set('touchmove', throttledTouchMoveHandler.handler);
+        this.eventListeners.set('touchend', throttledTouchEndHandler.handler);
+        
+        // Store throttled handlers for cleanup
+        this.throttledTouchHandlers = {
+            start: throttledTouchStartHandler,
+            move: throttledTouchMoveHandler,
+            end: throttledTouchEndHandler
         };
+    }
+    
+    /**
+     * Handle touch start event
+     */
+    handleTouchStart(event) {
+        event.preventDefault();
         
-        const touchmoveHandler = (event) => {
-            event.preventDefault();
-            
-            for (const touch of event.changedTouches) {
-                const existingTouch = this.touches.get(touch.identifier);
-                if (existingTouch) {
-                    const deltaX = touch.clientX - existingTouch.position.x;
-                    const deltaY = touch.clientY - existingTouch.position.y;
-                    
-                    existingTouch.position.x = touch.clientX;
-                    existingTouch.position.y = touch.clientY;
-                    existingTouch.delta = { x: deltaX, y: deltaY };
-                }
+        for (const touch of event.changedTouches) {
+            this.touches.set(touch.identifier, {
+                position: { x: touch.clientX, y: touch.clientY },
+                startPosition: { x: touch.clientX, y: touch.clientY },
+                timestamp: performance.now()
+            });
+        }
+        
+        this.updateGestures(event);
+        this.triggerCallback('touchstart', event);
+    }
+    
+    /**
+     * Handle touch move event
+     */
+    handleTouchMove(event) {
+        event.preventDefault();
+        
+        for (const touch of event.changedTouches) {
+            const existingTouch = this.touches.get(touch.identifier);
+            if (existingTouch) {
+                const deltaX = touch.clientX - existingTouch.position.x;
+                const deltaY = touch.clientY - existingTouch.position.y;
+                
+                existingTouch.position.x = touch.clientX;
+                existingTouch.position.y = touch.clientY;
+                existingTouch.delta = { x: deltaX, y: deltaY };
             }
-            
-            this.updateGestures(event);
-            this.triggerCallback('touchmove', event);
-        };
+        }
         
-        const touchendHandler = (event) => {
-            event.preventDefault();
-            
-            for (const touch of event.changedTouches) {
-                this.touches.delete(touch.identifier);
-            }
-            
-            this.updateGestures(event);
-            this.triggerCallback('touchend', event);
-        };
+        this.updateGestures(event);
+        this.triggerCallback('touchmove', event);
+    }
+    
+    /**
+     * Handle touch end event
+     */
+    handleTouchEnd(event) {
+        event.preventDefault();
         
-        document.addEventListener('touchstart', touchstartHandler, { passive: false });
-        document.addEventListener('touchmove', touchmoveHandler, { passive: false });
-        document.addEventListener('touchend', touchendHandler, { passive: false });
+        for (const touch of event.changedTouches) {
+            this.touches.delete(touch.identifier);
+        }
         
-        this.eventListeners.set('touchstart', touchstartHandler);
-        this.eventListeners.set('touchmove', touchmoveHandler);
-        this.eventListeners.set('touchend', touchendHandler);
-        
-        console.log('👆 Touch input initialized');
+        this.updateGestures(event);
+        this.triggerCallback('touchend', event);
     }
 
     /**
@@ -632,6 +677,15 @@ export class InputSystem {
     }
 
     /**
+     * Set mobile performance optimizer reference
+     * @param {MobilePerformanceOptimizer} optimizer - Mobile performance optimizer instance
+     */
+    setMobilePerformanceOptimizer(optimizer) {
+        this.options.mobilePerformanceOptimizer = optimizer;
+        console.log('📱 Mobile performance optimizer set for InputSystem');
+    }
+    
+    /**
      * Set input sensitivity
      * @param {number} sensitivity - Sensitivity multiplier
      */
@@ -713,6 +767,19 @@ export class InputSystem {
                 window.removeEventListener(event, handler);
             } else {
                 document.removeEventListener(event, handler);
+            }
+        }
+        
+        // Dispose throttled touch handlers if they exist
+        if (this.throttledTouchHandlers) {
+            if (this.throttledTouchHandlers.start && this.throttledTouchHandlers.start.dispose) {
+                this.throttledTouchHandlers.start.dispose();
+            }
+            if (this.throttledTouchHandlers.move && this.throttledTouchHandlers.move.dispose) {
+                this.throttledTouchHandlers.move.dispose();
+            }
+            if (this.throttledTouchHandlers.end && this.throttledTouchHandlers.end.dispose) {
+                this.throttledTouchHandlers.end.dispose();
             }
         }
         

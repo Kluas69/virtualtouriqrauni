@@ -40,13 +40,17 @@ class HeaderBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: theme.primaryColor),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: GoogleFonts.roboto(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-              color: isDark ? Colors.white : Colors.black87,
+          Flexible(
+            child: Text(
+              text,
+              style: GoogleFonts.roboto(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
         ],

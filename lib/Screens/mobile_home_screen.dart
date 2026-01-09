@@ -292,6 +292,9 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width - 80, // Leave margin for positioning
+                ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
@@ -310,12 +313,16 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                       size: 14,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      'H-9 Islamabad Campus',
-                      style: GoogleFonts.roboto(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                    Flexible(
+                      child: Text(
+                        'H-9 Islamabad Campus',
+                        style: GoogleFonts.roboto(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -406,9 +413,15 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildSimpleStat(Icons.view_in_ar_rounded, '3D Tour', isDark),
-            _buildSimpleStat(Icons.location_city, '8+ Locations', isDark),
-            _buildSimpleStat(Icons.explore, 'HD Quality', isDark),
+            Flexible(
+              child: _buildSimpleStat(Icons.view_in_ar_rounded, '3D Tour', isDark),
+            ),
+            Flexible(
+              child: _buildSimpleStat(Icons.location_city, '8+ Locations', isDark),
+            ),
+            Flexible(
+              child: _buildSimpleStat(Icons.explore, 'HD Quality', isDark),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -434,6 +447,9 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
         Text(
           label,
           style: GoogleFonts.roboto(fontSize: 12, fontWeight: FontWeight.w600),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
       ],
     );
@@ -684,11 +700,15 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              HeaderBadge(
-                isDark: isDark,
-                text: 'IQRA Virtual Tour',
-                icon: Icons.school,
+              Flexible(
+                flex: 1,
+                child: HeaderBadge(
+                  isDark: isDark,
+                  text: 'IQRA Virtual Tour',
+                  icon: Icons.school,
+                ),
               ),
+              const SizedBox(width: 8), // Add spacing between elements
               ThemeToggleButton(
                 isDark: isDark,
                 onPressed: () => context.read<ThemeProvider>().toggleTheme(),

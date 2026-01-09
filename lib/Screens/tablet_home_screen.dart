@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/chatbot_widget.dart';
 import 'package:virtualtouriu/core/widgets/header_badge.dart';
 import 'package:virtualtouriu/core/widgets/navigation_arrow.dart';
-import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'webgl_service.dart';
 import '../logging/app_logger.dart';
 import 'null_safety_layer.dart';
-import 'webgl_context_manager.dart';
+import '../memory/memory_manager.dart';
+import 'security_manager.dart';
+import 'mobile_performance_optimizer.dart';
 
 // Conditional imports for web compatibility
 import 'dart:html' as html show 
@@ -38,7 +40,9 @@ class WebGLServiceMobile implements WebGLService {
   static int _contextCounter = 0;
   
   // Enhanced context management
-  late final WebGLContextManager _contextManager;
+  late final MemoryManager _memoryManager;
+  late final SecurityManager _securityManager;
+  late final MobilePerformanceOptimizer _performanceOptimizer;
   
   // Delegate all WebGLService methods with basic implementations
   @override
@@ -46,8 +50,21 @@ class WebGLServiceMobile implements WebGLService {
     AppLogger.info('Initializing mobile WebGL service', component: 'WebGLServiceMobile');
     
     // Initialize context manager
-    _contextManager = WebGLContextManager.instance;
-    await _contextManager.initialize();
+    _memoryManager = MemoryManager();
+    await _memoryManager.initialize();
+    
+    // Initialize security manager with mobile-optimized configuration
+    _securityManager = SecurityManager();
+    
+    // Initialize mobile performance optimizer
+    _performanceOptimizer = MobilePerformanceOptimizer();
+    
+    AppLogger.info('Mobile WebGL service initialized with performance optimization',
+      component: 'WebGLServiceMobile',
+      metadata: {
+        'deviceCapabilities': _performanceOptimizer.deviceCapabilities.toMap(),
+        'performancePreset': _performanceOptimizer.currentPreset.displayName,
+      });
     
     // CRITICAL FIX: Check and cleanup existing contexts before initialization
     await _cleanupExcessiveContexts();
@@ -56,9 +73,6 @@ class WebGLServiceMobile implements WebGLService {
   /// CRITICAL: Cleanup excessive WebGL contexts to prevent browser crashes
   Future<void> _cleanupExcessiveContexts() async {
     try {
-      // Use context manager for cleanup
-      await _contextManager.cleanupExcessiveContexts();
-      
       // Legacy cleanup for backward compatibility
       if (_activeContexts.length >= _maxContexts) {
         AppLogger.warning('Too many WebGL contexts detected (${_activeContexts.length}), cleaning up oldest',
@@ -202,13 +216,15 @@ class WebGLServiceMobile implements WebGLService {
       for (final entry in _activeIframes.entries) {
         try {
           final iframe = entry.value;
-          // Send cleanup message before removing
-          iframe.contentWindow?.postMessage({
-            'type': 'dispose_context',
-            'viewerId': entry.key,
-            'source': 'flutter',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-          }, '*');
+          // Send cleanup message using SecurityManager
+          _securityManager.sendSecureMessage(
+            iframe.contentWindow,
+            {
+              'type': 'dispose_context',
+              'viewerId': entry.key,
+            },
+            '*',
+          );
           
           // Remove iframe from DOM
           iframe.remove();
@@ -224,6 +240,10 @@ class WebGLServiceMobile implements WebGLService {
       _globalIframes.clear();
       _activeContexts.clear();
       _contextCounter = 0;
+      
+      // Dispose managers
+      _securityManager.dispose();
+      _performanceOptimizer.dispose();
       
       AppLogger.info('WebGL resource cleanup completed',
         component: 'WebGLServiceMobile');
@@ -257,7 +277,7 @@ class WebGLServiceMobile implements WebGLService {
       onLoaded: onLoaded,
       onError: onError,
       service: this,
-      contextManager: _contextManager,
+      memoryManager: _memoryManager,
     );
   }
   
@@ -349,18 +369,68 @@ class WebGLServiceMobile implements WebGLService {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
       
-      // Send message to iframe using postMessage without JS interop
-      iframe.contentWindow?.postMessage(message, '*');
+      // Use SecurityManager to send secure message
+      final success = _securityManager.sendSecureMessage(
+        iframe.contentWindow,
+        message,
+        '*', // Allow any origin for mobile compatibility
+      );
       
-      AppLogger.debug('Sent mobile message: $type',
-        component: 'WebGLServiceMobile',
-        metadata: {'viewerId': viewerId, 'type': type});
+      if (success) {
+        AppLogger.debug('Sent secure mobile message: $type',
+          component: 'WebGLServiceMobile',
+          metadata: {'viewerId': viewerId, 'type': type});
+      } else {
+        AppLogger.warning('Failed to send secure mobile message: $type',
+          component: 'WebGLServiceMobile',
+          metadata: {'viewerId': viewerId, 'type': type});
+      }
     } catch (e) {
       AppLogger.error('Failed to send mobile message',
         component: 'WebGLServiceMobile',
         error: e,
         metadata: {'viewerId': viewerId, 'type': type});
     }
+  }
+  
+  /// Send performance settings to Three.js
+  void sendPerformanceSettings(String viewerId) {
+    final settings = _performanceOptimizer.getPerformanceSettings();
+    _sendMobileMessage(viewerId, 'performance_settings', settings);
+  }
+  
+  /// Update performance metrics from Three.js
+  void updatePerformanceMetrics(String viewerId, double fps, double memoryMB) {
+    _performanceOptimizer.updatePerformanceMetrics(fps, memoryMB);
+    
+    // Send updated settings if quality changed
+    final currentSettings = _performanceOptimizer.getPerformanceSettings();
+    _sendMobileMessage(viewerId, 'performance_update', {
+      'fps': fps,
+      'memoryMB': memoryMB,
+      'settings': currentSettings,
+      'stats': _performanceOptimizer.getPerformanceStats(),
+    });
+  }
+  
+  /// Get device-specific touch scaling factors
+  Map<String, double> getTouchScalingFactors() {
+    return _performanceOptimizer.getTouchScalingFactors();
+  }
+  
+  /// Set performance preset
+  void setPerformancePreset(PerformancePreset preset) {
+    _performanceOptimizer.setPerformancePreset(preset);
+    
+    // Send updated settings to all active viewers
+    for (final viewerId in _activeIframes.keys) {
+      sendPerformanceSettings(viewerId);
+    }
+  }
+  
+  /// Enable/disable adaptive quality scaling
+  void setAdaptiveQualityEnabled(bool enabled) {
+    _performanceOptimizer.setAdaptiveQualityEnabled(enabled);
   }
   
   /// Register iframe for mobile communication
@@ -372,19 +442,18 @@ class WebGLServiceMobile implements WebGLService {
       _unregisterIframe(viewerId);
     }
     
-    // Create context through context manager
-    _contextManager.createContext(viewerId).then((contextId) {
-      // Register in both local and global tracking (legacy support)
-      _activeIframes[viewerId] = iframe;
-      _globalIframes[contextId] = iframe;
-      _activeContexts.add(contextId);
-      
-      // Register iframe with context manager
-      _contextManager.registerIframe(contextId, iframe);
-      
-      // Set context ID as iframe attribute for tracking
-      NullSafetyLayer.safeSetAttribute(iframe, 'data-context-id', contextId);
-      NullSafetyLayer.safeSetAttribute(iframe, 'data-viewer-id', viewerId);
+    // Create context through memory manager
+    final contextId = 'webgl_context_${DateTime.now().millisecondsSinceEpoch}';
+    _memoryManager.registerWebGLContext(contextId);
+    
+    // Register in both local and global tracking (legacy support)
+    _activeIframes[viewerId] = iframe;
+    _globalIframes[contextId] = iframe;
+    _activeContexts.add(contextId);
+    
+    // Set context ID as iframe attribute for tracking
+    NullSafetyLayer.safeSetAttribute(iframe, 'data-context-id', contextId);
+    NullSafetyLayer.safeSetAttribute(iframe, 'data-viewer-id', viewerId);
       
       AppLogger.info('Registered iframe for mobile controls',
         component: 'WebGLServiceMobile',
@@ -394,12 +463,6 @@ class WebGLServiceMobile implements WebGLService {
           'totalContexts': _activeContexts.length,
           'maxContexts': _maxContexts,
         });
-    }).catchError((error) {
-      AppLogger.error('Failed to create context for iframe registration',
-        component: 'WebGLServiceMobile',
-        error: error,
-        metadata: {'viewerId': viewerId});
-    });
   }
   
   /// Unregister iframe
@@ -426,9 +489,9 @@ class WebGLServiceMobile implements WebGLService {
           // Ignore postMessage errors during cleanup
         }
         
-        // Dispose context through context manager
+        // Dispose context through memory manager
         if (contextId != null) {
-          _contextManager.disposeContext(contextId);
+          _memoryManager.unregisterWebGLContext(contextId);
           _globalIframes.remove(contextId);
           _activeContexts.remove(contextId);
         }
@@ -467,15 +530,13 @@ class WebGLServiceMobile implements WebGLService {
     }
   }
 }
-
-/// Mobile-optimized WebGL viewer widget with gaming controls
 class MobileWebGLViewerWidget extends StatefulWidget {
   final String url;
   final String title;
   final VoidCallback? onLoaded;
   final Function(String)? onError;
   final WebGLServiceMobile service;
-  final WebGLContextManager contextManager;
+  final MemoryManager memoryManager;
   
   const MobileWebGLViewerWidget({
     super.key,
@@ -484,7 +545,7 @@ class MobileWebGLViewerWidget extends StatefulWidget {
     this.onLoaded,
     this.onError,
     required this.service,
-    required this.contextManager,
+    required this.memoryManager,
   });
   
   @override
@@ -508,19 +569,25 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
   }
   
   void _setupMessageListener() {
-    // Listen for messages from Three.js
-    _messageSubscription = html.window.onMessage.listen((event) {
-      try {
-        final data = event.data;
-        if (data is Map && data['source'] == 'threejs') {
-          _handleThreeJsMessage(Map<String, dynamic>.from(data));
+    // Setup secure message listener using SecurityManager
+    _messageSubscription = widget.service._securityManager.setupSecureMessageListener(
+      (Map<String, dynamic> validatedMessage) {
+        try {
+          if (validatedMessage['source'] == 'threejs') {
+            _handleThreeJsMessage(validatedMessage);
+          }
+        } catch (e) {
+          AppLogger.warning('Error processing validated message from Three.js',
+            component: 'MobileWebGLViewer',
+            error: e);
         }
-      } catch (e) {
-        AppLogger.warning('Error processing message from Three.js',
-          component: 'MobileWebGLViewer',
-          error: e);
-      }
-    });
+      },
+      customAllowedOrigins: [
+        'https://localhost',
+        'https://127.0.0.1',
+        html.window.location.origin, // Allow same origin
+      ],
+    );
   }
   
   void _handleThreeJsMessage(Map<String, dynamic> data) {
@@ -540,6 +607,8 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
         break;
       case 'mobile_controls_enabled':
         widget.service.enableMobileControls(_viewerId);
+        // Send initial performance settings
+        widget.service.sendPerformanceSettings(_viewerId);
         break;
       case 'mobile_controls_disabled':
         widget.service.disableMobileControls(_viewerId);
@@ -549,6 +618,9 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
         break;
       case 'mobile_performance_update':
         _handlePerformanceUpdate(payload ?? {});
+        break;
+      case 'performance_metrics':
+        _handlePerformanceMetrics(payload ?? {});
         break;
       default:
         AppLogger.debug('Unknown Three.js message type: $type',
@@ -595,6 +667,28 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
     AppLogger.debug('Performance update from Three.js',
       component: 'MobileWebGLViewer',
       metadata: data);
+  }
+  
+  void _handlePerformanceMetrics(Map<String, dynamic> data) {
+    try {
+      final fps = (data['fps'] as num?)?.toDouble() ?? 60.0;
+      final memoryMB = (data['memoryMB'] as num?)?.toDouble() ?? 0.0;
+      
+      // Update performance optimizer with metrics
+      widget.service.updatePerformanceMetrics(_viewerId, fps, memoryMB);
+      
+      AppLogger.debug('Performance metrics updated',
+        component: 'MobileWebGLViewer',
+        metadata: {
+          'viewerId': _viewerId,
+          'fps': fps,
+          'memoryMB': memoryMB,
+        });
+    } catch (e) {
+      AppLogger.warning('Error handling performance metrics: $e',
+        component: 'MobileWebGLViewer',
+        error: e);
+    }
   }
   
   void _registerViewer() {
@@ -672,17 +766,11 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
         NullSafetyLayer.safeRemoveElement(loadingDiv);
       }
       
-      // Create the actual iframe using null safety layer
-      final iframe = NullSafetyLayer.createSafeIframe(
+      // Create the actual iframe using SecurityManager for enhanced security
+      final iframe = widget.service._securityManager.createSecureIframe(
         src: widget.service._buildThreeJsViewerUrl(widget.url),
         id: 'mobile-webgl-iframe-${_viewerId}',
-        attributes: {
-          'loading': 'lazy',
-          'referrerpolicy': 'no-referrer-when-downgrade',
-          'sandbox': 'allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-orientation-lock',
-          'allow': 'accelerometer; gyroscope; magnetometer; xr-spatial-tracking; gamepad',
-        },
-        styles: {
+        additionalStyles: {
           'border': 'none',
           'width': '100%',
           'height': '100%',
@@ -690,11 +778,12 @@ class _MobileWebGLViewerWidgetState extends State<MobileWebGLViewerWidget> {
       );
       
       if (iframe == null) {
-        throw StateError('Failed to create iframe using null safety layer');
+        throw StateError('Failed to create secure iframe using SecurityManager');
       }
       
-      // Skip iframe validation for mobile - let the browser handle compatibility
-      AppLogger.info('Iframe created successfully for mobile, skipping validation', component: 'WebGLServiceMobile');
+      AppLogger.info('Secure iframe created successfully for mobile', 
+        component: 'MobileWebGLViewer',
+        metadata: {'viewerId': _viewerId});
       
       // Add iframe to container using null safety
       if (!NullSafetyLayer.safeAppendChild(container, iframe)) {

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../logging/app_logger.dart';
 
 /// Fix for screen refreshing issues
 /// 

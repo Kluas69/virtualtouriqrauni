@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../animation/animation_config.dart';
 import '../state/futuristic_ui_state.dart';
-import 'enhanced_glassmorphic_container.dart';
+import 'unified_glassmorphic_container.dart';
 
 /// Smart search bar with AI suggestions and voice input
 class SmartSearchBar extends StatefulWidget {
@@ -372,9 +372,8 @@ class _SmartSearchBarState extends State<SmartSearchBar>
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
-              return SearchBarGlassmorphicContainer(
+              return UnifiedGlassmorphicContainer.searchBar(
                 isDark: widget.isDark,
-                isExpanded: _isExpanded,
                 isFocused: _isFocused,
                 child: SizedBox(
                   width: widget.width,

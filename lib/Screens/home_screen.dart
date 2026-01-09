@@ -15,8 +15,11 @@ import 'package:virtualtouriu/core/widgets/stat_card.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/responsive/Responsive_Layout.dart';
 import 'package:virtualtouriu/themes/themes.dart';
-import 'package:virtualtouriu/Screens/location_detail_screen.dart';
+import 'package:virtualtouriu/core/routing/app_routes.dart';
+import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
 import 'package:virtualtouriu/core/widgets/google_style_tour_button.dart';
+import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
+import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,26 +29,7 @@ class HomeScreen extends StatefulWidget {
 
   // Static methods that can be accessed from other classes
   static void navigateToCategories(BuildContext context) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder:
-            (context, animation, secondaryAnimation) =>
-                const CategoriesScreen(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = Offset(1.0, 0.0);
-          const end = Offset.zero;
-          const curve = Curves.easeInOutCubic;
-          var tween = Tween(
-            begin: begin,
-            end: end,
-          ).chain(CurveTween(curve: curve));
-          var offsetAnimation = animation.drive(tween);
-          return SlideTransition(position: offsetAnimation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 400),
-      ),
-    );
+    AppNavigator.toCategories(context);
   }
 
   static Widget buildHeroSection({
@@ -479,31 +463,9 @@ class HomeScreen extends StatefulWidget {
                       data: effectiveCards[cardIndex],
                       isHovered: isSelected,
                       onTap: () {
-                        Navigator.push(
+                        NavigationHelpers.navigateToLocation(
                           context,
-                          PageRouteBuilder(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    LocationDetailScreen(
-                                      locationData: effectiveCards[cardIndex],
-                                      locationName: '',
-                                      imagePath: '',
-                                    ),
-                            transitionsBuilder: (
-                              context,
-                              animation,
-                              secondaryAnimation,
-                              child,
-                            ) {
-                              return FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              );
-                            },
-                            transitionDuration: const Duration(
-                              milliseconds: 300,
-                            ),
-                          ),
+                          effectiveCards[cardIndex],
                         );
                       },
                     ),
@@ -518,7 +480,7 @@ class HomeScreen extends StatefulWidget {
   }
 }
 
-class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin, PerformanceOptimizedWidget {
   // Static future to prevent recreation on rebuilds
   static final Future<void> _initializationFuture = AppConstants.initializationFuture.timeout(
     const Duration(seconds: 15),
@@ -657,11 +619,26 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
         return Scaffold(
           backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFFAFAFA),
-          body: ResponsiveLayout(
-            key: const ValueKey('home_responsive_layout'),
-            mobileBody: MobileHomeScreenOptimized(key: const ValueKey('mobile_home')),
-            tabletBody: TabletHomeScreen(key: const ValueKey('tablet_home')),
-            desktopBody: DesktopHomeScreen(key: const ValueKey('desktop_home')),
+          body: AdaptiveLayout(
+            builder: (context, config) {
+              // Use new responsive system instead of old ResponsiveLayout
+              if (config.isMobile) {
+                return RepaintBoundary(
+                  key: const ValueKey('mobile_home'),
+                  child: MobileHomeScreenOptimized(),
+                );
+              } else if (config.isTablet) {
+                return RepaintBoundary(
+                  key: const ValueKey('tablet_home'),
+                  child: TabletHomeScreen(),
+                );
+              } else {
+                return RepaintBoundary(
+                  key: const ValueKey('desktop_home'),
+                  child: DesktopHomeScreen(),
+                );
+              }
+            },
           ),
         );
       },

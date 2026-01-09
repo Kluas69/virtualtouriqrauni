@@ -9,9 +9,10 @@ import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/widgets/custom_button.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
-import 'package:virtualtouriu/core/utils/image_utils.dart';
 import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/themes/themes.dart';
+import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
+import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
 
 class LocationDetailScreen extends StatefulWidget {
   final String locationName;
@@ -30,7 +31,7 @@ class LocationDetailScreen extends StatefulWidget {
 }
 
 class _LocationDetailScreenState extends State<LocationDetailScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, PerformanceOptimizedWidget {
   final _scrollController = ScrollController();
   late final List<Map<String, dynamic>> _features;
 
@@ -208,10 +209,11 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             const Text(' 3D Classroom'),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text(
               'You\'re about to enter a professional 3D classroom environment powered by our advanced Three.js game engine.',
               style: TextStyle(fontWeight: FontWeight.w500),
@@ -281,6 +283,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             ),
           ],
         ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -335,24 +338,25 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
 
     final theme = Theme.of(context);
     final isDark = context.watch<ThemeProvider>().isDark;
-    final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-    final isTablet = size.width >= 600 && size.width < 900;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      body: Stack(
-        children: [
-          _buildBackground(isDark),
-          CustomScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              _buildAppBar(isDark, theme, isMobile),
-              _buildContent(theme, isDark, size, isMobile, isTablet),
+      body: AdaptiveLayout(
+        builder: (context, config) {
+          return Stack(
+            children: [
+              _buildBackground(isDark),
+              CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  _buildAppBar(isDark, theme, config),
+                  _buildContent(theme, isDark, config),
+                ],
+              ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -375,9 +379,9 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     );
   }
 
-  Widget _buildAppBar(bool isDark, ThemeData theme, bool isMobile) {
+  Widget _buildAppBar(bool isDark, ThemeData theme, AdaptiveConfig config) {
     return SliverAppBar(
-      expandedHeight: isMobile ? 350 : 500,
+      expandedHeight: config.isMobile ? 350 : 500,
       pinned: true,
       elevation: 0,
       backgroundColor:
@@ -437,18 +441,20 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Use optimized image loader on mobile
-            isMobile
-                ? ResponsiveImageLoader.loadOptimizedImage(
-                  imagePath: widget.locationData.imagePath,
-                  fit: BoxFit.cover,
-                )
-                : Image.asset(
-                  widget.locationData.imagePath,
-                  fit: BoxFit.cover,
-                  cacheWidth: 1200,
-                  cacheHeight: 800,
-                ),
+            // Use optimized image loader
+            config.isMobile
+                ? OptimizedImage(
+                    imagePath: widget.locationData.imagePath,
+                    fit: BoxFit.cover,
+                    width: config.width,
+                    height: config.isMobile ? 350 : 500,
+                  )
+                : OptimizedImage(
+                    imagePath: widget.locationData.imagePath,
+                    fit: BoxFit.cover,
+                    width: config.width,
+                    height: config.isMobile ? 350 : 500,
+                  ),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -460,8 +466,8 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             ),
             Positioned(
               bottom: 32,
-              left: isMobile ? 20 : 32,
-              right: isMobile ? 20 : 32,
+              left: ResponsiveSpacing.medium(config),
+              right: ResponsiveSpacing.medium(config),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -472,10 +478,10 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                             : 'CAMPUS',
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  ResponsiveText(
                     widget.locationData.name,
+                    fontSizeBuilder: (config) => config.isMobile ? 32 : 48,
                     style: GoogleFonts.roboto(
-                      fontSize: isMobile ? 32 : 48,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
                       height: 1.1,
@@ -501,20 +507,13 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
   Widget _buildContent(
     ThemeData theme,
     bool isDark,
-    Size size,
-    bool isMobile,
-    bool isTablet,
+    AdaptiveConfig config,
   ) {
     return SliverToBoxAdapter(
-      child: Padding(
+      child: ResponsiveContainer(
         padding: EdgeInsets.symmetric(
-          horizontal:
-              isMobile
-                  ? 20
-                  : isTablet
-                  ? 32
-                  : 48,
-          vertical: isMobile ? 32 : 48,
+          horizontal: ResponsiveSpacing.medium(config),
+          vertical: config.isMobile ? 32 : 48,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,22 +527,22 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                       : 'Start Virtual Tour',
                   onPressed: _openTour,
                   fontSize: 16,
-                  isMobile: isMobile,
-                  width: isMobile ? double.infinity : null,
+                  isMobile: config.isMobile,
+                  width: config.isMobile ? double.infinity : null,
                 ),
               ),
             ),
-            SizedBox(height: isMobile ? 40 : 48),
+            SizedBox(height: ResponsiveSpacing.extraLarge(config)),
             FadeInUp(
               duration: const Duration(milliseconds: 700),
               delay: const Duration(milliseconds: 100),
-              child: _buildAboutSection(theme, isMobile, isDark),
+              child: _buildAboutSection(theme, config, isDark),
             ),
-            SizedBox(height: isMobile ? 48 : 56),
+            SizedBox(height: ResponsiveSpacing.extraLarge(config)),
             FadeInUp(
               duration: const Duration(milliseconds: 800),
               delay: const Duration(milliseconds: 200),
-              child: _buildFeaturesSection(theme, isMobile, isTablet, isDark),
+              child: _buildFeaturesSection(theme, config, isDark),
             ),
             const SizedBox(height: 40),
           ],
@@ -552,18 +551,18 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
     );
   }
 
-  Widget _buildAboutSection(ThemeData theme, bool isMobile, bool isDark) {
+  Widget _buildAboutSection(ThemeData theme, AdaptiveConfig config, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TagBadge(text: 'ABOUT THIS LOCATION', fontSize: 11),
         const SizedBox(height: 16),
-        Text(
+        ResponsiveText(
           widget.locationData.description.isNotEmpty
               ? widget.locationData.description
               : 'Experience the vibrant and modern atmosphere of ${widget.locationData.name} at Iqra University Islamabad Campus. This space is designed to inspire learning, collaboration, and community engagement.',
+          fontSizeBuilder: (config) => config.isMobile ? 15 : 18,
           style: GoogleFonts.roboto(
-            fontSize: isMobile ? 15 : 18,
             height: 1.7,
             color: isDark 
                 ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
@@ -577,17 +576,16 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
 
   Widget _buildFeaturesSection(
     ThemeData theme,
-    bool isMobile,
-    bool isTablet,
+    AdaptiveConfig config,
     bool isDark,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        ResponsiveText(
           'Key Features',
+          fontSizeBuilder: (config) => config.isMobile ? 24 : 36,
           style: GoogleFonts.roboto(
-            fontSize: isMobile ? 24 : 36,
             fontWeight: FontWeight.w900,
             color: isDark 
                 ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
@@ -597,129 +595,110 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           ),
         ),
         const SizedBox(height: 8),
-        Text(
+        ResponsiveText(
           'What makes this location special',
+          fontSizeBuilder: (config) => config.isMobile ? 14 : 16,
           style: GoogleFonts.roboto(
-            fontSize: isMobile ? 14 : 16,
             color: isDark 
                 ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
                 : const Color(0xFF49454F),
             letterSpacing: 0.1,
           ),
         ),
-        SizedBox(height: isMobile ? 24 : 32),
-        _buildFeatureGrid(isMobile, isTablet, isDark, theme),
+        SizedBox(height: ResponsiveSpacing.large(config)),
+        _buildFeatureGrid(config, isDark, theme),
       ],
     );
   }
 
   Widget _buildFeatureGrid(
-    bool isMobile,
-    bool isTablet,
+    AdaptiveConfig config,
     bool isDark,
     ThemeData theme,
   ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount =
-            isMobile
-                ? 1
-                : isTablet
-                ? 2
-                : 3;
-        final spacing = isMobile ? 16.0 : 20.0;
+    return ResponsiveGrid(
+      spacing: ResponsiveSpacing.small(config),
+      runSpacing: ResponsiveSpacing.small(config),
+      forceColumns: config.gridColumns.clamp(1, 3),
+      children: _features.asMap().entries.map((entry) {
+        final index = entry.key;
+        final feature = entry.value;
 
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children:
-              _features.asMap().entries.map((entry) {
-                final index = entry.key;
-                final feature = entry.value;
-
-                return FadeInUp(
-                  duration: const Duration(milliseconds: 600),
-                  delay: Duration(milliseconds: 300 + (index * 100)),
-                  child: Container(
-                    width:
-                        isMobile
-                            ? constraints.maxWidth
-                            : (constraints.maxWidth -
-                                    spacing * (crossAxisCount - 1)) /
-                                crossAxisCount,
-                    padding: EdgeInsets.all(isMobile ? 20 : 24),
-                    decoration: BoxDecoration(
-                      // Material Design 3 surface container colors
-                      color:
-                          isDark
-                              ? const Color(0xFF2D2D30) // Dark surface variant
-                              : const Color(0xFFF7F2FA), // Light surface variant
-                      borderRadius: BorderRadius.circular(20),
-                      // Material Design 3 border
-                      border: Border.all(
-                        color:
-                            isDark
-                                ? const Color(0xFF49454F).withValues(alpha: 0.12)
-                                : const Color(0xFF79747E).withValues(alpha: 0.12),
-                        width: 1,
-                      ),
-                      // Material Design 3 shadows
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark 
-                              ? Colors.black.withValues(alpha: 0.2)
-                              : Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4285F4).withValues(alpha: 0.1), // Google Blue matching chatbot
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            feature['icon'] ?? Icons.star_outline,
-                            color: const Color(0xFF4285F4), // Google Blue matching chatbot
-                            size: isMobile ? 24 : 28,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          feature['title'] ?? 'Feature',
-                          style: GoogleFonts.roboto(
-                            fontSize: isMobile ? 16 : 18,
-                            fontWeight: FontWeight.w700,
-                            color: isDark 
-                                ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
-                                : const Color(0xFF1C1B1F),
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          feature['description'] ?? 'Description',
-                          style: GoogleFonts.roboto(
-                            fontSize: isMobile ? 13 : 14,
-                            height: 1.5,
-                            color: isDark 
-                                ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
-                                : const Color(0xFF49454F),
-                            letterSpacing: 0.1,
-                          ),
-                        ),
-                      ],
-                    ),
+        return FadeInUp(
+          duration: const Duration(milliseconds: 600),
+          delay: Duration(milliseconds: 300 + (index * 100)),
+          child: Container(
+            padding: EdgeInsets.all(ResponsiveSpacing.medium(config)),
+            decoration: BoxDecoration(
+              // Material Design 3 surface container colors
+              color:
+                  isDark
+                      ? const Color(0xFF2D2D30) // Dark surface variant
+                      : const Color(0xFFF7F2FA), // Light surface variant
+              borderRadius: BorderRadius.circular(20),
+              // Material Design 3 border
+              border: Border.all(
+                color:
+                    isDark
+                        ? const Color(0xFF49454F).withValues(alpha: 0.12)
+                        : const Color(0xFF79747E).withValues(alpha: 0.12),
+                width: 1,
+              ),
+              // Material Design 3 shadows
+              boxShadow: [
+                BoxShadow(
+                  color: isDark 
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4285F4).withValues(alpha: 0.1), // Google Blue matching chatbot
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              }).toList(),
+                  child: Icon(
+                    feature['icon'] ?? Icons.star_outline,
+                    color: const Color(0xFF4285F4), // Google Blue matching chatbot
+                    size: config.isMobile ? 24 : 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ResponsiveText(
+                  feature['title'] ?? 'Feature',
+                  fontSizeBuilder: (config) => config.isMobile ? 16 : 18,
+                  style: GoogleFonts.roboto(
+                    fontWeight: FontWeight.w700,
+                    color: isDark 
+                        ? const Color(0xFFE6E1E5) // Material Design 3 on-surface
+                        : const Color(0xFF1C1B1F),
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ResponsiveText(
+                  feature['description'] ?? 'Description',
+                  fontSizeBuilder: (config) => config.isMobile ? 13 : 14,
+                  style: GoogleFonts.roboto(
+                    height: 1.5,
+                    color: isDark 
+                        ? const Color(0xFF938F99) // Material Design 3 on-surface-variant
+                        : const Color(0xFF49454F),
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
-      },
+      }).toList(),
     );
   }
 }
