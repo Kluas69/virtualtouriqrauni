@@ -110,21 +110,21 @@ export class RenderingSystem {
     }
     
     /**
-     * Create Three.js scene with professional settings
+     * Create Three.js scene with Professional Studio Settings
      */
     createScene() {
         this.scene = new THREE.Scene();
         
-        // Set background
-        this.scene.background = new THREE.Color(0x87CEEB); // Sky blue
+        // Professional studio background - neutral but appealing
+        this.scene.background = new THREE.Color(0x87ceeb); // Classic sky blue
         
-        // Enable fog for depth perception
-        this.scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
+        // Professional atmospheric fog for depth
+        this.scene.fog = new THREE.Fog(0x87ceeb, 60, 250); // Balanced fog distance
         
-        // Setup tone mapping for HDR
+        // Enable proper color management for professional results
         THREE.ColorManagement.enabled = true;
         
-        console.log('🌍 Professional scene created');
+        console.log('🌍 Professional Studio Scene Created');
     }
     
     /**
@@ -143,7 +143,7 @@ export class RenderingSystem {
     }
     
     /**
-     * Create WebGL renderer with optimized settings for baked lighting
+     * Create WebGL renderer with Professional Studio Settings
      */
     createRenderer() {
         this.renderer = new THREE.WebGLRenderer({
@@ -164,64 +164,94 @@ export class RenderingSystem {
         // SHADOWS DISABLED - Using baked lighting from .glb models
         this.renderer.shadowMap.enabled = false;
         
-        // Enhanced tone mapping for better visuals
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2; // Slightly brighter for better visibility
+        // Professional Studio-Quality Tone Mapping
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic tone mapping
+        this.renderer.toneMappingExposure = 1.2; // Bright and vibrant like professional renders
         
-        // Enable physically correct lights
+        // Professional Color Settings
+        this.renderer.gammaFactor = 2.2; // Standard gamma for accurate colors
+        
+        // Enable physically correct lights for professional results
         this.renderer.useLegacyLights = false;
+        this.renderer.physicallyCorrectLights = true;
         
-        // Output encoding for proper color space
+        // Professional color space
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         
-        // Enhanced rendering settings for better graphics
-        this.renderer.gammaFactor = 2.2;
-        this.renderer.physicallyCorrectLights = true;
+        // Enhanced rendering settings for professional quality
+        this.renderer.sortObjects = true; // Better depth sorting
+        this.renderer.logarithmicDepthBuffer = false; // Keep false for performance
         
         // Append to container
         this.container.appendChild(this.renderer.domElement);
         
-        console.log('🖥️ Optimized WebGL renderer created (shadows disabled, baked lighting)');
+        console.log('🖥️ Professional Studio-Quality WebGL Renderer Created');
     }
     
     /**
-     * Setup optimized lighting system (no shadows - using baked lighting)
+     * Setup Professional Studio-Quality Lighting System
      */
     setupLighting() {
-        // Enhanced ambient light for better base illumination
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Increased intensity
+        console.log('� Seetting up Professional Studio-Quality Lighting System...');
+        
+        // 1. PROFESSIONAL AMBIENT LIGHTING - Provides base illumination
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Balanced ambient
         this.scene.add(ambientLight);
         this.lights.set('ambient', ambientLight);
         
-        // Directional light (sun) WITHOUT shadows for performance
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2); // Increased intensity
-        directionalLight.position.set(10, 10, 5);
-        directionalLight.castShadow = false; // DISABLED - using baked lighting
+        // 2. KEY LIGHT (Main Sun) - Primary light source with warm professional color
+        const keyLight = new THREE.DirectionalLight(0xfff8dc, 1.8); // Warm white, strong intensity
+        keyLight.position.set(15, 20, 10);
+        keyLight.castShadow = false; // Using baked lighting for performance
+        this.scene.add(keyLight);
+        this.lights.set('key', keyLight);
         
-        this.scene.add(directionalLight);
-        this.lights.set('directional', directionalLight);
-        
-        // Enhanced hemisphere light for natural outdoor lighting
-        const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x8B4513, 0.6); // Increased intensity
-        this.scene.add(hemisphereLight);
-        this.lights.set('hemisphere', hemisphereLight);
-        
-        // Additional fill light for better visibility
-        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        fillLight.position.set(-5, 5, -5);
+        // 3. FILL LIGHT - Softens shadows and provides secondary illumination
+        const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.8); // Cool blue fill
+        fillLight.position.set(-10, 15, 5);
         fillLight.castShadow = false;
         this.scene.add(fillLight);
         this.lights.set('fill', fillLight);
         
-        console.log('💡 Optimized lighting system setup (shadows disabled, enhanced illumination)');
+        // 4. RIM LIGHT - Creates edge lighting for depth and separation
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.6); // Pure white rim light
+        rimLight.position.set(0, 10, -15);
+        rimLight.castShadow = false;
+        this.scene.add(rimLight);
+        this.lights.set('rim', rimLight);
+        
+        // 5. PROFESSIONAL HEMISPHERE LIGHT - Natural sky-ground gradient
+        const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.7); // Sky to earth
+        this.scene.add(hemisphereLight);
+        this.lights.set('hemisphere', hemisphereLight);
+        
+        // 6. ACCENT POINT LIGHTS - For local illumination and atmosphere
+        const accentLight1 = new THREE.PointLight(0xfff8dc, 0.8, 30); // Warm accent
+        accentLight1.position.set(8, 6, 8);
+        this.scene.add(accentLight1);
+        this.lights.set('accent1', accentLight1);
+        
+        const accentLight2 = new THREE.PointLight(0xe6f3ff, 0.6, 25); // Cool accent
+        accentLight2.position.set(-8, 5, -8);
+        this.scene.add(accentLight2);
+        this.lights.set('accent2', accentLight2);
+        
+        // 7. BOUNCE LIGHT - Simulates light bouncing from surfaces
+        const bounceLight = new THREE.DirectionalLight(0xffeaa7, 0.4); // Warm bounce
+        bounceLight.position.set(5, -3, 12); // From below-forward
+        bounceLight.castShadow = false;
+        this.scene.add(bounceLight);
+        this.lights.set('bounce', bounceLight);
+        
+        console.log('💡 Professional Studio-Quality Lighting System Complete');
     }
     
     /**
-     * Setup post-processing pipeline with safe module loading
+     * Setup GTA 5-style post-processing pipeline with realistic effects
      */
     async setupPostProcessing() {
         try {
-            console.log('🎭 Setting up post-processing pipeline...');
+            console.log('🎭 Setting up GTA 5-style post-processing pipeline...');
             
             // Load post-processing modules safely
             await this.loadPostProcessingModules();
@@ -240,7 +270,7 @@ export class RenderingSystem {
                 this.composer.addPass(this.renderPass);
             }
             
-            // SSAO pass (screen-space ambient occlusion)
+            // SSAO pass (screen-space ambient occlusion) - GTA 5 style subtle AO
             if (this.qualitySettings.ssao && this.SSAOPass) {
                 try {
                     this.ssaoPass = new this.SSAOPass(
@@ -249,35 +279,37 @@ export class RenderingSystem {
                         this.container.clientWidth, 
                         this.container.clientHeight
                     );
-                    this.ssaoPass.kernelRadius = 8;
-                    this.ssaoPass.minDistance = 0.005;
-                    this.ssaoPass.maxDistance = 0.1;
+                    
+                    // GTA 5-style SSAO settings - more subtle and realistic
+                    this.ssaoPass.kernelRadius = 12; // Larger radius for softer AO
+                    this.ssaoPass.minDistance = 0.002; // Finer detail
+                    this.ssaoPass.maxDistance = 0.08; // Shorter range for realism
                     
                     // Handle Three.js version compatibility for SSAO output
                     if (this.SSAOPass.OUTPUT && this.SSAOPass.OUTPUT.Beauty !== undefined) {
                         this.ssaoPass.output = this.SSAOPass.OUTPUT.Beauty;
                     } else if (this.ssaoPass.output !== undefined) {
-                        // Fallback for newer Three.js versions
                         this.ssaoPass.output = 0; // Default output mode
                     }
                     
                     this.composer.addPass(this.ssaoPass);
-                    console.log('✅ SSAO pass added successfully');
+                    console.log('✅ GTA 5-style SSAO pass added successfully');
                 } catch (error) {
                     console.warn('⚠️ SSAO pass failed to initialize, skipping:', error.message);
                     this.qualitySettings.ssao = false;
                 }
             }
             
-            // Bloom pass (HDR bloom effect)
+            // Bloom pass (HDR bloom effect) - GTA 5 style subtle bloom
             if (this.qualitySettings.bloom && this.UnrealBloomPass) {
                 this.bloomPass = new this.UnrealBloomPass(
                     new THREE.Vector2(this.container.clientWidth, this.container.clientHeight),
-                    1.5,  // strength
-                    0.4,  // radius
-                    0.85  // threshold
+                    0.8,  // strength - more subtle like GTA 5
+                    0.6,  // radius - wider spread
+                    0.9   // threshold - higher threshold for realism
                 );
                 this.composer.addPass(this.bloomPass);
+                console.log('✅ GTA 5-style bloom pass added');
             }
             
             // Output pass (final tone mapping and gamma correction)
@@ -286,7 +318,7 @@ export class RenderingSystem {
                 this.composer.addPass(this.outputPass);
             }
             
-            console.log('✅ Post-processing pipeline setup complete');
+            console.log('✅ GTA 5-style post-processing pipeline setup complete');
             
         } catch (error) {
             console.error('❌ Post-processing setup failed:', error);
@@ -408,47 +440,50 @@ export class RenderingSystem {
     }
     
     /**
-     * Get quality settings for different levels with optimized performance
+     * Get high-resolution quality settings for different levels
      * @param {string} level - Quality level
-     * @returns {Object} Quality settings
+     * @returns {Object} Quality settings optimized for high-resolution graphics
      */
     getQualitySettings(level) {
         const settings = {
             low: {
-                shadowMapSize: 0, // Shadows disabled
-                antialias: false,
+                shadowMapSize: 0, // Shadows disabled for performance
+                antialias: true, // Keep antialias even on low
                 postProcessing: false,
                 ssao: false,
                 bloom: false,
-                maxPixelRatio: 1.0,
-                renderScale: 0.75,
-                textureQuality: 'low',
+                maxPixelRatio: 1.25, // High resolution even on low quality
+                renderScale: 0.8,
+                textureQuality: 'medium', // Upgraded from low
                 geometryLOD: 'low',
-                targetFPS: 30
+                targetFPS: 30,
+                toneMappingExposure: 1.0
             },
             medium: {
                 shadowMapSize: 0, // Shadows disabled
                 antialias: true,
                 postProcessing: true,
-                ssao: false,
+                ssao: false, // Disabled for medium to maintain performance
                 bloom: true,
-                maxPixelRatio: 1.5,
-                renderScale: 0.85,
-                textureQuality: 'medium',
+                maxPixelRatio: 1.5, // Higher resolution
+                renderScale: 0.9,
+                textureQuality: 'high', // Upgraded from medium
                 geometryLOD: 'medium',
-                targetFPS: 45
+                targetFPS: 45,
+                toneMappingExposure: 1.1
             },
             high: {
-                shadowMapSize: 0, // Shadows disabled
+                shadowMapSize: 0, // Shadows disabled but using baked lighting
                 antialias: true,
                 postProcessing: true,
-                ssao: true,
+                ssao: true, // Enable for high quality realism
                 bloom: true,
-                maxPixelRatio: 2.0,
+                maxPixelRatio: 2.0, // Maximum resolution
                 renderScale: 1.0,
-                textureQuality: 'high',
+                textureQuality: 'ultra', // Maximum quality
                 geometryLOD: 'high',
-                targetFPS: 60
+                targetFPS: 60,
+                toneMappingExposure: 1.2 // Bright and vibrant
             }
         };
         
@@ -520,42 +555,57 @@ export class RenderingSystem {
     }
     
     /**
-     * Apply quality settings to renderer (optimized for baked lighting)
+     * Apply high-resolution quality settings to renderer
      */
     applyQualitySettings() {
-        // Update pixel ratio
+        // Update pixel ratio for high resolution
         this.renderer.setPixelRatio(
             Math.min(window.devicePixelRatio, this.qualitySettings.maxPixelRatio)
         );
         
+        // Update tone mapping exposure based on quality level
+        this.renderer.toneMappingExposure = this.qualitySettings.toneMappingExposure || 1.2;
+        
         // Shadows are disabled - no shadow map updates needed
         
-        // Update post-processing effects
+        // Update post-processing effects with high-resolution settings
         if (this.composer) {
             if (this.ssaoPass) {
                 this.ssaoPass.enabled = this.qualitySettings.ssao;
+                if (this.qualitySettings.ssao) {
+                    // Adjust SSAO intensity based on quality
+                    const aoIntensity = this.options.qualityLevel === 'high' ? 0.6 : 0.4;
+                    if (this.ssaoPass.kernelRadius !== undefined) {
+                        this.ssaoPass.kernelRadius = this.options.qualityLevel === 'high' ? 16 : 12;
+                    }
+                }
             }
             if (this.bloomPass) {
                 this.bloomPass.enabled = this.qualitySettings.bloom;
+                if (this.qualitySettings.bloom) {
+                    // Adjust bloom settings based on quality for high-resolution effect
+                    this.bloomPass.strength = this.options.qualityLevel === 'high' ? 0.9 : 0.7;
+                    this.bloomPass.threshold = this.options.qualityLevel === 'high' ? 0.85 : 0.8;
+                }
             }
         }
         
-        // Apply texture quality settings
+        // Apply high-resolution texture quality settings
         this.applyTextureQuality(this.qualitySettings.textureQuality);
         
-        console.log(`🎯 Quality settings applied: ${this.options.qualityLevel} (shadows disabled)`);
+        console.log(`🎯 High-resolution quality settings applied: ${this.options.qualityLevel}`);
     }
     
     /**
-     * Apply texture quality settings
+     * Apply high-resolution texture quality settings
      * @param {string} quality - Texture quality level
      */
     applyTextureQuality(quality) {
         const qualityMap = {
-            low: { anisotropy: 1, maxTextureSize: 512 },
-            medium: { anisotropy: 4, maxTextureSize: 1024 },
-            high: { anisotropy: 8, maxTextureSize: 2048 },
-            ultra: { anisotropy: 16, maxTextureSize: 4096 }
+            low: { anisotropy: 2, maxTextureSize: 1024 }, // Upgraded from 1/512
+            medium: { anisotropy: 8, maxTextureSize: 2048 }, // Upgraded from 4/1024
+            high: { anisotropy: 16, maxTextureSize: 4096 }, // Upgraded from 8/2048
+            ultra: { anisotropy: 16, maxTextureSize: 8192 } // New ultra setting
         };
         
         const settings = qualityMap[quality] || qualityMap.medium;
@@ -565,7 +615,7 @@ export class RenderingSystem {
             this.renderer.capabilities.getMaxAnisotropy = () => settings.anisotropy;
         }
         
-        console.log(`🖼️ Texture quality set to: ${quality}`);
+        console.log(`🖼️ High-resolution texture quality set to: ${quality}`);
     }
     
     /**

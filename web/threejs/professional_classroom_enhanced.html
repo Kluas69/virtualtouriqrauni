@@ -155,24 +155,24 @@
             box-shadow: 0 6px 30px rgba(0, 255, 255, 0.5);
         }
 
-        /* Settings Panel */
+        /* Settings Panel - CS:GO Style Transparency */
         #settings-panel {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.75); /* More transparent like CS:GO */
             padding: 30px;
-            border-radius: 20px;
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(0, 255, 255, 0.4);
+            border-radius: 15px; /* Slightly less rounded for CS:GO feel */
+            backdrop-filter: blur(15px); /* Reduced blur for CS:GO style */
+            border: 1px solid rgba(0, 255, 255, 0.3); /* Thinner border */
             z-index: 150;
             min-width: 380px;
             max-width: 450px;
             max-height: 80vh;
             overflow-y: auto;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(0, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 255, 255, 0.15); /* Reduced glow */
             transform: translateX(-120%);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Faster transition */
         }
 
         #settings-panel.open {
@@ -209,11 +209,11 @@
         }
 
         .control-group {
-            margin-bottom: 25px;
-            padding: 20px;
-            background: rgba(0, 255, 255, 0.05);
-            border-radius: 15px;
-            border: 1px solid rgba(0, 255, 255, 0.2);
+            margin-bottom: 20px; /* Reduced spacing */
+            padding: 15px; /* Reduced padding */
+            background: rgba(0, 255, 255, 0.03); /* More subtle background */
+            border-radius: 10px; /* Less rounded */
+            border: 1px solid rgba(0, 255, 255, 0.15); /* More subtle border */
         }
 
         .control-group:last-child {
@@ -802,6 +802,20 @@
         </div>
 
         <div class="control-group">
+            <h3>🎮 Sensitivity</h3>
+            <div class="control-row">
+                <button onclick="decreaseSensitivity()">➖ Lower</button>
+                <button onclick="increaseSensitivity()">➕ Higher</button>
+            </div>
+            <div class="control-row single">
+                <button onclick="resetSensitivity()">🎯 Reset Default</button>
+            </div>
+            <div style="color: #00ffff; font-size: 12px; text-align: center; margin-top: 10px;">
+                <span id="sensitivity-display">Sensitivity: Normal</span>
+            </div>
+        </div>
+
+        <div class="control-group">
             <h3>� Graaphics</h3>
             <div class="control-row">
                 <button onclick="cycleQuality()">⚙️ Quality</button>
@@ -1147,7 +1161,7 @@
             }
         }
         
-        // Enhanced performance monitoring with Safari optimizations
+        // ===== OPTIMIZED PERFORMANCE MONITORING =====
         function updatePerformanceMonitor() {
             performanceMonitor.frameCount++;
             const currentTime = performance.now();
@@ -1159,50 +1173,9 @@
                 document.getElementById('fps-hud').textContent = performanceMonitor.fps;
                 document.getElementById('fps-counter').textContent = performanceMonitor.fps;
                 
-                // Safari-specific performance management
-                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-                const isMobile = isMobileDevice();
-                
-                if (isSafari && isMobile) {
-                    // Gentle performance management for Safari mobile - don't override user quality choice
-                    if (performanceMonitor.fps < 10 && qualityLevel > 0) {
-                        console.log(`⚠️ Safari: Very low FPS detected (${performanceMonitor.fps}) - consider reducing quality manually`);
-                        showNotification(`⚠️ Low FPS detected - try reducing quality manually`);
-                    }
-                    
-                    // Memory cleanup for Safari
-                    if (performanceMonitor.frameCount % 300 === 0) { // Every 5 seconds at 60fps
-                        try {
-                            if (window.gc) {
-                                window.gc();
-                            }
-                            // Force garbage collection hints
-                            if (renderer && renderer.info) {
-                                renderer.info.reset();
-                            }
-                        } catch (e) {
-                            console.warn('Safari memory cleanup failed:', e);
-                        }
-                    }
-                } else {
-                    // DISABLED: Automatic quality adjustment - let user control quality manually
-                    // Standard performance adjustment for other browsers
-                    // if (performanceMonitor.fps < 20 && qualityLevel > 0) {
-                    //     qualityLevel--;
-                    //     applyQualitySettings();
-                    //     console.log(`📉 Quality reduced to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
-                    //     showNotification(`📉 Quality reduced for better performance (FPS: ${performanceMonitor.fps})`);
-                    // } else if (performanceMonitor.fps > 50 && qualityLevel < 2) { // Changed from < 2 to < 2 for 3-level system
-                    //     qualityLevel++;
-                    //     applyQualitySettings();
-                    //     console.log(`📈 Quality increased to level ${qualityLevel} (FPS: ${performanceMonitor.fps})`);
-                    // }
-                }
-                
-                // Send performance data to Flutter (reduced frequency for Safari)
-                const messageInterval = isSafari ? 10000 : 5000; // 10s for Safari, 5s for others
+                // Send performance data to Flutter (optimized frequency)
                 if (window.parent && window.parent !== window && renderer && renderer.info && 
-                    performanceMonitor.frameCount % (messageInterval / 16.67) === 0) {
+                    performanceMonitor.frameCount % 300 === 0) { // Every 5 seconds
                     const info = renderer.info;
                     try {
                         window.parent.postMessage({
@@ -1228,11 +1201,14 @@
         // Game-like Player System
         const player = {
             position: { x: 0, y: 0.3, z: 5 }, // Start on floor level
-            size: { radius: 0.3, height: 0.9 },
+            size: { radius: 0.3, height: 1.2 },
             velocity: { x: 0, y: 0, z: 0 },
             speed: 3.5, // Optimized for realistic game movement
             jumpPower: 8, // Reduced for more realistic jumping
             onGround: true, // Start on ground
+            onRamp: false, // Track if player is on a ramp
+            onStairs: false, // Track if player is on stairs
+            previousY: 0.3, // Track previous Y position for direction detection
             mode: 'normal', // normal, bee, ant
             // Game-like movement
             moveForward: false,
@@ -1251,12 +1227,17 @@
             crouchSpeed: 0.7 // Speed multiplier when crouching
         };
         
-        // Game-like Camera System
+        // Game-like Camera System with Smoothing
         const cameraSystem = {
             pitch: 0, // Up/down rotation
             yaw: 0,   // Left/right rotation
             sensitivity: 0.002,
-            maxPitch: Math.PI / 2 - 0.1 // Prevent over-rotation
+            maxPitch: Math.PI / 2 - 0.1, // Prevent over-rotation
+            // Camera smoothing system to prevent shaking during stair transitions
+            smoothedY: 0.3, // Smoothed Y position for camera
+            smoothingSpeed: 8.0, // How fast camera follows player Y changes (lower = smoother)
+            minSmoothingThreshold: 0.001, // Minimum change to trigger smoothing
+            lastPlayerY: 0.3 // Track last player Y for smooth interpolation
         };
         
         // Input System
@@ -1620,33 +1601,78 @@
         
         // Removed functions: showQualityInfo, testQualitySystem, testSettingsButton - cleaned up for professional UI
         
-        // ===== QUALITY SYSTEM INITIALIZATION =====
+        // ===== HIGH RESOLUTION GRAPHICS SYSTEM =====
         function initializeQualitySystem() {
-            console.log('🎯 Initializing Quality System...');
+            console.log('🎯 Initializing High Resolution Graphics System...');
             
-            // Detect device capabilities and set appropriate default quality
-            const isMobile = isMobileDevice();
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            // Detect device capabilities for optimal quality
+            const deviceCapabilities = detectDeviceCapabilities();
             
-            // Set default quality based on device - BUT ALLOW USER TO OVERRIDE
-            if (isSafari && isMobile) {
-                qualityLevel = 1; // Start with medium quality on Safari mobile (user can change)
-                console.log('🍎 Safari mobile detected - defaulting to MEDIUM quality (user can override)');
-            } else if (isMobile) {
-                qualityLevel = 1; // Medium quality for other mobile devices
-                console.log('📱 Mobile device detected - defaulting to MEDIUM quality');
+            // Set initial quality based on device capabilities
+            if (deviceCapabilities.isMobile) {
+                qualityLevel = deviceCapabilities.isLowEnd ? 0 : 1; // Low or Medium for mobile
             } else {
-                qualityLevel = 2; // High quality for desktop
-                console.log('🖥️ Desktop detected - defaulting to HIGH quality');
+                // Desktop - check GPU and memory
+                if (deviceCapabilities.memoryGB >= 8 && deviceCapabilities.cores >= 4) {
+                    qualityLevel = 2; // High quality for powerful desktops
+                } else if (deviceCapabilities.memoryGB >= 4) {
+                    qualityLevel = 1; // Medium for average desktops
+                } else {
+                    qualityLevel = 0; // Low for older desktops
+                }
             }
+            
+            console.log(`🎯 Initial quality level set to: ${qualityLevel} (${['Low', 'Medium', 'High'][qualityLevel]})`);
+            console.log('📊 Device capabilities:', deviceCapabilities);
             
             // Apply initial quality settings
             setTimeout(() => {
                 if (renderer && scene) {
-                    applyQualitySettings();
-                    console.log('✅ Initial quality settings applied');
+                    applyHighResolutionSettings();
+                    console.log('✅ High resolution graphics settings applied');
                 }
             }, 100);
+        }
+        
+        function detectDeviceCapabilities() {
+            const capabilities = {
+                isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                isLowEnd: false,
+                memoryGB: navigator.deviceMemory || 4,
+                cores: navigator.hardwareConcurrency || 4,
+                pixelRatio: window.devicePixelRatio || 1,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                webglVersion: 'unknown',
+                maxTextureSize: 2048,
+                gpuTier: 'unknown'
+            };
+            
+            // Detect WebGL capabilities
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                
+                if (gl) {
+                    capabilities.webglVersion = gl.getParameter(gl.VERSION);
+                    capabilities.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+                    
+                    // Estimate GPU tier based on renderer info
+                    const renderer = gl.getParameter(gl.RENDERER).toLowerCase();
+                    if (renderer.includes('mali') || renderer.includes('adreno 3') || renderer.includes('powervr')) {
+                        capabilities.isLowEnd = true;
+                        capabilities.gpuTier = 'low';
+                    } else if (renderer.includes('adreno 5') || renderer.includes('adreno 6') || renderer.includes('apple')) {
+                        capabilities.gpuTier = 'medium';
+                    } else {
+                        capabilities.gpuTier = 'high';
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not detect WebGL capabilities:', error);
+            }
+            
+            return capabilities;
         }
         
         // ===== UTILITY FUNCTIONS =====
@@ -1730,7 +1756,15 @@
                 
                 // Create Professional Camera
                 camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                camera.position.set(0, 2, 5);
+                
+                // Initialize camera at proper eye level (same as resetPlayer function)
+                const initialEyeHeight = player.position.y + player.size.height - 0.1;
+                camera.position.set(0, initialEyeHeight, 5);
+                
+                // Initialize camera smoothing system
+                cameraSystem.smoothedY = initialEyeHeight;
+                cameraSystem.lastPlayerY = player.position.y;
+                
                 camera.lookAt(0, 0, 0); // Look at the center where the ground plane is
                 
                 // Create Professional Renderer with Context Management (SHADOWS DISABLED)
@@ -1742,10 +1776,18 @@
                 });
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                renderer.shadowMap.enabled = false; // DISABLED - using baked lighting from .glb models
+                renderer.shadowMap.enabled = false; // Using baked lighting for performance
                 renderer.outputColorSpace = THREE.SRGBColorSpace;
-                renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                renderer.toneMappingExposure = 1.4; // Enhanced exposure for better visibility with baked lighting
+                
+                // Professional Studio-Quality Tone Mapping and Color Grading
+                renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic tone mapping
+                renderer.toneMappingExposure = 1.2; // Bright and vibrant like professional renders
+                
+                // Professional Color Grading for Studio Quality
+                renderer.gammaFactor = 2.2; // Standard gamma for accurate colors
+                
+                // Enhanced Anti-aliasing for smoother visuals
+                renderer.antialias = true;
                 
                 // CRITICAL FIX: Ensure canvas is properly styled and visible
                 renderer.domElement.style.display = 'block';
@@ -1770,27 +1812,49 @@
                 
                 updateProgress(30);
                 
-                // Create Optimized Lighting (NO SHADOWS - using baked lighting from .glb models)
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.8); // Increased ambient for better visibility with baked lighting
+                // Create Professional Studio-Quality Lighting System
+                console.log('🎬 Setting up Professional Studio-Quality Lighting...');
+                
+                // 1. PROFESSIONAL AMBIENT LIGHTING - Provides base illumination
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Balanced ambient
                 scene.add(ambientLight);
                 
-                // Main directional light (sun-like) WITHOUT shadows for performance
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 1.6); // Increased intensity for baked lighting
-                directionalLight.position.set(10, 15, 5);
-                directionalLight.castShadow = false; // DISABLED - using baked lighting
-                scene.add(directionalLight);
+                // 2. KEY LIGHT (Main Sun) - Primary light source with warm professional color
+                const keyLight = new THREE.DirectionalLight(0xfff8dc, 1.8); // Warm white, strong intensity
+                keyLight.position.set(15, 20, 10);
+                keyLight.castShadow = false; // Using baked lighting for performance
+                scene.add(keyLight);
                 
-                // Secondary fill light to brighten the scene
-                const fillLight = new THREE.DirectionalLight(0x87CEEB, 0.7); // Increased intensity
-                fillLight.position.set(-5, 8, -5);
-                fillLight.castShadow = false; // DISABLED - using baked lighting
+                // 3. FILL LIGHT - Softens shadows and provides secondary illumination
+                const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.8); // Cool blue fill
+                fillLight.position.set(-10, 15, 5);
+                fillLight.castShadow = false;
                 scene.add(fillLight);
                 
-                // Point light for additional illumination WITHOUT shadows
-                const pointLight = new THREE.PointLight(0xffffff, 0.9, 30); // Increased intensity
-                pointLight.position.set(0, 8, 0);
-                pointLight.castShadow = false; // DISABLED - using baked lighting
-                scene.add(pointLight);
+                // 4. RIM LIGHT - Creates edge lighting for depth and separation
+                const rimLight = new THREE.DirectionalLight(0xffffff, 0.6); // Pure white rim light
+                rimLight.position.set(0, 10, -15);
+                rimLight.castShadow = false;
+                scene.add(rimLight);
+                
+                // 5. PROFESSIONAL HEMISPHERE LIGHT - Natural sky-ground gradient
+                const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.7); // Sky to earth
+                scene.add(hemisphereLight);
+                
+                // 6. ACCENT POINT LIGHTS - For local illumination and atmosphere
+                const accentLight1 = new THREE.PointLight(0xfff8dc, 0.8, 30); // Warm accent
+                accentLight1.position.set(8, 6, 8);
+                scene.add(accentLight1);
+                
+                const accentLight2 = new THREE.PointLight(0xe6f3ff, 0.6, 25); // Cool accent
+                accentLight2.position.set(-8, 5, -8);
+                scene.add(accentLight2);
+                
+                // 7. BOUNCE LIGHT - Simulates light bouncing from surfaces
+                const bounceLight = new THREE.DirectionalLight(0xffeaa7, 0.4); // Warm bounce
+                bounceLight.position.set(5, -3, 12); // From below-forward
+                bounceLight.castShadow = false;
+                scene.add(bounceLight);
                 
                 // CRITICAL FIX: Render frame after lights are added
                 renderer.render(scene, camera);
@@ -1836,6 +1900,9 @@
                     document.getElementById('loading').classList.add('hidden');
                     updateStatusInfo('Ready - Professional Classroom loaded!');
                     showNotification('🎮 Professional Classroom Ready!');
+                    
+                    // Initialize sensitivity display
+                    updateSensitivityDisplay();
                     
                     // Auto-enable FPS mode for mobile devices
                     if (isMobileDevice()) {
@@ -1937,6 +2004,16 @@
                             setTimeout(() => {
                                 enableFPSMode();
                                 showNotification('🎮 Auto-spawn enabled - Character ready to play!');
+                                
+                                showNotification('🎮 Enhanced Professional Stair Climbing System Enabled!');
+                                console.log('✅ Enhanced stair climbing features:');
+                                console.log('   • Fast movement support with continuous collision detection');
+                                console.log('   • Multi-point sampling prevents tunneling through stairs');
+                                console.log('   • Dynamic check distances scale with movement speed');
+                                console.log('   • Velocity clamping prevents physics bypass');
+                                console.log('   • Enhanced slope following with speed-based smoothing');
+                                console.log('   • Professional camera smoothing system');
+                                console.log('   • Cleaned and optimized codebase');
                             }, 500); // Small delay to ensure everything is ready
                             
                             resolve();
@@ -1990,11 +2067,11 @@
                         }
                         break;
                     case 'KeyC':
-                        player.isCrouching = true;
-                        player.size.height = player.crouchHeight;
-                        // Lower camera position when crouching
-                        if (camera) {
-                            camera.position.y = player.position.y + player.crouchHeight * 0.8;
+                        // Toggle crouch state
+                        if (!player.isCrouching) {
+                            player.isCrouching = true;
+                            player.size.height = player.crouchHeight;
+                            console.log('🦆 Player crouching');
                         }
                         break;
                     case 'Escape':
@@ -2029,11 +2106,11 @@
                         player.canJump = false;
                         break;
                     case 'KeyC':
-                        player.isCrouching = false;
-                        player.size.height = player.normalHeight;
-                        // Restore normal camera position when standing up
-                        if (camera) {
-                            camera.position.y = player.position.y + player.normalHeight * 0.8;
+                        // Toggle crouch state on key release
+                        if (player.isCrouching) {
+                            player.isCrouching = false;
+                            player.size.height = player.normalHeight;
+                            console.log('🚶 Player standing up');
                         }
                         break;
                 }
@@ -2102,79 +2179,58 @@
             updateFPS();
         }
         
+        // ===== OPTIMIZED RENDER LOOP =====
         function startProfessionalRenderLoop() {
-            console.log('🎮 Starting Professional Render Loop...');
+            console.log('🎮 Starting Optimized Professional Render Loop...');
             
-            // CRITICAL FIX: Render first frame immediately to prevent white screen
+            // Render first frame immediately to prevent white screen
             if (renderer && scene && camera) {
                 renderer.render(scene, camera);
-                console.log('🎨 First frame rendered immediately in render loop');
+                console.log('🎨 First frame rendered immediately');
             }
             
-            // Safari-specific error handling
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
             let errorCount = 0;
-            const maxErrors = 5;
+            const maxErrors = 3; // Reduced for faster error handling
             
             function animate() {
                 try {
                     requestAnimationFrame(animate);
                     
-                    const deltaTime = clock.getDelta();
+                    const deltaTime = Math.min(clock.getDelta(), 0.1); // Clamp deltaTime
                     
-                    // Clamp deltaTime to prevent large jumps (Safari stability)
-                    const clampedDeltaTime = Math.min(deltaTime, 0.1);
+                    // Update animations
+                    if (mixer) mixer.update(deltaTime);
                     
-                    // Update animations if available
-                    if (mixer) {
-                        mixer.update(clampedDeltaTime);
-                    }
-                    
-                    // Update player and camera (works for both desktop and mobile)
+                    // Update player and camera
                     if (isPointerLocked || mobileInput.enabled) {
-                        updatePlayer(clampedDeltaTime);
+                        updatePlayer(deltaTime);
                         updateCamera();
                     }
                     
-                    // Update orbit controls (only in orbit mode and not mobile)
+                    // Update orbit controls (only when needed)
                     if (orbitMode && !isPointerLocked && !mobileInput.enabled) {
                         controls.update();
                     }
                     
-                    // CRITICAL: Enhanced performance monitoring
+                    // Optimized performance monitoring
                     updatePerformanceMonitor();
                     updatePerformanceStats();
                     
-                    // Professional rendering with error handling
+                    // Render
                     if (renderer && scene && camera) {
                         renderer.render(scene, camera);
                     }
                     
-                    // Reset error count on successful frame
-                    errorCount = 0;
+                    errorCount = 0; // Reset on success
                     
                 } catch (error) {
                     errorCount++;
-                    console.error(`Render loop error ${errorCount}/${maxErrors}:`, error);
+                    console.error(`Render error ${errorCount}/${maxErrors}:`, error);
                     
                     if (errorCount >= maxErrors) {
-                        console.error('Too many render errors, stopping animation loop');
+                        console.error('Too many render errors, stopping animation');
                         showError('Rendering failed. Please refresh the page.');
                         return;
-                    }
-                    
-                    // Try to recover
-                    if (isSafari) {
-                        // Safari-specific recovery
-                        try {
-                            // Only suggest quality reduction, don't force it
-                            if (qualityLevel > 0) {
-                                console.log('Safari: Error detected - consider reducing quality manually if issues persist');
-                                showNotification('⚠️ Rendering error - try reducing quality if issues persist');
-                            }
-                        } catch (recoveryError) {
-                            console.error('Recovery failed:', recoveryError);
-                        }
                     }
                     
                     // Continue animation loop
@@ -2341,16 +2397,16 @@
             }
         }
         
-        function applyQualitySettings() {
+        function applyHighResolutionSettings() {
             if (!renderer || !scene) {
-                console.warn('⚠️ Cannot apply quality settings - renderer or scene not ready');
+                console.warn('⚠️ Cannot apply high-resolution settings - renderer or scene not ready');
                 return;
             }
             
             const qualityNames = ['Low', 'Medium', 'High'];
             const qualityName = qualityNames[qualityLevel] || 'Medium';
             
-            console.log(`🎯 Applying quality settings: ${qualityName} (Level ${qualityLevel}) - DRAMATIC DIFFERENCES`);
+            console.log(`🎯 Applying HIGH RESOLUTION settings: ${qualityName} (Level ${qualityLevel})`);
             
             // Device detection
             const isMobile = isMobileDevice();
@@ -2359,104 +2415,104 @@
             // Store original renderer settings for comparison
             const originalPixelRatio = renderer.getPixelRatio();
             
-            // COMPLETELY REWRITTEN FOR DRAMATIC VISIBLE DIFFERENCES
+            // HIGH RESOLUTION GRAPHICS WITH PROPER SCALING
             switch(qualityLevel) {
-                case 0: // LOW QUALITY - Very obvious low quality
-                    console.log('📉 Applying LOW quality settings (very obvious differences)...');
+                case 0: // LOW QUALITY - High resolution but performance optimized
+                    console.log('📉 Applying LOW quality HIGH RESOLUTION settings...');
                     
-                    // Very low pixel ratio for obvious difference
-                    renderer.setPixelRatio(0.5); // Very low for dramatic effect
+                    // High resolution even on low quality - just reduce other effects
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
                     renderer.shadowMap.enabled = false;
                     
-                    // Low quality tone mapping
-                    renderer.toneMapping = THREE.LinearToneMapping;
-                    renderer.toneMappingExposure = 0.8; // Darker
+                    // Professional tone mapping
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    renderer.toneMappingExposure = 1.0;
                     
-                    // Very short fog for obvious difference
+                    // Optimized fog for performance
                     if (scene.fog) {
-                        scene.fog.near = 5;
-                        scene.fog.far = 30; // Very short distance
-                        scene.fog.color.setHex(0x999999); // Gray fog
+                        scene.fog.near = 30;
+                        scene.fog.far = 120;
+                        scene.fog.color.setHex(0x87ceeb);
                     }
                     
-                    // Very low quality materials
+                    // Optimized materials
                     if (classroomModel) {
                         classroomModel.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                child.material.envMapIntensity = 0.0; // No reflections
+                                child.material.envMapIntensity = 0.3;
                                 if (child.material.normalMap) {
-                                    child.material.normalMapScale?.set(0.1, 0.1); // Almost no normal mapping
+                                    child.material.normalMapScale?.set(0.5, 0.5);
                                 }
-                                child.material.roughness = 1.0; // Very rough, no shine
-                                child.material.metalness = 0.0; // No metallic look
+                                child.material.roughness = 0.6;
+                                child.material.metalness = 0.2;
                                 child.material.needsUpdate = true;
                             }
                         });
                     }
                     break;
                     
-                case 1: // MEDIUM QUALITY - Balanced and clearly different from low
-                    console.log('⚖️ Applying MEDIUM quality settings (balanced)...');
+                case 1: // MEDIUM QUALITY - High resolution with balanced effects
+                    console.log('⚖️ Applying MEDIUM quality HIGH RESOLUTION settings...');
                     
-                    // Medium pixel ratio
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+                    // High resolution with balanced performance
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
                     renderer.shadowMap.enabled = false;
                     
-                    // Balanced tone mapping
+                    // Professional tone mapping
                     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    renderer.toneMappingExposure = 1.2;
+                    renderer.toneMappingExposure = 1.1;
                     
-                    // Medium fog distance
+                    // Balanced fog
                     if (scene.fog) {
-                        scene.fog.near = 20;
-                        scene.fog.far = 100;
-                        scene.fog.color.setHex(0x87CEEB); // Sky blue fog
+                        scene.fog.near = 60;
+                        scene.fog.far = 200;
+                        scene.fog.color.setHex(0x87ceeb);
                     }
                     
                     // Balanced materials
                     if (classroomModel) {
                         classroomModel.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                child.material.envMapIntensity = 0.3; // Some reflections
+                                child.material.envMapIntensity = 0.5;
                                 if (child.material.normalMap) {
-                                    child.material.normalMapScale?.set(0.7, 0.7);
+                                    child.material.normalMapScale?.set(0.9, 0.9);
                                 }
-                                child.material.roughness = 0.6; // Balanced roughness
-                                child.material.metalness = 0.3; // Some metallic look
+                                child.material.roughness = 0.4;
+                                child.material.metalness = 0.4;
                                 child.material.needsUpdate = true;
                             }
                         });
                     }
                     break;
                     
-                case 2: // HIGH QUALITY - Very obvious high quality
-                    console.log('📈 Applying HIGH quality settings (maximum quality)...');
+                case 2: // HIGH QUALITY - Maximum resolution and effects
+                    console.log('📈 Applying HIGH quality MAXIMUM RESOLUTION settings...');
                     
-                    // High pixel ratio for sharp image
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0)); // Higher for dramatic effect
+                    // Maximum resolution for crisp visuals
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
                     renderer.shadowMap.enabled = false; // Still disabled for performance
                     
-                    // Best quality tone mapping
+                    // Professional studio-quality tone mapping
                     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    renderer.toneMappingExposure = 1.5; // Brighter and more vibrant
+                    renderer.toneMappingExposure = 1.2;
                     
-                    // Long fog distance for best visuals
+                    // Extended fog for atmospheric depth
                     if (scene.fog) {
-                        scene.fog.near = 50;
-                        scene.fog.far = 300; // Very long distance
-                        scene.fog.color.setHex(0x87CEEB); // Sky blue fog
+                        scene.fog.near = 60;
+                        scene.fog.far = 250;
+                        scene.fog.color.setHex(0x87ceeb);
                     }
                     
-                    // High quality materials with maximum reflections
+                    // Maximum quality materials
                     if (classroomModel) {
                         classroomModel.traverse((child) => {
                             if (child.isMesh && child.material) {
-                                child.material.envMapIntensity = 0.8; // High reflections
+                                child.material.envMapIntensity = 0.7;
                                 if (child.material.normalMap) {
-                                    child.material.normalMapScale?.set(1.2, 1.2); // Enhanced normal mapping
+                                    child.material.normalMapScale?.set(1.2, 1.2);
                                 }
-                                child.material.roughness = 0.2; // Very smooth and shiny
-                                child.material.metalness = 0.7; // High metallic look
+                                child.material.roughness = 0.25;
+                                child.material.metalness = 0.6;
                                 child.material.needsUpdate = true;
                             }
                         });
@@ -2464,14 +2520,13 @@
                     break;
             }
             
-            // REMOVED SAFARI OVERRIDE - Let user control quality
-            // Only apply minimal Safari optimizations without overriding user choice
+            // Apply mobile optimizations without overriding user quality choice
             if (isSafari && isMobile) {
-                console.log('🍎 Safari mobile detected - applying minimal optimizations without overriding quality');
-                renderer.precision = "mediump"; // Only this optimization
+                console.log('🍎 Safari mobile - applying minimal optimizations');
+                renderer.precision = "mediump";
             }
             
-            // Force a render to show changes immediately
+            // Force immediate render to show changes
             if (renderer && scene && camera) {
                 renderer.render(scene, camera);
             }
@@ -2485,17 +2540,15 @@
             const qualityHudElement = document.getElementById('quality-hud-value');
             if (qualityHudElement) {
                 qualityHudElement.textContent = qualityName;
-                // Remove existing quality classes
                 qualityHudElement.classList.remove('quality-low', 'quality-medium', 'quality-high');
-                // Add appropriate quality class
                 qualityHudElement.classList.add(`quality-${qualityName.toLowerCase()}`);
             }
             
-            // Log the changes with more detail
+            // Log the changes
             const newPixelRatio = renderer.getPixelRatio();
             const pixelRatioChanged = Math.abs(originalPixelRatio - newPixelRatio) > 0.01;
             
-            console.log(`✅ Quality settings applied: ${qualityName} - DRAMATIC DIFFERENCES`, {
+            console.log(`✅ HIGH RESOLUTION settings applied: ${qualityName}`, {
                 level: qualityLevel,
                 pixelRatio: `${originalPixelRatio.toFixed(2)} → ${newPixelRatio.toFixed(2)}`,
                 pixelRatioChanged: pixelRatioChanged,
@@ -2504,7 +2557,7 @@
                 fogDistance: scene.fog ? `${scene.fog.near}-${scene.fog.far}` : 'disabled',
                 mobile: isMobile,
                 safari: isSafari,
-                dramaticChanges: true
+                highResolution: true
             });
         }
         
@@ -2548,26 +2601,382 @@
             console.log('🎯 Pointer lock:', isPointerLocked ? 'enabled' : 'disabled');
         }
         
-        // Improved collision detection
-        function checkCollisionProfessional(direction, distance) {
-            // Improved collision detection using raycasting
+        // ===== PROFESSIONAL STAIR CLIMBING SYSTEM =====
+        // Enhanced system that handles both slow and fast movement like CS:GO/Valorant
+        
+        function handleStairClimbing(newPosition, deltaTime, currentVelocity) {
+            const maxStepHeight = 0.3; // Maximum single step height
+            const maxStepDown = 0.5; // Maximum step down distance
+            
+            // Calculate dynamic check distance based on movement speed to prevent tunneling
+            const horizontalSpeed = Math.sqrt(currentVelocity.x * currentVelocity.x + currentVelocity.z * currentVelocity.z);
+            const baseCheckDistance = 0.4;
+            const speedMultiplier = Math.max(1.0, horizontalSpeed * 0.5); // Scale with speed
+            const dynamicCheckDistance = baseCheckDistance * speedMultiplier;
+            
+            // Clamp to reasonable limits
+            const stepCheckDistance = Math.min(dynamicCheckDistance, 1.2); // Max 1.2 units ahead
+            const slopeFollowDistance = Math.min(dynamicCheckDistance * 1.5, 1.5); // Max 1.5 units for slope
+            
+            if (horizontalSpeed < 0.01) {
+                // Not moving horizontally, just check ground directly below
+                return checkGroundDirectlyBelow();
+            }
+            
+            // Get movement direction from velocity (more accurate than player.velocity)
+            const moveDirection = new THREE.Vector3(currentVelocity.x, 0, currentVelocity.z).normalize();
+            
+            // ENHANCED SLOPE FOLLOWING - Multi-point sampling for fast movement
+            const slopeResult = followStairSlopeEnhanced(moveDirection, slopeFollowDistance, horizontalSpeed);
+            if (slopeResult.foundSlope) {
+                return {
+                    onStairs: true,
+                    groundY: slopeResult.targetY,
+                    isTransitioning: true,
+                    slopeAngle: slopeResult.angle
+                };
+            }
+            
+            // ENHANCED STEP DETECTION - Multiple samples for fast movement
+            const stepResult = checkDiscreteStepsEnhanced(moveDirection, maxStepHeight, maxStepDown, stepCheckDistance, horizontalSpeed);
+            if (stepResult.foundStep) {
+                return {
+                    onStairs: true,
+                    groundY: stepResult.targetY,
+                    isTransitioning: true,
+                    isDiscreteStep: true
+                };
+            }
+            
+            // No stairs found, check normal ground
+            return checkGroundDirectlyBelow();
+        }
+        
+        // ENHANCED SLOPE FOLLOWING - Handles fast movement with multi-point sampling
+        function followStairSlopeEnhanced(moveDirection, distance, horizontalSpeed) {
+            const raycaster = new THREE.Raycaster();
+            
+            // Use multiple sample points for fast movement to prevent tunneling
+            const sampleCount = Math.max(2, Math.ceil(horizontalSpeed * 2)); // More samples for faster movement
+            const results = [];
+            
+            for (let i = 0; i < sampleCount; i++) {
+                const sampleDistance = distance * (i + 1) / sampleCount;
+                
+                // Cast ray from current position forward and slightly down
+                const forwardPos = new THREE.Vector3(
+                    player.position.x + moveDirection.x * sampleDistance,
+                    player.position.y + 0.5, // Start high to catch stairs
+                    player.position.z + moveDirection.z * sampleDistance
+                );
+                
+                raycaster.set(forwardPos, new THREE.Vector3(0, -1, 0));
+                raycaster.far = 1.0;
+                
+                if (classroomModel) {
+                    const hits = raycaster.intersectObject(classroomModel, true);
+                    
+                    if (hits.length > 0) {
+                        const groundPoint = hits[0].point;
+                        const heightDiff = groundPoint.y - player.position.y;
+                        
+                        // Check if this is a reasonable slope to follow
+                        const slopeAngle = Math.atan2(Math.abs(heightDiff), sampleDistance);
+                        const maxSlopeAngle = Math.PI / 3; // 60 degrees max
+                        
+                        if (slopeAngle <= maxSlopeAngle) {
+                            results.push({
+                                y: groundPoint.y,
+                                distance: sampleDistance,
+                                angle: slopeAngle
+                            });
+                        }
+                    }
+                }
+            }
+            
+            if (results.length > 0) {
+                // Use the closest valid result for immediate response
+                const closestResult = results.reduce((closest, current) => 
+                    current.distance < closest.distance ? current : closest
+                );
+                
+                // Smooth the target Y based on movement speed
+                const currentY = player.position.y;
+                const targetY = closestResult.y;
+                const speedFactor = Math.min(horizontalSpeed * 0.3, 0.8); // Faster movement = less smoothing
+                const smoothTargetY = THREE.MathUtils.lerp(currentY, targetY, speedFactor);
+                
+                return {
+                    foundSlope: true,
+                    targetY: smoothTargetY,
+                    angle: closestResult.angle
+                };
+            }
+            
+            return { foundSlope: false };
+        }
+        
+        // ENHANCED DISCRETE STEP DETECTION - Handles fast movement
+        function checkDiscreteStepsEnhanced(moveDirection, maxStepHeight, maxStepDown, stepCheckDistance, horizontalSpeed) {
+            // Use continuous collision detection for fast movement
+            const sampleCount = Math.max(3, Math.ceil(horizontalSpeed * 3)); // More samples for faster movement
+            
+            for (let i = 1; i <= sampleCount; i++) {
+                const checkDistance = stepCheckDistance * i / sampleCount;
+                
+                // Check for upward steps at this sample point
+                const upResult = checkUpwardStepEnhanced(moveDirection, maxStepHeight, checkDistance);
+                if (upResult.found) {
+                    return { foundStep: true, targetY: upResult.height };
+                }
+                
+                // Check for downward steps at this sample point
+                const downResult = checkDownwardStepEnhanced(moveDirection, maxStepDown, checkDistance);
+                if (downResult.found) {
+                    return { foundStep: true, targetY: downResult.height };
+                }
+            }
+            
+            return { foundStep: false };
+        }
+        
+        // ENHANCED UPWARD STEP DETECTION - Better collision detection for fast movement
+        function checkUpwardStepEnhanced(moveDirection, maxStepHeight, stepCheckDistance) {
+            const raycaster = new THREE.Raycaster();
+            const playerPos = new THREE.Vector3(player.position.x, player.position.y + 0.1, player.position.z);
+            
+            // Cast ray forward to find obstacle
+            raycaster.set(playerPos, moveDirection);
+            raycaster.far = stepCheckDistance;
+            
+            if (classroomModel) {
+                const forwardHits = raycaster.intersectObject(classroomModel, true);
+                
+                if (forwardHits.length > 0) {
+                    const hitPoint = forwardHits[0].point;
+                    
+                    // Enhanced step detection - cast multiple rays to find step top
+                    for (let offset = 0.05; offset <= 0.2; offset += 0.05) {
+                        const stepTopRay = new THREE.Raycaster();
+                        const checkPos = new THREE.Vector3(
+                            hitPoint.x + moveDirection.x * offset,
+                            player.position.y + maxStepHeight,
+                            hitPoint.z + moveDirection.z * offset
+                        );
+                        
+                        stepTopRay.set(checkPos, new THREE.Vector3(0, -1, 0));
+                        stepTopRay.far = maxStepHeight + 0.2;
+                        
+                        const stepHits = stepTopRay.intersectObject(classroomModel, true);
+                        
+                        if (stepHits.length > 0) {
+                            const stepY = stepHits[0].point.y;
+                            const stepHeight = stepY - player.position.y;
+                            
+                            if (stepHeight > 0.02 && stepHeight <= maxStepHeight) {
+                                return { found: true, height: stepY };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return { found: false };
+        }
+        
+        // ENHANCED DOWNWARD STEP DETECTION - Better for fast movement
+        function checkDownwardStepEnhanced(moveDirection, maxStepDown, stepCheckDistance) {
+            const raycaster = new THREE.Raycaster();
+            
+            // Cast multiple rays at different distances for better detection
+            for (let distance = stepCheckDistance * 0.5; distance <= stepCheckDistance; distance += stepCheckDistance * 0.25) {
+                const forwardPos = new THREE.Vector3(
+                    player.position.x + moveDirection.x * distance,
+                    player.position.y + 0.1,
+                    player.position.z + moveDirection.z * distance
+                );
+                
+                raycaster.set(forwardPos, new THREE.Vector3(0, -1, 0));
+                raycaster.far = maxStepDown;
+                
+                if (classroomModel) {
+                    const downHits = raycaster.intersectObject(classroomModel, true);
+                    
+                    if (downHits.length > 0) {
+                        const groundY = downHits[0].point.y;
+                        const stepDown = player.position.y - groundY;
+                        
+                        if (stepDown > 0.02 && stepDown <= maxStepDown) {
+                            // Enhanced clearance check
+                            const clearRay = new THREE.Raycaster();
+                            clearRay.set(
+                                new THREE.Vector3(player.position.x, player.position.y + 0.1, player.position.z),
+                                moveDirection
+                            );
+                            clearRay.far = distance;
+                            
+                            const obstacles = clearRay.intersectObject(classroomModel, true);
+                            
+                            // If no obstacles or obstacles are below the target ground level
+                            if (obstacles.length === 0 || obstacles[0].point.y < groundY + 0.1) {
+                                return { found: true, height: groundY };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return { found: false };
+        }
+        
+        // Check ground directly below player
+        function checkGroundDirectlyBelow() {
+            const raycaster = new THREE.Raycaster();
+            raycaster.set(
+                new THREE.Vector3(player.position.x, player.position.y + 0.1, player.position.z),
+                new THREE.Vector3(0, -1, 0)
+            );
+            raycaster.far = 2.0;
+            
+            if (classroomModel) {
+                const hits = raycaster.intersectObject(classroomModel, true);
+                
+                if (hits.length > 0) {
+                    const groundY = hits[0].point.y;
+                    
+                    // If there's a significant height difference, transition smoothly
+                    if (Math.abs(groundY - player.position.y) > 0.02) {
+                        return {
+                            onStairs: false,
+                            groundY: groundY,
+                            isTransitioning: true
+                        };
+                    }
+                }
+            }
+            
+            return {
+                onStairs: false,
+                groundY: player.spawnHeight,
+                isTransitioning: false
+            };
+        }
+        
+        // ===== ADVANCED GROUND COLLISION DETECTION =====
+        function checkAdvancedGroundCollision() {
             const raycaster = new THREE.Raycaster();
             const playerPosition = new THREE.Vector3(
                 player.position.x,
-                player.position.y + player.size.height * 0.5, // Check from middle of player
+                player.position.y + 0.1, // Start slightly above player
+                player.position.z
+            );
+            
+            const downDirection = new THREE.Vector3(0, -1, 0);
+            raycaster.set(playerPosition, downDirection);
+            raycaster.far = 2.0; // Check up to 2 units down
+            
+            let groundY = player.spawnHeight;
+            let foundGround = false;
+            
+            // Check for ground collision with all objects
+            const allObjects = [];
+            
+            // Add classroom model objects
+            if (classroomModel) {
+                classroomModel.traverse((child) => {
+                    if (child.isMesh) {
+                        allObjects.push(child);
+                    }
+                });
+            }
+            
+            // Add invisible ramp colliders if they exist
+            if (typeof invisibleColliders !== 'undefined' && invisibleColliders.length > 0) {
+                allObjects.push(...invisibleColliders);
+            }
+            
+            const intersects = raycaster.intersectObjects(allObjects, false);
+            
+            if (intersects.length > 0) {
+                const closestIntersect = intersects[0];
+                groundY = closestIntersect.point.y;
+                foundGround = true;
+                
+                // Check if we're on a ramp
+                if (closestIntersect.object.userData && closestIntersect.object.userData.isRampCollider) {
+                    // On a ramp - smooth movement
+                    player.onRamp = true;
+                } else {
+                    player.onRamp = false;
+                }
+            }
+            
+            return { groundY, foundGround };
+        }
+        
+        // ===== ENHANCED COLLISION DETECTION WITH STAIR SUPPORT =====
+        function checkCollisionEnhanced(direction, distance) {
+            const raycaster = new THREE.Raycaster();
+            const playerPosition = new THREE.Vector3(
+                player.position.x,
+                player.position.y + player.size.height * 0.5,
                 player.position.z
             );
             
             raycaster.set(playerPosition, direction);
-            raycaster.far = distance; // Set maximum distance for raycasting
+            raycaster.far = distance;
             
+            let hasCollision = false;
+            
+            // Check collision with main classroom model
             if (classroomModel) {
                 const intersects = raycaster.intersectObject(classroomModel, true);
-                // Only consider intersections that are close enough
-                return intersects.length > 0 && intersects[0].distance < distance;
+                
+                if (intersects.length > 0 && intersects[0].distance < distance) {
+                    const hitPoint = intersects[0].point;
+                    const hitObject = intersects[0].object;
+                    
+                    // Check if this is a stair that we can climb
+                    const heightDifference = hitPoint.y - player.position.y;
+                    
+                    // If it's a small step (stair), don't treat as collision
+                    if (heightDifference > 0 && heightDifference <= 0.3) {
+                        // This is a climbable step, not a blocking collision
+                        hasCollision = false;
+                    } else {
+                        // This is a wall or obstacle
+                        hasCollision = true;
+                    }
+                }
             }
             
-            return false;
+            // Check collision with invisible ramp colliders if they exist
+            if (typeof invisibleColliders !== 'undefined' && invisibleColliders.length > 0) {
+                const rampIntersects = raycaster.intersectObjects(invisibleColliders, false);
+                if (rampIntersects.length > 0 && rampIntersects[0].distance < distance) {
+                    // Ramp collision detected - allow movement (ramps are walkable)
+                    hasCollision = false;
+                }
+            }
+            
+            return hasCollision;
+        }
+        
+        function resetPlayerToStairs() {
+            // Move player to a position where stairs are likely to be found
+            player.position.x = 0;
+            player.position.y = 1.0;
+            player.position.z = -2;
+            
+            console.log(`📍 Player moved to stairs area: (${player.position.x}, ${player.position.y}, ${player.position.z})`);
+            showNotification('📍 Player moved to stairs area - Try walking forward');
+        }
+        
+        // Improved collision detection
+        function checkCollisionProfessional(direction, distance) {
+            // Use enhanced collision detection with stair climbing support
+            return checkCollisionEnhanced(direction, distance);
         }
         
         // ===== OPTIMIZED GAME-LIKE PLAYER MOVEMENT SYSTEM =====
@@ -2634,6 +3043,15 @@
                 
                 player.velocity.x = THREE.MathUtils.lerp(player.velocity.x, targetVelocityX, player.acceleration * deltaTime);
                 player.velocity.z = THREE.MathUtils.lerp(player.velocity.z, targetVelocityZ, player.acceleration * deltaTime);
+                
+                // Clamp velocity to prevent tunneling through stairs at high speeds
+                const maxVelocity = 15.0; // Maximum velocity to ensure collision detection works
+                const currentSpeed = Math.sqrt(player.velocity.x * player.velocity.x + player.velocity.z * player.velocity.z);
+                if (currentSpeed > maxVelocity) {
+                    const scale = maxVelocity / currentSpeed;
+                    player.velocity.x *= scale;
+                    player.velocity.z *= scale;
+                }
             } else {
                 // Apply friction (smooth stopping)
                 player.velocity.x = THREE.MathUtils.lerp(player.velocity.x, 0, player.friction * deltaTime);
@@ -2699,20 +3117,125 @@
             
             player.position.y = newPosition.y;
             
-            // Ground collision (game-like floor detection)
-            const floorLevel = player.spawnHeight;
-            if (player.position.y <= floorLevel) {
-                player.position.y = floorLevel;
+            // 🎮 PROFESSIONAL STAIR CLIMBING SYSTEM (Enhanced for Fast Movement)
+            const stairClimbResult = handleStairClimbing(newPosition, deltaTime, player.velocity);
+            if (stairClimbResult.onStairs || stairClimbResult.isTransitioning) {
+                // PROFESSIONAL SMOOTH HEIGHT FOLLOWING
+                const currentY = player.position.y;
+                const targetY = stairClimbResult.groundY;
+                const heightDiff = Math.abs(targetY - currentY);
+                
+                if (stairClimbResult.slopeAngle !== undefined) {
+                    // Following a slope - very smooth transition
+                    const slopeLerpSpeed = 15.0; // Fast slope following
+                    const lerpFactor = Math.min(slopeLerpSpeed * deltaTime, 0.8);
+                    player.position.y = THREE.MathUtils.lerp(currentY, targetY, lerpFactor);
+                    
+                } else if (stairClimbResult.isDiscreteStep) {
+                    // Discrete step - instant snap for responsive feel
+                    player.position.y = targetY;
+                } else {
+                    // General smooth transition
+                    const generalLerpSpeed = 10.0;
+                    const lerpFactor = Math.min(generalLerpSpeed * deltaTime, 0.6);
+                    player.position.y = THREE.MathUtils.lerp(currentY, targetY, lerpFactor);
+                }
+                
                 player.velocity.y = 0;
                 player.onGround = true;
+                player.onStairs = stairClimbResult.onStairs;
+                
+            } else {
+                // Enhanced ground collision with ramp support
+                const groundCheck = checkAdvancedGroundCollision();
+                if (groundCheck.foundGround) {
+                    const groundY = groundCheck.groundY;
+                    
+                    if (player.position.y <= groundY + 0.01) { // Small tolerance
+                        player.position.y = groundY + 0.01; // Keep player slightly above ground
+                        player.velocity.y = 0;
+                        player.onGround = true;
+                        player.onStairs = false;
+                        
+                        // Smooth movement on ramps
+                        if (player.onRamp) {
+                            // Apply slight upward force when moving on ramps for smooth traversal
+                            if (moveVector && moveVector.length() > 0) {
+                                player.position.y += 0.005; // Tiny boost for smooth ramp movement
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback to original ground level
+                    const floorLevel = player.spawnHeight;
+                    if (player.position.y <= floorLevel) {
+                        player.position.y = floorLevel;
+                        player.velocity.y = 0;
+                        player.onGround = true;
+                        player.onStairs = false;
+                    }
+                }
             }
             
-            // Update camera position (smooth game-like first person)
+            // Update camera position with smooth interpolation to prevent shaking
+            const eyeHeight = player.onStairs ? player.size.height - 0.05 : player.size.height - 0.1;
+            const targetCameraY = player.position.y + eyeHeight;
+            
+            // Smooth camera Y interpolation using frame-rate independent lerping
+            const actualSmoothingSpeed = cameraSystem.smoothingSpeed * deltaTime;
+            
+            // Only smooth if there's a significant change to prevent micro-jitter
+            const yDifference = Math.abs(targetCameraY - cameraSystem.smoothedY);
+            if (yDifference > cameraSystem.minSmoothingThreshold) {
+                // Use exponential smoothing for natural camera movement
+                const smoothingFactor = Math.min(actualSmoothingSpeed, 1.0);
+                cameraSystem.smoothedY += (targetCameraY - cameraSystem.smoothedY) * smoothingFactor;
+            } else {
+                // Snap to target if very close to prevent endless micro-adjustments
+                cameraSystem.smoothedY = targetCameraY;
+            }
+            
+            // Apply smoothed position to camera
             camera.position.set(
                 player.position.x, 
-                player.position.y + player.size.height - 0.1, // Eye level from floor
+                cameraSystem.smoothedY, // Use smoothed Y instead of direct player Y
                 player.position.z
             );
+            
+            // Debug info for professional stair climbing
+            if (player.onStairs) {
+                // Determine direction based on Y position change
+                const yDifference = player.position.y - player.previousY;
+                let direction = 'level';
+                let modeText = 'Professional mode';
+                
+                if (yDifference > 0.01) {
+                    direction = 'up ⬆️';
+                    modeText = 'Slope following';
+                } else if (yDifference < -0.01) {
+                    direction = 'down ⬇️';
+                    modeText = 'Descending stairs';
+                }
+                
+                // Update HUD to show stair climbing status
+                const statusElement = document.getElementById('status-info');
+                if (statusElement) {
+                    statusElement.textContent = `🎮 Navigating stairs ${direction} - ${modeText}`;
+                }
+            } else if (player.onRamp) {
+                const statusElement = document.getElementById('status-info');
+                if (statusElement) {
+                    statusElement.textContent = '🟢 On ramp - Smooth movement';
+                }
+            } else {
+                const statusElement = document.getElementById('status-info');
+                if (statusElement) {
+                    statusElement.textContent = 'FPS mode ready - WASD to move';
+                }
+            }
+            
+            // Update previous Y position for next frame
+            player.previousY = player.position.y;
         }
         
         // ===== GAME-LIKE CAMERA SYSTEM - PUBG-style fast rotation =====
@@ -2826,12 +3349,17 @@
             cameraSystem.yaw = 0;
             
             // Reset camera to floor level (game-like spawn)
+            const eyeHeight = player.position.y + player.size.height - 0.1;
             camera.position.set(
                 player.position.x, 
-                player.position.y + player.size.height - 0.1, // Eye level from floor
+                eyeHeight, // Eye level from floor
                 player.position.z
             );
             camera.rotation.set(0, 0, 0);
+            
+            // Reset camera smoothing system
+            cameraSystem.smoothedY = eyeHeight;
+            cameraSystem.lastPlayerY = player.position.y;
             
             // If in orbit mode, set camera to look at floor level
             if (orbitMode && classroomModel) {
@@ -2978,6 +3506,74 @@
             }
         }
         
+        // ===== SENSITIVITY CONTROL FUNCTIONS =====
+        function increaseSensitivity() {
+            const currentSensitivity = cameraSystem.sensitivity;
+            const newSensitivity = Math.min(currentSensitivity * 1.25, 0.008); // Max sensitivity limit
+            cameraSystem.sensitivity = newSensitivity;
+            
+            // Also update mobile sensitivity
+            if (mobileInput.screenTouch) {
+                mobileInput.screenTouch.sensitivity = Math.min(mobileInput.screenTouch.sensitivity * 1.25, 0.008);
+            }
+            
+            updateSensitivityDisplay();
+            showNotification('🎯 Sensitivity Increased');
+            console.log(`🎯 Sensitivity increased to: ${newSensitivity.toFixed(4)}`);
+        }
+        
+        function decreaseSensitivity() {
+            const currentSensitivity = cameraSystem.sensitivity;
+            const newSensitivity = Math.max(currentSensitivity * 0.8, 0.0005); // Min sensitivity limit
+            cameraSystem.sensitivity = newSensitivity;
+            
+            // Also update mobile sensitivity
+            if (mobileInput.screenTouch) {
+                mobileInput.screenTouch.sensitivity = Math.max(mobileInput.screenTouch.sensitivity * 0.8, 0.001);
+            }
+            
+            updateSensitivityDisplay();
+            showNotification('🎯 Sensitivity Decreased');
+            console.log(`🎯 Sensitivity decreased to: ${newSensitivity.toFixed(4)}`);
+        }
+        
+        function resetSensitivity() {
+            const defaultSensitivity = 0.002;
+            cameraSystem.sensitivity = defaultSensitivity;
+            
+            // Reset mobile sensitivity too
+            if (mobileInput.screenTouch) {
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                mobileInput.screenTouch.sensitivity = isSafari ? 0.003 : 0.004;
+            }
+            
+            updateSensitivityDisplay();
+            showNotification('🎯 Sensitivity Reset to Default');
+            console.log(`🎯 Sensitivity reset to default: ${defaultSensitivity}`);
+        }
+        
+        function updateSensitivityDisplay() {
+            const sensitivityDisplay = document.getElementById('sensitivity-display');
+            if (!sensitivityDisplay) return;
+            
+            const currentSensitivity = cameraSystem.sensitivity;
+            let sensitivityLevel = 'Normal';
+            
+            if (currentSensitivity <= 0.001) {
+                sensitivityLevel = 'Very Low';
+            } else if (currentSensitivity <= 0.0015) {
+                sensitivityLevel = 'Low';
+            } else if (currentSensitivity <= 0.0025) {
+                sensitivityLevel = 'Normal';
+            } else if (currentSensitivity <= 0.004) {
+                sensitivityLevel = 'High';
+            } else {
+                sensitivityLevel = 'Very High';
+            }
+            
+            sensitivityDisplay.textContent = `Sensitivity: ${sensitivityLevel}`;
+        }
+        
         function togglePerformanceHUD() {
             const hud = document.getElementById('performance-hud');
             const isVisible = hud.style.display !== 'none';
@@ -3041,8 +3637,8 @@
             
             console.log(`🎯 Quality cycling to: ${qualityName} (Level ${qualityLevel})`);
             
-            // Apply the new quality settings immediately
-            applyQualitySettings();
+            // Apply the new HIGH RESOLUTION quality settings immediately
+            applyHighResolutionSettings();
             
             // Update UI elements
             const qualityElement = document.getElementById('quality-info');
@@ -3059,28 +3655,29 @@
                 qualityHudElement.classList.add(`quality-${qualityName.toLowerCase()}`);
             }
             
-            // Show notification with detailed changes
+            // Show notification with HIGH RESOLUTION details
             let changes = [];
             switch(qualityLevel) {
                 case 0: // Low
-                    changes = ['Pixel Ratio: 0.5x (Very Low)', 'Materials: No Reflections', 'Fog: Gray & Short'];
+                    changes = ['Pixel Ratio: 1.25x (High Res)', 'Materials: Optimized', 'Fog: Short Range'];
                     break;
                 case 1: // Medium  
-                    changes = ['Pixel Ratio: 1.0x (Normal)', 'Materials: Some Reflections', 'Fog: Blue & Medium'];
+                    changes = ['Pixel Ratio: 1.5x (Higher Res)', 'Materials: Balanced', 'Fog: Medium Range'];
                     break;
                 case 2: // High
-                    changes = ['Pixel Ratio: 2.0x (Sharp)', 'Materials: High Reflections', 'Fog: Blue & Long'];
+                    changes = ['Pixel Ratio: 2.0x (Maximum Res)', 'Materials: Premium', 'Fog: Long Range'];
                     break;
             }
             
             updateStatusInfo(`⚙️ Quality: ${qualityName} - ${changes.join(', ')}`);
-            showNotification(`⚙️ Quality: ${qualityName}\n${changes.join('\n')}`);
+            showNotification(`⚙️ High Resolution Quality: ${qualityName}\n${changes.join('\n')}`);
             
-            console.log(`✅ Quality applied: ${qualityName}`, {
+            console.log(`✅ HIGH RESOLUTION Quality applied: ${qualityName}`, {
                 level: qualityLevel,
                 changes: changes,
                 pixelRatio: renderer.getPixelRatio(),
-                antialias: renderer.capabilities.antialias
+                antialias: renderer.capabilities.antialias,
+                highResolution: true
             });
         }
         
