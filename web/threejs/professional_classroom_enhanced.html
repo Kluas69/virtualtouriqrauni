@@ -677,6 +677,11 @@
             right: 40px;
         }
         
+        #crouch-btn {
+            bottom: 40px;
+            right: 120px;
+        }
+        
         #settings-btn-mobile {
             top: 40px;
             right: 40px;
@@ -750,6 +755,11 @@
                 right: 30px;
             }
             
+            #crouch-btn {
+                bottom: 30px;
+                right: 100px;
+            }
+            
             #settings-btn-mobile {
                 top: 30px;
                 right: 30px;
@@ -794,6 +804,22 @@
         <h2>🎮 GAME SETTINGS</h2>
         
         <div class="control-group">
+            <h3>🏛️ Virtual Tour</h3>
+            <div class="control-row">
+                <button onclick="toggleTourMode()">🎬 Tour Mode</button>
+                <button onclick="startAutoTour()">▶️ Auto Tour</button>
+            </div>
+            <div class="control-row">
+                <button onclick="navigateToTourLocation('entrance')">🚪 Entrance</button>
+                <button onclick="navigateToTourLocation('front-desk')">🏫 Front Desk</button>
+            </div>
+            <div class="control-row">
+                <button onclick="navigateToTourLocation('student-area')">🪑 Student Area</button>
+                <button onclick="navigateToTourLocation('whiteboard')">📋 Whiteboard</button>
+            </div>
+        </div>
+
+        <div class="control-group">
             <h3>🎯 Navigation</h3>
             <div class="control-row">
                 <button onclick="resetPlayer()">🔄 Reset Position</button>
@@ -828,9 +854,9 @@
             <div style="color: #ccc; font-size: 13px; line-height: 1.6;">
                 <div><strong>WASD</strong> - Move around</div>
                 <div><strong>Mouse</strong> - Look around (click to activate)</div>
-                <div><strong>Space</strong> - Jump</div>
+                <div><strong>Space</strong> - Jump (professional mechanics)</div>
                 <div><strong>Shift</strong> - Run faster</div>
-                <div><strong>C</strong> - Crouch</div>
+                <div><strong>C</strong> - Hold to crouch (CS:GO style)</div>
                 <div><strong>ESC</strong> - Exit navigation mode</div>
                 <div><strong>F</strong> - Toggle fullscreen</div>
             </div>
@@ -927,16 +953,18 @@
     </div>
     
     <div class="mobile-action-btn" id="jump-btn">⬆</div>
+    <div class="mobile-action-btn" id="crouch-btn">⬇</div>
     <div class="mobile-action-btn" id="settings-btn-mobile">⚙</div>
     
     <!-- Mobile Instructions -->
     <div id="mobile-instructions">
-        <h3>🎮 Mobile Controls (PUBG-Style)</h3>
+        <h3>🎮 Mobile Controls (Professional FPS Style)</h3>
         <p><strong>Left Joystick:</strong> Move around</p>
         <p><strong>Swipe Screen:</strong> Fast camera rotation (PUBG-style)</p>
-        <p><strong>Jump Button:</strong> Jump/Fly up</p>
+        <p><strong>Jump Button (⬆):</strong> Jump with professional mechanics</p>
+        <p><strong>Crouch Button (⬇):</strong> Hold to crouch (CS:GO style)</p>
         <p><strong>Settings Button:</strong> Game settings (top-right)</p>
-        <p><strong>Note:</strong> Optimized for fast gameplay</p>
+        <p><strong>Note:</strong> Professional jumping and crouching like CS:GO/Valorant</p>
         <p>Tap anywhere to dismiss</p>
     </div>
 
@@ -987,17 +1015,23 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         
-        console.log('✅ All Three.js modules imported successfully');
+        console.log('✅ Core Three.js modules imported successfully');
         
-        // ===== SIMPLIFIED PROFESSIONAL ARCHITECTURE =====
-        // Instead of importing complex game engine, use direct Three.js with professional patterns
+        // ===== PROFESSIONAL ARCHITECTURE WITH VIRTUAL TOUR ENGINE =====
+        // Import and use the professional VirtualTourEngine for optimized campus tours
         
         // Professional Game Engine Variables
         let gameEngine = null;
+        let virtualTourEngine = null;
         let renderingSystem = null;
         let inputSystem = null;
         let physicsSystem = null;
         let performanceSystem = null;
+        
+        // Tour-specific variables
+        let tourMode = false;
+        let currentTourLocation = null;
+        let tourLocations = new Map();
         
         // ===== GLOBAL VARIABLES (Legacy Support) =====
         let scene, camera, renderer, clock, controls;
@@ -1010,6 +1044,328 @@
         let fogEnabled = true;
         let qualityLevel = 2; // 0=Low, 1=Medium, 2=High
         let orbitMode = false; // Start with FPS mode for immediate gameplay
+        
+        // ===== VIRTUAL TOUR SYSTEM INTEGRATION =====
+        
+        /**
+         * Initialize Virtual Tour Engine for optimized campus tours
+         */
+        async function initializeVirtualTourEngine() {
+            try {
+                console.log('🏛️ Attempting to load Virtual Tour Engine...');
+                
+                // Try to dynamically import VirtualTourEngine
+                let VirtualTourEngine = null;
+                try {
+                    const tourModule = await import('./src/tour/VirtualTourEngine.js');
+                    VirtualTourEngine = tourModule.VirtualTourEngine;
+                    console.log('✅ VirtualTourEngine imported successfully');
+                } catch (importError) {
+                    console.warn('⚠️ VirtualTourEngine not available:', importError.message);
+                    return false;
+                }
+                
+                updateStatus('Setting up Virtual Campus Tour...');
+                
+                const container = document.getElementById('container');
+                
+                // Configure tour options based on device capabilities
+                const deviceCapabilities = detectDeviceCapabilities();
+                const tourOptions = {
+                    // Performance optimizations
+                    qualityLevel: deviceCapabilities.isMobile ? 'medium' : 'high',
+                    enableLOD: true,
+                    streamingDistance: deviceCapabilities.isMobile ? 50 : 100,
+                    cullingDistance: deviceCapabilities.isMobile ? 100 : 200,
+                    
+                    // Tour features
+                    enableAutoTour: false, // Disabled by default for manual control
+                    tourSpeed: 1.0,
+                    transitionDuration: 2000,
+                    enableMinimap: !deviceCapabilities.isMobile,
+                    enableCompass: true,
+                    
+                    // Mobile optimizations
+                    enableMobileControls: deviceCapabilities.isMobile,
+                    enableGyroscope: false,
+                    enableHapticFeedback: deviceCapabilities.isMobile,
+                    
+                    // Visual enhancements
+                    enableAtmosphere: !deviceCapabilities.isLowEnd,
+                    enableParticles: false,
+                    enableReflections: !deviceCapabilities.isMobile
+                };
+                
+                // Create and initialize tour engine
+                virtualTourEngine = new VirtualTourEngine(container, tourOptions);
+                await virtualTourEngine.initialize();
+                
+                // Get references to core systems
+                gameEngine = virtualTourEngine.gameEngine;
+                renderingSystem = gameEngine.getSystem('rendering');
+                inputSystem = gameEngine.getSystem('input');
+                physicsSystem = gameEngine.getSystem('physics');
+                performanceSystem = gameEngine.getSystem('performance');
+                
+                // Setup tour event callbacks
+                virtualTourEngine.setEventCallbacks({
+                    onLocationChange: (newLocation, previousLocation) => {
+                        currentTourLocation = newLocation;
+                        updateStatusInfo(`Tour Location: ${newLocation}`);
+                        showNotification(`📍 Arrived at: ${newLocation}`);
+                        
+                        // Send to Flutter if available
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage({
+                                type: 'tour_location_changed',
+                                newLocation,
+                                previousLocation,
+                                timestamp: Date.now()
+                            }, '*');
+                        }
+                    },
+                    
+                    onTourProgress: (progress, currentLocation) => {
+                        console.log(`🎬 Tour progress: ${(progress * 100).toFixed(1)}% at ${currentLocation}`);
+                    },
+                    
+                    onAssetLoaded: (assetPath, asset) => {
+                        console.log(`📦 Tour asset loaded: ${assetPath}`);
+                    },
+                    
+                    onPerformanceUpdate: (metrics) => {
+                        // Update performance displays
+                        updatePerformanceDisplays(metrics);
+                    }
+                });
+                
+                // Setup tour locations for the classroom
+                setupClassroomTourLocations();
+                
+                console.log('✅ Virtual Tour Engine initialized successfully');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize Virtual Tour Engine:', error);
+                // Fallback to direct Three.js implementation
+                return false;
+            }
+        }
+        
+        /**
+         * Setup tour locations specific to the classroom
+         */
+        function setupClassroomTourLocations() {
+            tourLocations.set('entrance', {
+                name: 'Classroom Entrance',
+                position: new THREE.Vector3(0, 1.6, 8),
+                rotation: new THREE.Euler(0, 0, 0),
+                description: 'Main entrance to the classroom'
+            });
+            
+            tourLocations.set('front-desk', {
+                name: 'Teacher\'s Desk',
+                position: new THREE.Vector3(0, 1.6, -5),
+                rotation: new THREE.Euler(0, Math.PI, 0),
+                description: 'Front of the classroom with teacher\'s desk'
+            });
+            
+            tourLocations.set('student-area', {
+                name: 'Student Seating',
+                position: new THREE.Vector3(-3, 1.6, 2),
+                rotation: new THREE.Euler(0, Math.PI / 4, 0),
+                description: 'Student seating area'
+            });
+            
+            tourLocations.set('whiteboard', {
+                name: 'Whiteboard View',
+                position: new THREE.Vector3(0, 1.6, 3),
+                rotation: new THREE.Euler(0, Math.PI, 0),
+                description: 'View of the classroom whiteboard'
+            });
+            
+            console.log(`📍 ${tourLocations.size} tour locations configured for classroom`);
+        }
+        
+        /**
+         * Navigate to a specific tour location
+         */
+        async function navigateToTourLocation(locationId) {
+            if (virtualTourEngine && tourLocations.has(locationId)) {
+                const location = tourLocations.get(locationId);
+                console.log(`🧭 Navigating to: ${location.name}`);
+                
+                try {
+                    // Use VirtualTourEngine's smooth navigation
+                    await virtualTourEngine.navigateToLocation(locationId, true);
+                    showNotification(`📍 ${location.name}`);
+                    updateStatusInfo(`Location: ${location.name}`);
+                } catch (error) {
+                    console.warn('Tour navigation failed, using fallback:', error);
+                    // Fallback to direct camera movement
+                    animateCameraToPosition(location.position, location.rotation);
+                    showNotification(`📍 ${location.name}`);
+                }
+            } else if (tourLocations.has(locationId)) {
+                // Fallback to direct camera movement
+                const location = tourLocations.get(locationId);
+                animateCameraToPosition(location.position, location.rotation);
+                showNotification(`📍 ${location.name}`);
+                updateStatusInfo(`Location: ${location.name}`);
+            } else {
+                console.warn(`Tour location not found: ${locationId}`);
+                showNotification(`❌ Location not found: ${locationId}`);
+            }
+        }
+        
+        /**
+         * Toggle tour mode on/off
+         */
+        function toggleTourMode() {
+            tourMode = !tourMode;
+            
+            if (tourMode) {
+                console.log('🎬 Tour mode enabled');
+                showNotification('🎬 Tour Mode Enabled');
+                updateStatusInfo('Tour Mode: Active');
+                
+                // Start at entrance
+                navigateToTourLocation('entrance');
+            } else {
+                console.log('🎮 Tour mode disabled');
+                showNotification('🎮 Free Exploration Mode');
+                updateStatusInfo('Mode: Free Exploration');
+            }
+            
+            return tourMode;
+        }
+        
+        /**
+         * Start automatic tour progression
+         */
+        function startAutoTour() {
+            if (virtualTourEngine) {
+                try {
+                    virtualTourEngine.startAutoTour();
+                    showNotification('🎬 Auto Tour Started');
+                    updateStatusInfo('Auto Tour: Active');
+                } catch (error) {
+                    console.warn('Auto tour failed:', error);
+                    showNotification('❌ Auto Tour not available');
+                }
+            } else {
+                // Fallback auto tour implementation
+                console.log('🎬 Starting fallback auto tour...');
+                startFallbackAutoTour();
+            }
+        }
+        
+        /**
+         * Stop automatic tour progression
+         */
+        function stopAutoTour() {
+            if (virtualTourEngine) {
+                try {
+                    virtualTourEngine.stopAutoTour();
+                    showNotification('⏹️ Auto Tour Stopped');
+                    updateStatusInfo('Auto Tour: Stopped');
+                } catch (error) {
+                    console.warn('Stop auto tour failed:', error);
+                }
+            } else {
+                // Stop fallback auto tour
+                stopFallbackAutoTour();
+            }
+        }
+        
+        /**
+         * Fallback auto tour implementation
+         */
+        let autoTourInterval = null;
+        let autoTourIndex = 0;
+        
+        function startFallbackAutoTour() {
+            if (autoTourInterval) return;
+            
+            const locations = Array.from(tourLocations.keys());
+            autoTourIndex = 0;
+            
+            showNotification('🎬 Auto Tour Started (Fallback Mode)');
+            updateStatusInfo('Auto Tour: Active (Fallback)');
+            
+            autoTourInterval = setInterval(() => {
+                const locationId = locations[autoTourIndex];
+                navigateToTourLocation(locationId);
+                
+                autoTourIndex = (autoTourIndex + 1) % locations.length;
+            }, 5000); // 5 seconds per location
+        }
+        
+        function stopFallbackAutoTour() {
+            if (autoTourInterval) {
+                clearInterval(autoTourInterval);
+                autoTourInterval = null;
+                showNotification('⏹️ Auto Tour Stopped');
+                updateStatusInfo('Auto Tour: Stopped');
+            }
+        }
+        
+        /**
+         * Animate camera to a specific position (fallback method)
+         */
+        function animateCameraToPosition(targetPosition, targetRotation, duration = 2000) {
+            if (!camera) return;
+            
+            const startPosition = camera.position.clone();
+            const startRotation = camera.rotation.clone();
+            const startTime = performance.now();
+            
+            function animate() {
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = easeInOutCubic(progress);
+                
+                // Interpolate position
+                camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+                
+                // Interpolate rotation
+                camera.rotation.x = THREE.MathUtils.lerp(startRotation.x, targetRotation.x, easeProgress);
+                camera.rotation.y = THREE.MathUtils.lerp(startRotation.y, targetRotation.y, easeProgress);
+                camera.rotation.z = THREE.MathUtils.lerp(startRotation.z, targetRotation.z, easeProgress);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            animate();
+        }
+        
+        function easeInOutCubic(t) {
+            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+        
+        /**
+         * Update performance displays with tour engine metrics
+         */
+        function updatePerformanceDisplays(metrics) {
+            if (metrics.fps !== undefined) {
+                document.getElementById('fps-hud').textContent = metrics.fps;
+                document.getElementById('fps-counter').textContent = metrics.fps;
+            }
+            
+            if (metrics.triangles !== undefined) {
+                document.getElementById('triangle-count').textContent = (metrics.triangles / 1000).toFixed(1) + 'K';
+            }
+            
+            if (metrics.drawCalls !== undefined) {
+                document.getElementById('draw-calls').textContent = metrics.drawCalls;
+            }
+            
+            if (metrics.loadedAssets !== undefined) {
+                document.getElementById('texture-count').textContent = metrics.loadedAssets;
+            }
+        }
         
         // ===== HIGH RESOLUTION GRAPHICS FUNCTIONS =====
         function applyHighResolutionSettings() {
@@ -1326,7 +1682,7 @@
             }
         }
         
-        // ===== OPTIMIZED PERFORMANCE MONITORING =====
+        // ===== OPTIMIZED PERFORMANCE MONITORING WITH VIRTUAL TOUR ENGINE =====
         function updatePerformanceMonitor() {
             performanceMonitor.frameCount++;
             const currentTime = performance.now();
@@ -1338,19 +1694,38 @@
                 document.getElementById('fps-hud').textContent = performanceMonitor.fps;
                 document.getElementById('fps-counter').textContent = performanceMonitor.fps;
                 
-                // Send performance data to Flutter (optimized frequency)
-                if (window.parent && window.parent !== window && renderer && renderer.info && 
-                    performanceMonitor.frameCount % 300 === 0) { // Every 5 seconds
+                // Get additional metrics from VirtualTourEngine or renderer
+                let additionalMetrics = {};
+                
+                if (virtualTourEngine && virtualTourEngine.performanceMetrics) {
+                    additionalMetrics = virtualTourEngine.performanceMetrics;
+                } else if (renderer && renderer.info) {
                     const info = renderer.info;
+                    additionalMetrics = {
+                        triangles: info.render.triangles,
+                        drawCalls: info.render.calls,
+                        memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
+                        loadedAssets: info.memory.textures
+                    };
+                }
+                
+                // Update performance displays
+                updatePerformanceDisplays({
+                    fps: performanceMonitor.fps,
+                    ...additionalMetrics
+                });
+                
+                // Send performance data to Flutter (optimized frequency)
+                if (window.parent && window.parent !== window && 
+                    performanceMonitor.frameCount % 300 === 0) { // Every 5 seconds
                     try {
                         window.parent.postMessage({
                             type: 'performance_update',
                             fps: performanceMonitor.fps,
-                            triangles: info.render.triangles,
-                            drawCalls: info.render.calls,
-                            memory: Math.round((info.memory.geometries + info.memory.textures) / 1024 / 1024),
+                            ...additionalMetrics,
                             contextLossCount: contextLossCount,
                             webglContexts: webglContexts.size,
+                            tourEngine: virtualTourEngine ? 'active' : 'fallback',
                             timestamp: Date.now()
                         }, '*');
                     } catch (e) {
@@ -1365,31 +1740,47 @@
         
         // Game-like Player System
         const player = {
-            position: { x: 0, y: 0.3, z: 5 }, // Start on floor level
-            size: { radius: 0.3, height: 1.2 },
+            position: { x: 0, y: 1.7, z: 5 }, // Start at human eye level (1.7m)
+            size: { radius: 0.3, height: 1.8 }, // Realistic human height (1.8m total)
             velocity: { x: 0, y: 0, z: 0 },
             speed: 3.5, // Optimized for realistic game movement
-            jumpPower: 8, // Reduced for more realistic jumping
+            jumpPower: 12, // Professional FPS jump power
             onGround: true, // Start on ground
             onRamp: false, // Track if player is on a ramp
             onStairs: false, // Track if player is on stairs
-            previousY: 0.3, // Track previous Y position for direction detection
+            isFalling: false, // Track if player is in free fall
+            fallStartY: 0, // Track where fall started
+            previousY: 1.7, // Track previous Y position for direction detection
             mode: 'normal', // normal, bee, ant
             // Game-like movement
             moveForward: false,
             moveBackward: false,
             moveLeft: false,
             moveRight: false,
-            canJump: false,
-            spawnHeight: 0.3, // Floor spawn height
+            // Professional jumping system
+            wantsToJump: false, // Input buffer for jump
+            isJumping: false, // Currently in jump state
+            jumpHoldTime: 0, // How long jump key is held
+            maxJumpHoldTime: 0.3, // Maximum time for variable jump height
+            jumpBufferTime: 0, // Buffer for jump input
+            maxJumpBufferTime: 0.1, // 100ms jump buffer
+            coyoteTime: 0, // Grace period after leaving ground
+            maxCoyoteTime: 0.15, // 150ms coyote time
+            spawnHeight: 1.7, // Human floor spawn height (1.7m)
             // Movement smoothing
             acceleration: 15, // How fast player reaches max speed
             friction: 12, // How fast player stops
-            // Crouch functionality
-            isCrouching: false,
-            normalHeight: 0.9,
-            crouchHeight: 0.5,
-            crouchSpeed: 0.7 // Speed multiplier when crouching
+            // Professional crouch system
+            wantsToCrouch: false, // Input state for crouch
+            isCrouching: false, // Current crouch state
+            crouchTransition: 0, // 0 = standing, 1 = fully crouched
+            crouchSpeed: 8, // Speed of crouch transition
+            normalHeight: 1.8, // Realistic human height (1.8m)
+            crouchHeight: 1.2, // Realistic crouch height (1.2m)
+            crouchMoveSpeed: 0.65, // Speed multiplier when crouching (65% like CS:GO)
+            // Camera heights for smooth transitions (human eye level)
+            normalCameraHeight: 1.6, // Human eye level when standing (1.6m)
+            crouchCameraHeight: 1.0 // Human eye level when crouching (1.0m)
         };
         
         // Game-like Camera System with Smoothing
@@ -1441,6 +1832,7 @@
             
             // Action buttons
             const jumpBtn = document.getElementById('jump-btn');
+            const crouchBtn = document.getElementById('crouch-btn');
             const settingsBtn = document.getElementById('settings-btn-mobile');
             
             // Setup movement joystick
@@ -1458,6 +1850,27 @@
             jumpBtn.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
             jumpBtn.addEventListener('click', handleJump);
             jumpBtn.addEventListener('mousedown', handleJump);
+            
+            // Setup professional crouch button (hold-to-crouch)
+            const handleCrouchStart = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                player.wantsToCrouch = true;
+                console.log('📱 Mobile crouch started');
+            };
+            
+            const handleCrouchEnd = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                player.wantsToCrouch = false;
+                console.log('📱 Mobile crouch ended');
+            };
+            
+            crouchBtn.addEventListener('touchstart', handleCrouchStart, { passive: false });
+            crouchBtn.addEventListener('touchend', handleCrouchEnd, { passive: false });
+            crouchBtn.addEventListener('mousedown', handleCrouchStart);
+            crouchBtn.addEventListener('mouseup', handleCrouchEnd);
+            crouchBtn.addEventListener('mouseleave', handleCrouchEnd); // Handle mouse leaving button
             
             // Fix settings button with multiple event handlers
             const handleSettings = (e) => {
@@ -1744,10 +2157,10 @@
         }
         
         function handleMobileJump() {
-            if (player.onGround) {
-                player.canJump = true;
-                mobileInput.isJumping = true;
-            }
+            // Professional mobile jump input
+            player.wantsToJump = true;
+            player.jumpBufferTime = player.maxJumpBufferTime;
+            console.log('📱 Mobile jump input registered');
         }
         
         function showMobileInstructions() {
@@ -1896,175 +2309,51 @@
             console.error('❌ Error:', message);
         }
         
-        // ===== SIMPLIFIED PROFESSIONAL INITIALIZATION =====
+        // ===== PROFESSIONAL INITIALIZATION WITH VIRTUAL TOUR ENGINE =====
         async function init() {
             try {
-                console.log('🔧 Initializing Professional Classroom Viewer...');
-                updateStatus('Initializing Professional Three.js Engine...');
+                console.log('🔧 Initializing Professional Classroom Viewer with Virtual Tour Engine...');
+                updateStatus('Initializing Professional Virtual Tour System...');
                 updateProgress(10);
                 
-                // Create Professional Three.js Scene
-                scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x87CEEB); // Sky blue background instead of white
-                scene.fog = new THREE.Fog(0x87CEEB, 80, 200); // Matching fog color
+                // Try to initialize with VirtualTourEngine first
+                const tourEngineInitialized = await initializeVirtualTourEngine();
                 
-                console.log('🎨 Scene created with sky blue background to prevent white screen');
+                if (tourEngineInitialized) {
+                    console.log('✅ Using VirtualTourEngine for professional tour experience');
+                    
+                    // Get references from tour engine
+                    scene = renderingSystem.getScene();
+                    camera = renderingSystem.getCamera();
+                    renderer = renderingSystem.getRenderer();
+                    
+                    updateProgress(50);
+                    
+                    // Load classroom model through tour engine
+                    await loadClassroomModelForTour();
+                    
+                    updateProgress(80);
+                    
+                    // Start the tour engine
+                    virtualTourEngine.start();
+                    
+                } else {
+                    console.log('⚠️ Falling back to direct Three.js implementation');
+                    await initializeDirectThreeJS();
+                }
                 
-                // Add a temporary ground plane so there's something visible initially
-                const groundGeometry = new THREE.PlaneGeometry(20, 20);
-                const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 }); // Light green
-                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-                ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
-                ground.position.y = -0.1; // Slightly below origin
-                ground.name = 'tempGround'; // Name it so we can remove it later
-                scene.add(ground);
-                
-                // Create Professional Camera
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-                
-                // Initialize camera at proper eye level (same as resetPlayer function)
-                const initialEyeHeight = player.position.y + player.size.height - 0.1;
-                camera.position.set(0, initialEyeHeight, 5);
-                
-                // Initialize camera smoothing system
-                cameraSystem.smoothedY = initialEyeHeight;
-                cameraSystem.lastPlayerY = player.position.y;
-                
-                camera.lookAt(0, 0, 0); // Look at the center where the ground plane is
-                
-                // Create Professional Renderer with Context Management (SHADOWS DISABLED)
-                renderer = new THREE.WebGLRenderer({ 
-                    antialias: true,
-                    powerPreference: "high-performance",
-                    preserveDrawingBuffer: false, // Better memory management
-                    failIfMajorPerformanceCaveat: false // Allow fallback
-                });
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                renderer.shadowMap.enabled = false; // Using baked lighting for performance
-                renderer.outputColorSpace = THREE.SRGBColorSpace;
-                
-                // Professional Studio-Quality Tone Mapping and Color Grading
-                renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic tone mapping
-                renderer.toneMappingExposure = 1.2; // Bright and vibrant like professional renders
-                
-                // Professional Color Grading for Studio Quality
-                renderer.gammaFactor = 2.2; // Standard gamma for accurate colors
-                
-                // Enhanced Anti-aliasing for smoother visuals
-                renderer.antialias = true;
-                
-                // CRITICAL FIX: Ensure canvas is properly styled and visible
-                renderer.domElement.style.display = 'block';
-                renderer.domElement.style.width = '100%';
-                renderer.domElement.style.height = '100%';
-                
-                // CRITICAL: Add WebGL context loss/restore handlers
-                renderer.domElement.addEventListener('webglcontextlost', handleContextLoss, false);
-                renderer.domElement.addEventListener('webglcontextrestored', handleContextRestore, false);
-                
-                document.getElementById('container').appendChild(renderer.domElement);
-                
-                // Apply initial quality settings
-                applyHighResolutionSettings();
-                
-                // CRITICAL FIX: Render initial frame to prevent white screen
-                renderer.render(scene, camera);
-                console.log('🎨 Initial frame rendered to prevent white screen');
-                
-                // Monitor WebGL contexts
-                monitorWebGLContexts();
-                
-                updateProgress(30);
-                
-                // Create Professional Studio-Quality Lighting System
-                console.log('🎬 Setting up Professional Studio-Quality Lighting...');
-                
-                // 1. PROFESSIONAL AMBIENT LIGHTING - Provides base illumination
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Balanced ambient
-                scene.add(ambientLight);
-                
-                // 2. KEY LIGHT (Main Sun) - Primary light source with warm professional color
-                const keyLight = new THREE.DirectionalLight(0xfff8dc, 1.8); // Warm white, strong intensity
-                keyLight.position.set(15, 20, 10);
-                keyLight.castShadow = false; // Using baked lighting for performance
-                scene.add(keyLight);
-                
-                // 3. FILL LIGHT - Softens shadows and provides secondary illumination
-                const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.8); // Cool blue fill
-                fillLight.position.set(-10, 15, 5);
-                fillLight.castShadow = false;
-                scene.add(fillLight);
-                
-                // 4. RIM LIGHT - Creates edge lighting for depth and separation
-                const rimLight = new THREE.DirectionalLight(0xffffff, 0.6); // Pure white rim light
-                rimLight.position.set(0, 10, -15);
-                rimLight.castShadow = false;
-                scene.add(rimLight);
-                
-                // 5. PROFESSIONAL HEMISPHERE LIGHT - Natural sky-ground gradient
-                const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.7); // Sky to earth
-                scene.add(hemisphereLight);
-                
-                // 6. ACCENT POINT LIGHTS - For local illumination and atmosphere
-                const accentLight1 = new THREE.PointLight(0xfff8dc, 0.8, 30); // Warm accent
-                accentLight1.position.set(8, 6, 8);
-                scene.add(accentLight1);
-                
-                const accentLight2 = new THREE.PointLight(0xe6f3ff, 0.6, 25); // Cool accent
-                accentLight2.position.set(-8, 5, -8);
-                scene.add(accentLight2);
-                
-                // 7. BOUNCE LIGHT - Simulates light bouncing from surfaces
-                const bounceLight = new THREE.DirectionalLight(0xffeaa7, 0.4); // Warm bounce
-                bounceLight.position.set(5, -3, 12); // From below-forward
-                bounceLight.castShadow = false;
-                scene.add(bounceLight);
-                
-                // CRITICAL FIX: Render frame after lights are added
-                renderer.render(scene, camera);
-                console.log('🎨 Frame rendered after lighting setup');
-                
-                // Create Professional Controls
-                controls = new OrbitControls(camera, renderer.domElement);
-                controls.enableDamping = true;
-                controls.dampingFactor = 0.05;
-                controls.enableZoom = true;
-                controls.enablePan = true;
-                controls.maxPolarAngle = Math.PI / 2;
-                controls.enabled = false; // Start disabled since we're in FPS mode
-                
-                // Create Professional Clock
-                clock = new THREE.Clock();
-                
-                // Start Professional Render Loop EARLY so users see something immediately
-                startProfessionalRenderLoop();
-                
-                updateProgress(50);
-                
-                // Load Classroom Model with Direct Three.js
-                await loadClassroomModelDirect();
-                
-                updateProgress(80);
-                
-                // Setup Professional Input System (Simplified)
-                setupSimplifiedInputSystem();
-                
-                // Setup Professional Performance Monitoring (Simplified)
-                setupSimplifiedPerformanceMonitoring();
+                updateProgress(90);
                 
                 // Initialize Quality System
                 initializeQualitySystem();
-                
-                updateProgress(90);
                 
                 updateProgress(100);
                 
                 // Hide Loading Screen
                 setTimeout(() => {
                     document.getElementById('loading').classList.add('hidden');
-                    updateStatusInfo('Ready - Professional Classroom loaded!');
-                    showNotification('🎮 Professional Classroom Ready!');
+                    updateStatusInfo('Ready - Professional Classroom with Virtual Tour!');
+                    showNotification('🏛️ Virtual Campus Tour Ready!');
                     
                     // Initialize sensitivity display
                     updateSensitivityDisplay();
@@ -2078,12 +2367,228 @@
                     }
                 }, 800);
                 
-                console.log('🎉 Professional Classroom Viewer initialized successfully!');
+                console.log('🎉 Professional Classroom Viewer with Virtual Tour initialized successfully!');
                 
             } catch (error) {
                 console.error('❌ Failed to initialize:', error);
                 showError(`Failed to initialize Professional Classroom: ${error.message}`);
             }
+        }
+        
+        /**
+         * Load classroom model optimized for virtual tour
+         */
+        async function loadClassroomModelForTour() {
+            return new Promise((resolve, reject) => {
+                console.log('📦 Loading classroom model for virtual tour...');
+                updateStatus('Loading classroom model for tour...');
+                
+                const loader = new GLTFLoader();
+                
+                loader.load(
+                    './assets/models/classroom.glb',
+                    
+                    function(gltf) {
+                        try {
+                            console.log('✅ Classroom model loaded for virtual tour!');
+                            
+                            classroomModel = gltf.scene;
+                            scene.add(classroomModel);
+                            
+                            // Professional Model Setup for Virtual Tour
+                            classroomModel.traverse((child) => {
+                                if (child.isMesh) {
+                                    // Optimize for tour performance
+                                    child.castShadow = false;
+                                    child.receiveShadow = false;
+                                    
+                                    // Enhanced materials for tour quality
+                                    if (child.material) {
+                                        child.material.envMapIntensity = 0.5;
+                                        if (child.material.color) {
+                                            child.material.color.multiplyScalar(1.1);
+                                        }
+                                        child.material.needsUpdate = true;
+                                    }
+                                }
+                            });
+                            
+                            // Setup tour-specific camera positioning
+                            const box = new THREE.Box3().setFromObject(classroomModel);
+                            const center = box.getCenter(new THREE.Vector3());
+                            const size = box.getSize(new THREE.Vector3());
+                            
+                            // Position camera at entrance for tour start
+                            camera.position.set(0, 1.6, 8);
+                            camera.lookAt(center);
+                            
+                            // Setup animations if available
+                            if (gltf.animations && gltf.animations.length > 0) {
+                                mixer = new THREE.AnimationMixer(classroomModel);
+                                gltf.animations.forEach((clip) => {
+                                    const action = mixer.clipAction(clip);
+                                    action.play();
+                                });
+                                console.log(`🎬 ${gltf.animations.length} animations loaded for tour`);
+                            }
+                            
+                            // Update model info
+                            document.getElementById('model-info').textContent = 'classroom.glb (Tour Ready)';
+                            
+                            resolve();
+                            
+                        } catch (error) {
+                            console.error('❌ Error setting up classroom model for tour:', error);
+                            reject(error);
+                        }
+                    },
+                    
+                    function(progress) {
+                        const percent = (progress.loaded / progress.total) * 100;
+                        console.log(`📦 Loading progress: ${percent.toFixed(1)}%`);
+                        updateProgress(50 + (percent * 0.3)); // 50-80% range
+                    },
+                    
+                    function(error) {
+                        console.error('❌ Failed to load classroom model:', error);
+                        reject(error);
+                    }
+                );
+            });
+        }
+        
+        /**
+         * Fallback initialization with direct Three.js
+         */
+        async function initializeDirectThreeJS() {
+            console.log('🔧 Initializing with direct Three.js...');
+            updateStatus('Initializing Professional Three.js Engine...');
+            
+            // Create Professional Three.js Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 80, 200);
+            
+            // Add temporary ground plane
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x90EE90 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.1;
+            ground.name = 'tempGround';
+            scene.add(ground);
+            
+            // Create Professional Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const initialEyeHeight = player.position.y + player.size.height - 0.1;
+            camera.position.set(0, initialEyeHeight, 5);
+            
+            // Initialize camera smoothing system
+            cameraSystem.smoothedY = initialEyeHeight;
+            cameraSystem.lastPlayerY = player.position.y;
+            camera.lookAt(0, 0, 0);
+            
+            // Create Professional Renderer
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true,
+                powerPreference: "high-performance",
+                preserveDrawingBuffer: false,
+                failIfMajorPerformanceCaveat: false
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = false;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            renderer.gammaFactor = 2.2;
+            renderer.antialias = true;
+            
+            renderer.domElement.style.display = 'block';
+            renderer.domElement.style.width = '100%';
+            renderer.domElement.style.height = '100%';
+            
+            renderer.domElement.addEventListener('webglcontextlost', handleContextLoss, false);
+            renderer.domElement.addEventListener('webglcontextrestored', handleContextRestore, false);
+            
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            // Apply initial quality settings
+            applyHighResolutionSettings();
+            renderer.render(scene, camera);
+            
+            // Monitor WebGL contexts
+            monitorWebGLContexts();
+            
+            // Setup Professional Lighting
+            setupProfessionalLighting();
+            
+            // Create Professional Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;
+            controls.enablePan = true;
+            controls.maxPolarAngle = Math.PI / 2;
+            controls.enabled = false;
+            
+            // Create Professional Clock
+            clock = new THREE.Clock();
+            
+            // Start render loop
+            startProfessionalRenderLoop();
+            
+            // Load classroom model
+            await loadClassroomModelDirect();
+            
+            // Setup input and performance systems
+            setupSimplifiedInputSystem();
+            setupSimplifiedPerformanceMonitoring();
+        }
+        
+        /**
+         * Setup professional lighting system
+         */
+        function setupProfessionalLighting() {
+            console.log('🎬 Setting up Professional Studio-Quality Lighting...');
+            
+            // Professional lighting setup
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const keyLight = new THREE.DirectionalLight(0xfff8dc, 1.8);
+            keyLight.position.set(15, 20, 10);
+            keyLight.castShadow = false;
+            scene.add(keyLight);
+            
+            const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.8);
+            fillLight.position.set(-10, 15, 5);
+            fillLight.castShadow = false;
+            scene.add(fillLight);
+            
+            const rimLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            rimLight.position.set(0, 10, -15);
+            rimLight.castShadow = false;
+            scene.add(rimLight);
+            
+            const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x8b7355, 0.7);
+            scene.add(hemisphereLight);
+            
+            const accentLight1 = new THREE.PointLight(0xfff8dc, 0.8, 30);
+            accentLight1.position.set(8, 6, 8);
+            scene.add(accentLight1);
+            
+            const accentLight2 = new THREE.PointLight(0xe6f3ff, 0.6, 25);
+            accentLight2.position.set(-8, 5, -8);
+            scene.add(accentLight2);
+            
+            const bounceLight = new THREE.DirectionalLight(0xffeaa7, 0.4);
+            bounceLight.position.set(5, -3, 12);
+            bounceLight.castShadow = false;
+            scene.add(bounceLight);
+            
+            renderer.render(scene, camera);
+            console.log('🎨 Professional lighting setup complete');
         }
         
         // ===== DIRECT MODEL LOADING (NO GAME ENGINE DEPENDENCIES) =====
@@ -2227,17 +2732,13 @@
                         player.moveRight = true;
                         break;
                     case 'Space':
-                        if (player.onGround) {
-                            player.canJump = true;
-                        }
+                        // Professional jump input with buffering
+                        player.wantsToJump = true;
+                        player.jumpBufferTime = player.maxJumpBufferTime;
                         break;
                     case 'KeyC':
-                        // Toggle crouch state
-                        if (!player.isCrouching) {
-                            player.isCrouching = true;
-                            player.size.height = player.crouchHeight;
-                            console.log('🦆 Player crouching');
-                        }
+                        // Professional hold-to-crouch (like CS:GO)
+                        player.wantsToCrouch = true;
                         break;
                     case 'Escape':
                         if (isPointerLocked) {
@@ -2268,15 +2769,12 @@
                         player.moveRight = false;
                         break;
                     case 'Space':
-                        player.canJump = false;
+                        // Professional jump release (for variable jump height)
+                        player.wantsToJump = false;
                         break;
                     case 'KeyC':
-                        // Toggle crouch state on key release
-                        if (player.isCrouching) {
-                            player.isCrouching = false;
-                            player.size.height = player.normalHeight;
-                            console.log('🚶 Player standing up');
-                        }
+                        // Professional crouch release (stand up immediately)
+                        player.wantsToCrouch = false;
                         break;
                 }
             });
@@ -2346,7 +2844,7 @@
         
         // ===== OPTIMIZED RENDER LOOP =====
         function startProfessionalRenderLoop() {
-            console.log('🎮 Starting Optimized Professional Render Loop...');
+            console.log('🎮 Starting Optimized Professional Render Loop with Virtual Tour Engine...');
             
             // Render first frame immediately to prevent white screen
             if (renderer && scene && camera) {
@@ -2355,15 +2853,22 @@
             }
             
             let errorCount = 0;
-            const maxErrors = 3; // Reduced for faster error handling
+            const maxErrors = 3;
             
             function animate() {
                 try {
                     requestAnimationFrame(animate);
                     
-                    const deltaTime = Math.min(clock.getDelta(), 0.1); // Clamp deltaTime
+                    const deltaTime = Math.min(clock.getDelta(), 0.1);
                     
-                    // Update animations
+                    // Update VirtualTourEngine if available
+                    if (virtualTourEngine && virtualTourEngine.gameEngine) {
+                        // Let VirtualTourEngine handle updates and rendering
+                        // The tour engine manages its own render loop
+                        return;
+                    }
+                    
+                    // Fallback to direct Three.js updates
                     if (mixer) mixer.update(deltaTime);
                     
                     // Update player and camera
@@ -2386,7 +2891,7 @@
                         renderer.render(scene, camera);
                     }
                     
-                    errorCount = 0; // Reset on success
+                    errorCount = 0;
                     
                 } catch (error) {
                     errorCount++;
@@ -2398,7 +2903,6 @@
                         return;
                     }
                     
-                    // Continue animation loop
                     requestAnimationFrame(animate);
                 }
             }
@@ -2980,16 +3484,149 @@
             return checkCollisionEnhanced(direction, distance);
         }
         
+        // ===== PROFESSIONAL CAMERA SYSTEM (Crouch-Aware) =====
+        function updateProfessionalCameraSystem(deltaTime) {
+            // Calculate base eye height based on stairs
+            const baseEyeHeight = player.onStairs ? player.size.height - 0.05 : player.size.height - 0.1;
+            
+            // Professional crouch camera interpolation
+            const standingCameraHeight = player.normalCameraHeight;
+            const crouchingCameraHeight = player.crouchCameraHeight;
+            const crouchCameraOffset = THREE.MathUtils.lerp(
+                standingCameraHeight, 
+                crouchingCameraHeight, 
+                player.crouchTransition
+            );
+            
+            // Combine base height with crouch offset
+            const targetCameraY = player.position.y + crouchCameraOffset;
+            
+            // Smooth camera Y interpolation using frame-rate independent lerping
+            const actualSmoothingSpeed = cameraSystem.smoothingSpeed * deltaTime;
+            
+            // Only smooth if there's a significant change to prevent micro-jitter
+            const yDifference = Math.abs(targetCameraY - cameraSystem.smoothedY);
+            if (yDifference > cameraSystem.minSmoothingThreshold) {
+                // Use exponential smoothing for natural camera movement
+                const smoothingFactor = Math.min(actualSmoothingSpeed, 1.0);
+                cameraSystem.smoothedY += (targetCameraY - cameraSystem.smoothedY) * smoothingFactor;
+            } else {
+                // Snap to target if very close to prevent endless micro-adjustments
+                cameraSystem.smoothedY = targetCameraY;
+            }
+            
+            // Apply smoothed position to camera
+            camera.position.set(
+                player.position.x, 
+                cameraSystem.smoothedY, // Use smoothed Y with crouch support
+                player.position.z
+            );
+        }
+        
+        // ===== PROFESSIONAL JUMPING SYSTEM (CS:GO/Valorant Style) =====
+        function updateProfessionalJumpSystem(deltaTime) {
+            // Update jump buffer timer
+            if (player.jumpBufferTime > 0) {
+                player.jumpBufferTime -= deltaTime;
+            }
+            
+            // Update coyote time (grace period after leaving ground)
+            if (!player.onGround && player.coyoteTime > 0) {
+                player.coyoteTime -= deltaTime;
+            } else if (player.onGround) {
+                player.coyoteTime = player.maxCoyoteTime;
+            }
+            
+            // Update jump hold time for variable jump height
+            if (player.wantsToJump && player.isJumping) {
+                player.jumpHoldTime += deltaTime;
+            }
+            
+            // Professional jump logic with buffering and coyote time
+            const canJump = (player.onGround || player.coyoteTime > 0) && !player.isJumping;
+            const wantsToJump = player.wantsToJump || player.jumpBufferTime > 0;
+            
+            if (canJump && wantsToJump) {
+                // Execute jump
+                player.velocity.y = player.jumpPower;
+                player.onGround = false;
+                player.isJumping = true;
+                player.jumpHoldTime = 0;
+                player.coyoteTime = 0;
+                player.jumpBufferTime = 0;
+                
+                console.log('🦘 Professional jump executed');
+                
+                // Reset mobile jump flag
+                if (mobileInput.isJumping) {
+                    mobileInput.isJumping = false;
+                }
+            }
+            
+            // Variable jump height (release jump key early for shorter jump)
+            if (player.isJumping && !player.wantsToJump && player.jumpHoldTime < player.maxJumpHoldTime) {
+                if (player.velocity.y > 0) {
+                    player.velocity.y *= 0.5; // Cut jump short like in professional games
+                    console.log('🦘 Jump cut short for variable height');
+                }
+            }
+            
+            // Reset jumping state when landing
+            if (player.onGround && player.isJumping) {
+                player.isJumping = false;
+                player.jumpHoldTime = 0;
+                console.log('🦘 Jump completed - landed');
+            }
+        }
+        
+        // ===== PROFESSIONAL CROUCH SYSTEM (CS:GO Style Hold-to-Crouch) =====
+        function updateProfessionalCrouchSystem(deltaTime) {
+            // Smooth crouch transition
+            const targetCrouchState = player.wantsToCrouch ? 1 : 0;
+            const crouchLerpSpeed = player.crouchSpeed * deltaTime;
+            
+            // Update crouch transition smoothly
+            if (Math.abs(player.crouchTransition - targetCrouchState) > 0.01) {
+                player.crouchTransition = THREE.MathUtils.lerp(
+                    player.crouchTransition, 
+                    targetCrouchState, 
+                    crouchLerpSpeed
+                );
+            } else {
+                player.crouchTransition = targetCrouchState;
+            }
+            
+            // Update crouch state based on transition
+            const wasCrouching = player.isCrouching;
+            player.isCrouching = player.crouchTransition > 0.1;
+            
+            // Update player height based on crouch transition
+            const heightRange = player.normalHeight - player.crouchHeight;
+            player.size.height = player.normalHeight - (heightRange * player.crouchTransition);
+            
+            // Log crouch state changes
+            if (wasCrouching !== player.isCrouching) {
+                if (player.isCrouching) {
+                    console.log('🦆 Professional crouch started');
+                } else {
+                    console.log('🚶 Professional crouch ended');
+                }
+            }
+        }
+        
         // ===== OPTIMIZED GAME-LIKE PLAYER MOVEMENT SYSTEM =====
         function updatePlayer(deltaTime) {
             if (!isPointerLocked && !mobileInput.enabled) return;
             
+            // 🎮 PROFESSIONAL CROUCH SYSTEM UPDATE (Frame-rate Independent)
+            updateProfessionalCrouchSystem(deltaTime);
+            
             const moveVector = new THREE.Vector3();
             let targetSpeed = player.speed;
             
-            // Apply crouch speed modifier
+            // Apply professional crouch speed modifier
             if (player.isCrouching) {
-                targetSpeed *= player.crouchSpeed;
+                targetSpeed *= player.crouchMoveSpeed; // 65% speed like CS:GO
             }
             
             // Adjust speed based on character mode
@@ -3059,20 +3696,8 @@
                 player.velocity.z = THREE.MathUtils.lerp(player.velocity.z, 0, player.friction * deltaTime);
             }
             
-            // Game-like jumping with realistic physics (works for both keyboard and mobile)
-            // Cannot jump while crouching
-            if (player.canJump && player.onGround && !player.isCrouching) {
-                player.velocity.y = player.jumpPower;
-                player.onGround = false;
-                player.canJump = false;
-                
-                // Reset mobile jump flag
-                if (mobileInput.isJumping) {
-                    mobileInput.isJumping = false;
-                }
-            }
-            
-            // Fly controls removed - Ctrl now used for crouch only
+            // 🎮 PROFESSIONAL JUMPING SYSTEM (CS:GO/Valorant Style)
+            updateProfessionalJumpSystem(deltaTime);
             
             // Apply gravity (realistic game physics)
             if (!player.onGround) {
@@ -3178,30 +3803,8 @@
                 }
             }
             
-            // Update camera position with smooth interpolation to prevent shaking
-            const eyeHeight = player.onStairs ? player.size.height - 0.05 : player.size.height - 0.1;
-            const targetCameraY = player.position.y + eyeHeight;
-            
-            // Smooth camera Y interpolation using frame-rate independent lerping
-            const actualSmoothingSpeed = cameraSystem.smoothingSpeed * deltaTime;
-            
-            // Only smooth if there's a significant change to prevent micro-jitter
-            const yDifference = Math.abs(targetCameraY - cameraSystem.smoothedY);
-            if (yDifference > cameraSystem.minSmoothingThreshold) {
-                // Use exponential smoothing for natural camera movement
-                const smoothingFactor = Math.min(actualSmoothingSpeed, 1.0);
-                cameraSystem.smoothedY += (targetCameraY - cameraSystem.smoothedY) * smoothingFactor;
-            } else {
-                // Snap to target if very close to prevent endless micro-adjustments
-                cameraSystem.smoothedY = targetCameraY;
-            }
-            
-            // Apply smoothed position to camera
-            camera.position.set(
-                player.position.x, 
-                cameraSystem.smoothedY, // Use smoothed Y instead of direct player Y
-                player.position.z
-            );
+            // 🎮 PROFESSIONAL CAMERA SYSTEM with Crouch Support
+            updateProfessionalCameraSystem(deltaTime);
             
             // Debug info for professional stair climbing
             if (player.onStairs) {
@@ -3339,18 +3942,32 @@
             player.position = { x: 0, y: player.spawnHeight, z: 5 };
             player.velocity = { x: 0, y: 0, z: 0 };
             player.onGround = true; // Always spawn on ground
+            player.isFalling = false; // Reset falling state
+            player.fallStartY = 0; // Reset fall start position
             player.moveForward = false;
             player.moveBackward = false;
             player.moveLeft = false;
             player.moveRight = false;
-            player.canJump = false;
+            
+            // Reset professional jumping system
+            player.wantsToJump = false;
+            player.isJumping = false;
+            player.jumpHoldTime = 0;
+            player.jumpBufferTime = 0;
+            player.coyoteTime = player.maxCoyoteTime;
+            
+            // Reset professional crouch system
+            player.wantsToCrouch = false;
+            player.isCrouching = false;
+            player.crouchTransition = 0;
+            player.size.height = player.normalHeight;
             
             // Reset camera system
             cameraSystem.pitch = 0;
             cameraSystem.yaw = 0;
             
             // Reset camera to floor level (game-like spawn)
-            const eyeHeight = player.position.y + player.size.height - 0.1;
+            const eyeHeight = player.position.y + player.normalCameraHeight;
             camera.position.set(
                 player.position.x, 
                 eyeHeight, // Eye level from floor
@@ -3457,20 +4074,20 @@
         
         function activateNormalMode() {
             player.size.radius = 0.3; // Normal human size
-            player.spawnHeight = 0.3; // Normal spawn height
+            player.spawnHeight = 1.7; // Human spawn height (1.7m)
             player.mode = 'normal';
             player.speed = 3.5; // Optimized normal speed
             player.acceleration = 15; // Normal acceleration
             player.friction = 12; // Normal friction
             
-            // Reset position to floor for normal size
+            // Reset position to human floor level
             player.position.y = player.spawnHeight;
             player.onGround = true;
             
             updateCharacterInfo('Normal Mode');
             updateCharacterHUD('Normal');
-            updateStatusInfo('🚶 Normal human-sized character');
-            showNotification('🚶 Normal Mode Activated');
+            updateStatusInfo('🚶 Normal human-sized character at realistic height');
+            showNotification('🚶 Normal Mode Activated - Human Scale');
         }
         
         // ===== NEW UI FUNCTIONS =====
