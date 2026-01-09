@@ -1011,6 +1011,171 @@
         let qualityLevel = 2; // 0=Low, 1=Medium, 2=High
         let orbitMode = false; // Start with FPS mode for immediate gameplay
         
+        // ===== HIGH RESOLUTION GRAPHICS FUNCTIONS =====
+        function applyHighResolutionSettings() {
+            if (!renderer || !scene) {
+                console.warn('⚠️ Cannot apply high-resolution settings - renderer or scene not ready');
+                return;
+            }
+            
+            const qualityNames = ['Low', 'Medium', 'High'];
+            const qualityName = qualityNames[qualityLevel] || 'Medium';
+            
+            console.log(`🎯 Applying HIGH RESOLUTION settings: ${qualityName} (Level ${qualityLevel})`);
+            
+            // Device detection
+            const isMobile = isMobileDevice();
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            
+            // Store original renderer settings for comparison
+            const originalPixelRatio = renderer.getPixelRatio();
+            
+            // HIGH RESOLUTION GRAPHICS WITH PROPER SCALING
+            switch(qualityLevel) {
+                case 0: // LOW QUALITY - High resolution but performance optimized
+                    console.log('📉 Applying LOW quality HIGH RESOLUTION settings...');
+                    
+                    // High resolution even on low quality - just reduce other effects
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+                    renderer.shadowMap.enabled = false;
+                    
+                    // Professional tone mapping
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    renderer.toneMappingExposure = 1.0;
+                    
+                    // Optimized fog for performance
+                    if (scene.fog) {
+                        scene.fog.near = 30;
+                        scene.fog.far = 120;
+                        scene.fog.color.setHex(0x87ceeb);
+                    }
+                    
+                    // Optimized materials
+                    if (classroomModel) {
+                        classroomModel.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                child.material.envMapIntensity = 0.3;
+                                if (child.material.normalMap) {
+                                    child.material.normalMapScale?.set(0.5, 0.5);
+                                }
+                                child.material.roughness = 0.6;
+                                child.material.metalness = 0.2;
+                                child.material.needsUpdate = true;
+                            }
+                        });
+                    }
+                    break;
+                    
+                case 1: // MEDIUM QUALITY - High resolution with balanced effects
+                    console.log('⚖️ Applying MEDIUM quality HIGH RESOLUTION settings...');
+                    
+                    // High resolution with balanced performance
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+                    renderer.shadowMap.enabled = false;
+                    
+                    // Professional tone mapping
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    renderer.toneMappingExposure = 1.1;
+                    
+                    // Balanced fog
+                    if (scene.fog) {
+                        scene.fog.near = 60;
+                        scene.fog.far = 200;
+                        scene.fog.color.setHex(0x87ceeb);
+                    }
+                    
+                    // Balanced materials
+                    if (classroomModel) {
+                        classroomModel.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                child.material.envMapIntensity = 0.5;
+                                if (child.material.normalMap) {
+                                    child.material.normalMapScale?.set(0.9, 0.9);
+                                }
+                                child.material.roughness = 0.4;
+                                child.material.metalness = 0.4;
+                                child.material.needsUpdate = true;
+                            }
+                        });
+                    }
+                    break;
+                    
+                case 2: // HIGH QUALITY - Maximum resolution and effects
+                    console.log('📈 Applying HIGH quality MAXIMUM RESOLUTION settings...');
+                    
+                    // Maximum resolution for crisp visuals
+                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
+                    renderer.shadowMap.enabled = false; // Still disabled for performance
+                    
+                    // Professional studio-quality tone mapping
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    renderer.toneMappingExposure = 1.2;
+                    
+                    // Extended fog for atmospheric depth
+                    if (scene.fog) {
+                        scene.fog.near = 60;
+                        scene.fog.far = 250;
+                        scene.fog.color.setHex(0x87ceeb);
+                    }
+                    
+                    // Maximum quality materials
+                    if (classroomModel) {
+                        classroomModel.traverse((child) => {
+                            if (child.isMesh && child.material) {
+                                child.material.envMapIntensity = 0.7;
+                                if (child.material.normalMap) {
+                                    child.material.normalMapScale?.set(1.2, 1.2);
+                                }
+                                child.material.roughness = 0.25;
+                                child.material.metalness = 0.6;
+                                child.material.needsUpdate = true;
+                            }
+                        });
+                    }
+                    break;
+            }
+            
+            // Apply mobile optimizations without overriding user quality choice
+            if (isSafari && isMobile) {
+                console.log('🍎 Safari mobile - applying minimal optimizations');
+                renderer.precision = "mediump";
+            }
+            
+            // Force immediate render to show changes
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+            
+            // Update UI
+            const qualityElement = document.getElementById('quality-info');
+            if (qualityElement) {
+                qualityElement.textContent = qualityName;
+            }
+            
+            const qualityHudElement = document.getElementById('quality-hud-value');
+            if (qualityHudElement) {
+                qualityHudElement.textContent = qualityName;
+                qualityHudElement.classList.remove('quality-low', 'quality-medium', 'quality-high');
+                qualityHudElement.classList.add(`quality-${qualityName.toLowerCase()}`);
+            }
+            
+            // Log the changes
+            const newPixelRatio = renderer.getPixelRatio();
+            const pixelRatioChanged = Math.abs(originalPixelRatio - newPixelRatio) > 0.01;
+            
+            console.log(`✅ HIGH RESOLUTION settings applied: ${qualityName}`, {
+                level: qualityLevel,
+                pixelRatio: `${originalPixelRatio.toFixed(2)} → ${newPixelRatio.toFixed(2)}`,
+                pixelRatioChanged: pixelRatioChanged,
+                toneMapping: renderer.toneMapping,
+                toneMappingExposure: renderer.toneMappingExposure,
+                fogDistance: scene.fog ? `${scene.fog.near}-${scene.fog.far}` : 'disabled',
+                mobile: isMobile,
+                safari: isSafari,
+                highResolution: true
+            });
+        }
+        
         // ===== CRITICAL WEBGL CONTEXT MANAGEMENT =====
         let webglContexts = new Set();
         const MAX_WEBGL_CONTEXTS = 2;
@@ -1801,7 +1966,7 @@
                 document.getElementById('container').appendChild(renderer.domElement);
                 
                 // Apply initial quality settings
-                applyQualitySettings();
+                applyHighResolutionSettings();
                 
                 // CRITICAL FIX: Render initial frame to prevent white screen
                 renderer.render(scene, camera);
@@ -2395,170 +2560,6 @@
                 document.getElementById('memory-usage').textContent = memoryMB.toFixed(1) + ' MB';
                 document.getElementById('texture-count').textContent = info.memory.textures;
             }
-        }
-        
-        function applyHighResolutionSettings() {
-            if (!renderer || !scene) {
-                console.warn('⚠️ Cannot apply high-resolution settings - renderer or scene not ready');
-                return;
-            }
-            
-            const qualityNames = ['Low', 'Medium', 'High'];
-            const qualityName = qualityNames[qualityLevel] || 'Medium';
-            
-            console.log(`🎯 Applying HIGH RESOLUTION settings: ${qualityName} (Level ${qualityLevel})`);
-            
-            // Device detection
-            const isMobile = isMobileDevice();
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-            
-            // Store original renderer settings for comparison
-            const originalPixelRatio = renderer.getPixelRatio();
-            
-            // HIGH RESOLUTION GRAPHICS WITH PROPER SCALING
-            switch(qualityLevel) {
-                case 0: // LOW QUALITY - High resolution but performance optimized
-                    console.log('📉 Applying LOW quality HIGH RESOLUTION settings...');
-                    
-                    // High resolution even on low quality - just reduce other effects
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
-                    renderer.shadowMap.enabled = false;
-                    
-                    // Professional tone mapping
-                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    renderer.toneMappingExposure = 1.0;
-                    
-                    // Optimized fog for performance
-                    if (scene.fog) {
-                        scene.fog.near = 30;
-                        scene.fog.far = 120;
-                        scene.fog.color.setHex(0x87ceeb);
-                    }
-                    
-                    // Optimized materials
-                    if (classroomModel) {
-                        classroomModel.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                child.material.envMapIntensity = 0.3;
-                                if (child.material.normalMap) {
-                                    child.material.normalMapScale?.set(0.5, 0.5);
-                                }
-                                child.material.roughness = 0.6;
-                                child.material.metalness = 0.2;
-                                child.material.needsUpdate = true;
-                            }
-                        });
-                    }
-                    break;
-                    
-                case 1: // MEDIUM QUALITY - High resolution with balanced effects
-                    console.log('⚖️ Applying MEDIUM quality HIGH RESOLUTION settings...');
-                    
-                    // High resolution with balanced performance
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-                    renderer.shadowMap.enabled = false;
-                    
-                    // Professional tone mapping
-                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    renderer.toneMappingExposure = 1.1;
-                    
-                    // Balanced fog
-                    if (scene.fog) {
-                        scene.fog.near = 60;
-                        scene.fog.far = 200;
-                        scene.fog.color.setHex(0x87ceeb);
-                    }
-                    
-                    // Balanced materials
-                    if (classroomModel) {
-                        classroomModel.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                child.material.envMapIntensity = 0.5;
-                                if (child.material.normalMap) {
-                                    child.material.normalMapScale?.set(0.9, 0.9);
-                                }
-                                child.material.roughness = 0.4;
-                                child.material.metalness = 0.4;
-                                child.material.needsUpdate = true;
-                            }
-                        });
-                    }
-                    break;
-                    
-                case 2: // HIGH QUALITY - Maximum resolution and effects
-                    console.log('📈 Applying HIGH quality MAXIMUM RESOLUTION settings...');
-                    
-                    // Maximum resolution for crisp visuals
-                    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
-                    renderer.shadowMap.enabled = false; // Still disabled for performance
-                    
-                    // Professional studio-quality tone mapping
-                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-                    renderer.toneMappingExposure = 1.2;
-                    
-                    // Extended fog for atmospheric depth
-                    if (scene.fog) {
-                        scene.fog.near = 60;
-                        scene.fog.far = 250;
-                        scene.fog.color.setHex(0x87ceeb);
-                    }
-                    
-                    // Maximum quality materials
-                    if (classroomModel) {
-                        classroomModel.traverse((child) => {
-                            if (child.isMesh && child.material) {
-                                child.material.envMapIntensity = 0.7;
-                                if (child.material.normalMap) {
-                                    child.material.normalMapScale?.set(1.2, 1.2);
-                                }
-                                child.material.roughness = 0.25;
-                                child.material.metalness = 0.6;
-                                child.material.needsUpdate = true;
-                            }
-                        });
-                    }
-                    break;
-            }
-            
-            // Apply mobile optimizations without overriding user quality choice
-            if (isSafari && isMobile) {
-                console.log('🍎 Safari mobile - applying minimal optimizations');
-                renderer.precision = "mediump";
-            }
-            
-            // Force immediate render to show changes
-            if (renderer && scene && camera) {
-                renderer.render(scene, camera);
-            }
-            
-            // Update UI
-            const qualityElement = document.getElementById('quality-info');
-            if (qualityElement) {
-                qualityElement.textContent = qualityName;
-            }
-            
-            const qualityHudElement = document.getElementById('quality-hud-value');
-            if (qualityHudElement) {
-                qualityHudElement.textContent = qualityName;
-                qualityHudElement.classList.remove('quality-low', 'quality-medium', 'quality-high');
-                qualityHudElement.classList.add(`quality-${qualityName.toLowerCase()}`);
-            }
-            
-            // Log the changes
-            const newPixelRatio = renderer.getPixelRatio();
-            const pixelRatioChanged = Math.abs(originalPixelRatio - newPixelRatio) > 0.01;
-            
-            console.log(`✅ HIGH RESOLUTION settings applied: ${qualityName}`, {
-                level: qualityLevel,
-                pixelRatio: `${originalPixelRatio.toFixed(2)} → ${newPixelRatio.toFixed(2)}`,
-                pixelRatioChanged: pixelRatioChanged,
-                toneMapping: renderer.toneMapping,
-                toneMappingExposure: renderer.toneMappingExposure,
-                fogDistance: scene.fog ? `${scene.fog.near}-${scene.fog.far}` : 'disabled',
-                mobile: isMobile,
-                safari: isSafari,
-                highResolution: true
-            });
         }
         
         // ===== OLD PROFESSIONAL SYSTEMS REMOVED =====
@@ -3321,7 +3322,7 @@
             }
             
             // Apply current quality settings without forcing changes
-            applyQualitySettings();
+            applyHighResolutionSettings();
             
             // Update UI
             updateNavInfo('Mobile FPS Mode');
@@ -3758,10 +3759,10 @@
                     // Reduce quality for mobile
                     if (event.data.quality === 'medium') {
                         qualityLevel = 1;
-                        applyQualitySettings();
+                        applyHighResolutionSettings();
                     } else if (event.data.quality === 'low') {
                         qualityLevel = 0;
-                        applyQualitySettings();
+                        applyHighResolutionSettings();
                     }
                     
                     // Show mobile controls
