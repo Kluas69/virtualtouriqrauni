@@ -4094,7 +4094,7 @@
             console.log('🚪 Exit game requested');
             
             try {
-                // Try to send message to Flutter parent
+                // Send message to Flutter parent
                 if (window.parent && window.parent !== window) {
                     window.parent.postMessage({
                         type: 'game_exit',
@@ -4105,29 +4105,21 @@
                     console.log('✅ Exit message sent to Flutter');
                 }
                 
-                // Also try direct navigation if available
-                if (window.history && window.history.length > 1) {
-                    window.history.back();
-                    console.log('✅ Browser back navigation triggered');
-                }
-                
                 showNotification('🚪 Exiting game...');
                 
-                // Fallback: show exit confirmation
+                // Simple fallback after delay - only if Flutter doesn't handle it
                 setTimeout(() => {
-                    if (confirm('Exit the 3D classroom?')) {
-                        // Last resort: try to close or navigate
-                        if (window.close) {
-                            window.close();
-                        } else {
-                            window.location.href = 'about:blank';
-                        }
+                    if (window.history && window.history.length > 1) {
+                        window.history.back();
                     }
-                }, 1000);
+                }, 500);
                 
             } catch (error) {
                 console.error('❌ Exit game error:', error);
-                showNotification('❌ Exit failed - use device back button');
+                // Fallback navigation
+                if (window.history && window.history.length > 1) {
+                    window.history.back();
+                }
             }
         }
         

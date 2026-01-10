@@ -53,19 +53,25 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
     });
   }
 
-  void _handleGameExit() async {
+  Future<void> _handleGameExit() async {
     try {
+      AppLogger.info('Handling game exit request', component: _logComponent);
+      
       // Restore normal orientation when leaving the game
       if (_isMobileDevice()) {
         await _gameController.disableLandscapeMode();
       }
       
-      // Navigate back
+      // Navigate back to previous screen
       if (mounted) {
         Navigator.of(context).pop();
       }
     } catch (e) {
       AppLogger.error('Error handling game exit: $e', component: _logComponent);
+      // Force navigation even if there's an error
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -131,24 +137,35 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // Use simplified UI for all devices - HTML handles mobile controls natively
-    return Scaffold(
-      backgroundColor: isDark ? Colors.black : Colors.white,
-      appBar: _isMobileDevice() ? null : AppBar(
-        title: Text(
-          widget.title,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (bool didPop) {
+        if (didPop) {
+          // Clean up when back navigation happens
+          if (_isMobileDevice()) {
+            _gameController.disableLandscapeMode();
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark ? Colors.black : Colors.white,
+        appBar: _isMobileDevice() ? null : AppBar(
+          title: Text(
+            widget.title,
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
+          foregroundColor: isDark ? Colors.white : Colors.black,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        backgroundColor: isDark ? Colors.grey.shade900 : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.black,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        body: _buildGameContent(isDark),
       ),
-      body: _buildGameContent(isDark),
     );
   }
 
