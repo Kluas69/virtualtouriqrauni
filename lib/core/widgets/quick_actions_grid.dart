@@ -104,7 +104,7 @@ class QuickActionsGrid extends StatelessWidget {
   }
 
   Widget _buildResponsiveGrid(BuildContext context, List<QuickAction> actions, Size size) {
-    // Google-style responsive design optimized for 3 cards
+    // Google-style responsive design optimized for 2 cards
     int crossAxisCount;
     double childAspectRatio;
     double spacing;
@@ -117,23 +117,23 @@ class QuickActionsGrid extends StatelessWidget {
       spacing = 12.0;
       maxWidth = double.infinity;
     } else if (size.width < AppSpacing.tabletBreakpoint) {
-      // Tablet: 3 cards in a row or 2x2 layout depending on space
-      crossAxisCount = size.width > 700 ? 3 : 2;
-      childAspectRatio = size.width > 700 ? 2.0 : 2.2; // Adjust ratio based on layout
+      // Tablet: 2 cards in a row for perfect balance
+      crossAxisCount = 2;
+      childAspectRatio = 2.2; // Balanced ratio for 2 cards
       spacing = 16.0;
-      maxWidth = 700; // Constrain width for better appearance
+      maxWidth = 600; // Constrain width for better appearance
     } else if (size.width < 1200) {
-      // Small desktop: 3 cards in a row
-      crossAxisCount = 3;
-      childAspectRatio = 2.5; // Balanced cards for desktop
+      // Small desktop: 2 cards in a row
+      crossAxisCount = 2;
+      childAspectRatio = 2.8; // Balanced cards for desktop
       spacing = 20.0;
-      maxWidth = 900; // Constrain width
+      maxWidth = 700; // Constrain width
     } else {
-      // Large desktop: 3 cards in a row with maximum width constraint
-      crossAxisCount = 3;
-      childAspectRatio = 2.8; // Wider cards for large screens
+      // Large desktop: 2 cards in a row with maximum width constraint
+      crossAxisCount = 2;
+      childAspectRatio = 3.2; // Wider cards for large screens
       spacing = 24.0;
-      maxWidth = 1000; // Maximum width for better UX
+      maxWidth = 800; // Maximum width for better UX
     }
     
     return Center(
@@ -184,17 +184,6 @@ class QuickActionsGrid extends StatelessWidget {
 
   List<QuickAction> _getQuickActions(BuildContext context) {
     return [
-      QuickAction(
-        title: 'Start Virtual Tour',
-        subtitle: 'Explore campus locations',
-        icon: Icons.explore_rounded,
-        color: const Color(0xFF4285F4), // Google Blue
-        tooltip: 'Begin an immersive virtual tour of the campus',
-        onTap: () {
-          // Navigate directly to categories screen for virtual tour
-          _showLoadingAndNavigate(context, CategoriesScreen(), 'categories');
-        },
-      ),
       QuickAction(
         title: 'Campus Locations',
         subtitle: 'Browse all locations',

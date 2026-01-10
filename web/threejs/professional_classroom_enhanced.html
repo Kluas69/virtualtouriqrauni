@@ -575,6 +575,30 @@
                 border-radius: 15px;
             }
             
+            #settings-panel {
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                padding: 20px;
+                border-radius: 12px;
+                max-height: 85vh;
+            }
+            
+            #settings-panel h2 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            
+            .control-group {
+                margin-bottom: 15px;
+                padding: 12px;
+            }
+            
+            .control-group h3 {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            
             button {
                 padding: 12px 16px;
                 font-size: 12px;
@@ -682,6 +706,16 @@
             right: 120px;
         }
         
+        #fullscreen-btn-mobile {
+            top: 40px;
+            right: 120px;
+        }
+        
+        #back-btn-mobile {
+            top: 40px;
+            left: 40px;
+        }
+        
         #settings-btn-mobile {
             top: 40px;
             right: 40px;
@@ -723,8 +757,16 @@
                 display: none;
             }
             
+            /* Keep settings panel visible on mobile but adjust positioning */
             #settings-panel {
-                display: none;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                width: auto;
+                max-width: none;
+                max-height: 80vh;
+                overflow-y: auto;
             }
         }
         
@@ -758,6 +800,16 @@
             #crouch-btn {
                 bottom: 30px;
                 right: 100px;
+            }
+            
+            #fullscreen-btn-mobile {
+                top: 30px;
+                right: 100px;
+            }
+            
+            #back-btn-mobile {
+                top: 30px;
+                left: 30px;
             }
             
             #settings-btn-mobile {
@@ -803,21 +855,7 @@
         <button class="settings-close" onclick="toggleSettings()">×</button>
         <h2>🎮 GAME SETTINGS</h2>
         
-        <div class="control-group">
-            <h3>🏛️ Virtual Tour</h3>
-            <div class="control-row">
-                <button onclick="toggleTourMode()">🎬 Tour Mode</button>
-                <button onclick="startAutoTour()">▶️ Auto Tour</button>
-            </div>
-            <div class="control-row">
-                <button onclick="navigateToTourLocation('entrance')">🚪 Entrance</button>
-                <button onclick="navigateToTourLocation('front-desk')">🏫 Front Desk</button>
-            </div>
-            <div class="control-row">
-                <button onclick="navigateToTourLocation('student-area')">🪑 Student Area</button>
-                <button onclick="navigateToTourLocation('whiteboard')">📋 Whiteboard</button>
-            </div>
-        </div>
+
 
         <div class="control-group">
             <h3>🎯 Navigation</h3>
@@ -954,6 +992,8 @@
     
     <div class="mobile-action-btn" id="jump-btn">⬆</div>
     <div class="mobile-action-btn" id="crouch-btn">⬇</div>
+    <div class="mobile-action-btn" id="fullscreen-btn-mobile">⛶</div>
+    <div class="mobile-action-btn" id="back-btn-mobile">←</div>
     <div class="mobile-action-btn" id="settings-btn-mobile">⚙</div>
     
     <!-- Mobile Instructions -->
@@ -963,16 +1003,16 @@
         <p><strong>Swipe Screen:</strong> Fast camera rotation (PUBG-style)</p>
         <p><strong>Jump Button (⬆):</strong> Jump with professional mechanics</p>
         <p><strong>Crouch Button (⬇):</strong> Hold to crouch (CS:GO style)</p>
-        <p><strong>Settings Button:</strong> Game settings (top-right)</p>
+        <p><strong>Fullscreen Button (⛶):</strong> Enter fullscreen + landscape mode</p>
+        <p><strong>Back Button (←):</strong> Exit game and return to menu</p>
+        <p><strong>Settings Button (⚙):</strong> Game settings (top-right)</p>
         <p><strong>Note:</strong> Professional jumping and crouching like CS:GO/Valorant</p>
         <p>Tap anywhere to dismiss</p>
     </div>
 
-    <!-- Mobile Controls -->
-    <div id="mobile-controls">
-        <button class="mobile-btn" onclick="showMobileInstructions()">📋 Help</button>
-        <button class="mobile-btn" onclick="resetPlayer()">🔄 Reset</button>
-        <button class="mobile-btn" onclick="takeScreenshot()">📸</button>
+    <!-- Mobile Controls - Clean game interface -->
+    <div id="mobile-controls" style="display: none;">
+        <!-- Removed help, reset, and screenshot buttons for cleaner mobile game experience -->
     </div>
     <div id="performance">
         <h3>📊 Performance</h3>
@@ -1017,22 +1057,15 @@
         
         console.log('✅ Core Three.js modules imported successfully');
         
-        // ===== PROFESSIONAL ARCHITECTURE WITH VIRTUAL TOUR ENGINE =====
-        // Import and use the professional VirtualTourEngine for optimized campus tours
+        // ===== PROFESSIONAL ARCHITECTURE =====
+        // Simplified game architecture without virtual tour engine
         
-        // Professional Game Engine Variables
+        // Professional Game Engine Variables (simplified)
         let gameEngine = null;
-        let virtualTourEngine = null;
         let renderingSystem = null;
         let inputSystem = null;
         let physicsSystem = null;
         let performanceSystem = null;
-        
-        // Tour-specific variables
-        let tourMode = false;
-        let currentTourLocation = null;
-        let tourLocations = new Map();
-        
         // ===== GLOBAL VARIABLES (Legacy Support) =====
         let scene, camera, renderer, clock, controls;
         let classroomModel = null;
@@ -1044,328 +1077,6 @@
         let fogEnabled = true;
         let qualityLevel = 2; // 0=Low, 1=Medium, 2=High
         let orbitMode = false; // Start with FPS mode for immediate gameplay
-        
-        // ===== VIRTUAL TOUR SYSTEM INTEGRATION =====
-        
-        /**
-         * Initialize Virtual Tour Engine for optimized campus tours
-         */
-        async function initializeVirtualTourEngine() {
-            try {
-                console.log('🏛️ Attempting to load Virtual Tour Engine...');
-                
-                // Try to dynamically import VirtualTourEngine
-                let VirtualTourEngine = null;
-                try {
-                    const tourModule = await import('./src/tour/VirtualTourEngine.js');
-                    VirtualTourEngine = tourModule.VirtualTourEngine;
-                    console.log('✅ VirtualTourEngine imported successfully');
-                } catch (importError) {
-                    console.warn('⚠️ VirtualTourEngine not available:', importError.message);
-                    return false;
-                }
-                
-                updateStatus('Setting up Virtual Campus Tour...');
-                
-                const container = document.getElementById('container');
-                
-                // Configure tour options based on device capabilities
-                const deviceCapabilities = detectDeviceCapabilities();
-                const tourOptions = {
-                    // Performance optimizations
-                    qualityLevel: deviceCapabilities.isMobile ? 'medium' : 'high',
-                    enableLOD: true,
-                    streamingDistance: deviceCapabilities.isMobile ? 50 : 100,
-                    cullingDistance: deviceCapabilities.isMobile ? 100 : 200,
-                    
-                    // Tour features
-                    enableAutoTour: false, // Disabled by default for manual control
-                    tourSpeed: 1.0,
-                    transitionDuration: 2000,
-                    enableMinimap: !deviceCapabilities.isMobile,
-                    enableCompass: true,
-                    
-                    // Mobile optimizations
-                    enableMobileControls: deviceCapabilities.isMobile,
-                    enableGyroscope: false,
-                    enableHapticFeedback: deviceCapabilities.isMobile,
-                    
-                    // Visual enhancements
-                    enableAtmosphere: !deviceCapabilities.isLowEnd,
-                    enableParticles: false,
-                    enableReflections: !deviceCapabilities.isMobile
-                };
-                
-                // Create and initialize tour engine
-                virtualTourEngine = new VirtualTourEngine(container, tourOptions);
-                await virtualTourEngine.initialize();
-                
-                // Get references to core systems
-                gameEngine = virtualTourEngine.gameEngine;
-                renderingSystem = gameEngine.getSystem('rendering');
-                inputSystem = gameEngine.getSystem('input');
-                physicsSystem = gameEngine.getSystem('physics');
-                performanceSystem = gameEngine.getSystem('performance');
-                
-                // Setup tour event callbacks
-                virtualTourEngine.setEventCallbacks({
-                    onLocationChange: (newLocation, previousLocation) => {
-                        currentTourLocation = newLocation;
-                        updateStatusInfo(`Tour Location: ${newLocation}`);
-                        showNotification(`📍 Arrived at: ${newLocation}`);
-                        
-                        // Send to Flutter if available
-                        if (window.parent && window.parent !== window) {
-                            window.parent.postMessage({
-                                type: 'tour_location_changed',
-                                newLocation,
-                                previousLocation,
-                                timestamp: Date.now()
-                            }, '*');
-                        }
-                    },
-                    
-                    onTourProgress: (progress, currentLocation) => {
-                        console.log(`🎬 Tour progress: ${(progress * 100).toFixed(1)}% at ${currentLocation}`);
-                    },
-                    
-                    onAssetLoaded: (assetPath, asset) => {
-                        console.log(`📦 Tour asset loaded: ${assetPath}`);
-                    },
-                    
-                    onPerformanceUpdate: (metrics) => {
-                        // Update performance displays
-                        updatePerformanceDisplays(metrics);
-                    }
-                });
-                
-                // Setup tour locations for the classroom
-                setupClassroomTourLocations();
-                
-                console.log('✅ Virtual Tour Engine initialized successfully');
-                return true;
-                
-            } catch (error) {
-                console.error('❌ Failed to initialize Virtual Tour Engine:', error);
-                // Fallback to direct Three.js implementation
-                return false;
-            }
-        }
-        
-        /**
-         * Setup tour locations specific to the classroom
-         */
-        function setupClassroomTourLocations() {
-            tourLocations.set('entrance', {
-                name: 'Classroom Entrance',
-                position: new THREE.Vector3(0, 1.6, 8),
-                rotation: new THREE.Euler(0, 0, 0),
-                description: 'Main entrance to the classroom'
-            });
-            
-            tourLocations.set('front-desk', {
-                name: 'Teacher\'s Desk',
-                position: new THREE.Vector3(0, 1.6, -5),
-                rotation: new THREE.Euler(0, Math.PI, 0),
-                description: 'Front of the classroom with teacher\'s desk'
-            });
-            
-            tourLocations.set('student-area', {
-                name: 'Student Seating',
-                position: new THREE.Vector3(-3, 1.6, 2),
-                rotation: new THREE.Euler(0, Math.PI / 4, 0),
-                description: 'Student seating area'
-            });
-            
-            tourLocations.set('whiteboard', {
-                name: 'Whiteboard View',
-                position: new THREE.Vector3(0, 1.6, 3),
-                rotation: new THREE.Euler(0, Math.PI, 0),
-                description: 'View of the classroom whiteboard'
-            });
-            
-            console.log(`📍 ${tourLocations.size} tour locations configured for classroom`);
-        }
-        
-        /**
-         * Navigate to a specific tour location
-         */
-        async function navigateToTourLocation(locationId) {
-            if (virtualTourEngine && tourLocations.has(locationId)) {
-                const location = tourLocations.get(locationId);
-                console.log(`🧭 Navigating to: ${location.name}`);
-                
-                try {
-                    // Use VirtualTourEngine's smooth navigation
-                    await virtualTourEngine.navigateToLocation(locationId, true);
-                    showNotification(`📍 ${location.name}`);
-                    updateStatusInfo(`Location: ${location.name}`);
-                } catch (error) {
-                    console.warn('Tour navigation failed, using fallback:', error);
-                    // Fallback to direct camera movement
-                    animateCameraToPosition(location.position, location.rotation);
-                    showNotification(`📍 ${location.name}`);
-                }
-            } else if (tourLocations.has(locationId)) {
-                // Fallback to direct camera movement
-                const location = tourLocations.get(locationId);
-                animateCameraToPosition(location.position, location.rotation);
-                showNotification(`📍 ${location.name}`);
-                updateStatusInfo(`Location: ${location.name}`);
-            } else {
-                console.warn(`Tour location not found: ${locationId}`);
-                showNotification(`❌ Location not found: ${locationId}`);
-            }
-        }
-        
-        /**
-         * Toggle tour mode on/off
-         */
-        function toggleTourMode() {
-            tourMode = !tourMode;
-            
-            if (tourMode) {
-                console.log('🎬 Tour mode enabled');
-                showNotification('🎬 Tour Mode Enabled');
-                updateStatusInfo('Tour Mode: Active');
-                
-                // Start at entrance
-                navigateToTourLocation('entrance');
-            } else {
-                console.log('🎮 Tour mode disabled');
-                showNotification('🎮 Free Exploration Mode');
-                updateStatusInfo('Mode: Free Exploration');
-            }
-            
-            return tourMode;
-        }
-        
-        /**
-         * Start automatic tour progression
-         */
-        function startAutoTour() {
-            if (virtualTourEngine) {
-                try {
-                    virtualTourEngine.startAutoTour();
-                    showNotification('🎬 Auto Tour Started');
-                    updateStatusInfo('Auto Tour: Active');
-                } catch (error) {
-                    console.warn('Auto tour failed:', error);
-                    showNotification('❌ Auto Tour not available');
-                }
-            } else {
-                // Fallback auto tour implementation
-                console.log('🎬 Starting fallback auto tour...');
-                startFallbackAutoTour();
-            }
-        }
-        
-        /**
-         * Stop automatic tour progression
-         */
-        function stopAutoTour() {
-            if (virtualTourEngine) {
-                try {
-                    virtualTourEngine.stopAutoTour();
-                    showNotification('⏹️ Auto Tour Stopped');
-                    updateStatusInfo('Auto Tour: Stopped');
-                } catch (error) {
-                    console.warn('Stop auto tour failed:', error);
-                }
-            } else {
-                // Stop fallback auto tour
-                stopFallbackAutoTour();
-            }
-        }
-        
-        /**
-         * Fallback auto tour implementation
-         */
-        let autoTourInterval = null;
-        let autoTourIndex = 0;
-        
-        function startFallbackAutoTour() {
-            if (autoTourInterval) return;
-            
-            const locations = Array.from(tourLocations.keys());
-            autoTourIndex = 0;
-            
-            showNotification('🎬 Auto Tour Started (Fallback Mode)');
-            updateStatusInfo('Auto Tour: Active (Fallback)');
-            
-            autoTourInterval = setInterval(() => {
-                const locationId = locations[autoTourIndex];
-                navigateToTourLocation(locationId);
-                
-                autoTourIndex = (autoTourIndex + 1) % locations.length;
-            }, 5000); // 5 seconds per location
-        }
-        
-        function stopFallbackAutoTour() {
-            if (autoTourInterval) {
-                clearInterval(autoTourInterval);
-                autoTourInterval = null;
-                showNotification('⏹️ Auto Tour Stopped');
-                updateStatusInfo('Auto Tour: Stopped');
-            }
-        }
-        
-        /**
-         * Animate camera to a specific position (fallback method)
-         */
-        function animateCameraToPosition(targetPosition, targetRotation, duration = 2000) {
-            if (!camera) return;
-            
-            const startPosition = camera.position.clone();
-            const startRotation = camera.rotation.clone();
-            const startTime = performance.now();
-            
-            function animate() {
-                const elapsed = performance.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easeProgress = easeInOutCubic(progress);
-                
-                // Interpolate position
-                camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
-                
-                // Interpolate rotation
-                camera.rotation.x = THREE.MathUtils.lerp(startRotation.x, targetRotation.x, easeProgress);
-                camera.rotation.y = THREE.MathUtils.lerp(startRotation.y, targetRotation.y, easeProgress);
-                camera.rotation.z = THREE.MathUtils.lerp(startRotation.z, targetRotation.z, easeProgress);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-            
-            animate();
-        }
-        
-        function easeInOutCubic(t) {
-            return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        }
-        
-        /**
-         * Update performance displays with tour engine metrics
-         */
-        function updatePerformanceDisplays(metrics) {
-            if (metrics.fps !== undefined) {
-                document.getElementById('fps-hud').textContent = metrics.fps;
-                document.getElementById('fps-counter').textContent = metrics.fps;
-            }
-            
-            if (metrics.triangles !== undefined) {
-                document.getElementById('triangle-count').textContent = (metrics.triangles / 1000).toFixed(1) + 'K';
-            }
-            
-            if (metrics.drawCalls !== undefined) {
-                document.getElementById('draw-calls').textContent = metrics.drawCalls;
-            }
-            
-            if (metrics.loadedAssets !== undefined) {
-                document.getElementById('texture-count').textContent = metrics.loadedAssets;
-            }
-        }
         
         // ===== HIGH RESOLUTION GRAPHICS FUNCTIONS =====
         function applyHighResolutionSettings() {
@@ -1682,7 +1393,7 @@
             }
         }
         
-        // ===== OPTIMIZED PERFORMANCE MONITORING WITH VIRTUAL TOUR ENGINE =====
+        // ===== OPTIMIZED PERFORMANCE MONITORING =====
         function updatePerformanceMonitor() {
             performanceMonitor.frameCount++;
             const currentTime = performance.now();
@@ -1694,12 +1405,10 @@
                 document.getElementById('fps-hud').textContent = performanceMonitor.fps;
                 document.getElementById('fps-counter').textContent = performanceMonitor.fps;
                 
-                // Get additional metrics from VirtualTourEngine or renderer
+                // Get metrics from renderer
                 let additionalMetrics = {};
                 
-                if (virtualTourEngine && virtualTourEngine.performanceMetrics) {
-                    additionalMetrics = virtualTourEngine.performanceMetrics;
-                } else if (renderer && renderer.info) {
+                if (renderer && renderer.info) {
                     const info = renderer.info;
                     additionalMetrics = {
                         triangles: info.render.triangles,
@@ -1725,7 +1434,7 @@
                             ...additionalMetrics,
                             contextLossCount: contextLossCount,
                             webglContexts: webglContexts.size,
-                            tourEngine: virtualTourEngine ? 'active' : 'fallback',
+                            gameEngine: 'direct_threejs',
                             timestamp: Date.now()
                         }, '*');
                     } catch (e) {
@@ -1735,6 +1444,38 @@
                 
                 performanceMonitor.frameCount = 0;
                 performanceMonitor.lastTime = currentTime;
+            }
+        }
+        
+        /**
+         * Update performance displays with metrics
+         */
+        function updatePerformanceDisplays(metrics) {
+            if (metrics.fps !== undefined) {
+                const fpsHud = document.getElementById('fps-hud');
+                const fpsCounter = document.getElementById('fps-counter');
+                if (fpsHud) fpsHud.textContent = metrics.fps;
+                if (fpsCounter) fpsCounter.textContent = metrics.fps;
+            }
+            
+            if (metrics.triangles !== undefined) {
+                const triangleCount = document.getElementById('triangle-count');
+                if (triangleCount) triangleCount.textContent = (metrics.triangles / 1000).toFixed(1) + 'K';
+            }
+            
+            if (metrics.drawCalls !== undefined) {
+                const drawCalls = document.getElementById('draw-calls');
+                if (drawCalls) drawCalls.textContent = metrics.drawCalls;
+            }
+            
+            if (metrics.loadedAssets !== undefined) {
+                const textureCount = document.getElementById('texture-count');
+                if (textureCount) textureCount.textContent = metrics.loadedAssets;
+            }
+            
+            if (metrics.memory !== undefined) {
+                const memoryUsage = document.getElementById('memory-usage');
+                if (memoryUsage) memoryUsage.textContent = metrics.memory + ' MB';
             }
         }
         
@@ -1895,12 +1636,50 @@
             settingsBtn.style.pointerEvents = 'auto';
             settingsBtn.style.touchAction = 'manipulation';
             
+            // Setup fullscreen button
+            const fullscreenBtn = document.getElementById('fullscreen-btn-mobile');
+            const handleFullscreen = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Fullscreen button pressed');
+                try {
+                    // Enable fullscreen and force landscape mode
+                    toggleFullscreenLandscape();
+                } catch (error) {
+                    console.error('Fullscreen toggle error:', error);
+                }
+            };
+            
+            fullscreenBtn.addEventListener('touchstart', handleFullscreen, { passive: false });
+            fullscreenBtn.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+            fullscreenBtn.addEventListener('click', handleFullscreen);
+            fullscreenBtn.addEventListener('mousedown', handleFullscreen);
+            
+            // Setup back button
+            const backBtn = document.getElementById('back-btn-mobile');
+            const handleBack = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Back button pressed');
+                try {
+                    // Send message to Flutter to go back
+                    exitGame();
+                } catch (error) {
+                    console.error('Back button error:', error);
+                }
+            };
+            
+            backBtn.addEventListener('touchstart', handleBack, { passive: false });
+            backBtn.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+            backBtn.addEventListener('click', handleBack);
+            backBtn.addEventListener('mousedown', handleBack);
+            
             // Setup PUBG-style screen touch for camera rotation
             setupScreenTouchControls();
             
-            // Show mobile instructions initially
+            // Mobile FPS mode enabled - clean interface
             setTimeout(() => {
-                showMobileInstructions();
+                // Mobile interface is now clean without help instructions
             }, 1000);
         }
         
@@ -2117,9 +1896,9 @@
                 if (isScreenTouching) {
                     const touchDuration = Date.now() - touchStartTime;
                     
-                    // If it was a quick tap, show/hide instructions
+                    // Quick tap - clean mobile interface (no help popup)
                     if (touchDuration < 200 && !mobileInput.enabled) {
-                        showMobileInstructions();
+                        // Clean mobile game interface - no help instructions
                     }
                     
                     isScreenTouching = false;
@@ -2163,21 +1942,7 @@
             console.log('📱 Mobile jump input registered');
         }
         
-        function showMobileInstructions() {
-            const instructions = document.getElementById('mobile-instructions');
-            instructions.style.display = 'block';
-            
-            // Auto-hide after 5 seconds or on tap
-            setTimeout(() => {
-                instructions.style.display = 'none';
-            }, 5000);
-            
-            instructions.addEventListener('touchstart', () => {
-                instructions.style.display = 'none';
-            });
-        }
-        
-        // Removed functions: showQualityInfo, testQualitySystem, testSettingsButton - cleaned up for professional UI
+        // Removed functions: showMobileInstructions, showQualityInfo, testQualitySystem, testSettingsButton - cleaned up for professional UI
         
         // ===== HIGH RESOLUTION GRAPHICS SYSTEM =====
         function initializeQualitySystem() {
@@ -2309,38 +2074,16 @@
             console.error('❌ Error:', message);
         }
         
-        // ===== PROFESSIONAL INITIALIZATION WITH VIRTUAL TOUR ENGINE =====
+        // ===== PROFESSIONAL INITIALIZATION =====
         async function init() {
             try {
-                console.log('🔧 Initializing Professional Classroom Viewer with Virtual Tour Engine...');
-                updateStatus('Initializing Professional Virtual Tour System...');
+                console.log('🔧 Initializing Professional Classroom Viewer...');
+                updateStatus('Initializing Professional Game System...');
                 updateProgress(10);
                 
-                // Try to initialize with VirtualTourEngine first
-                const tourEngineInitialized = await initializeVirtualTourEngine();
-                
-                if (tourEngineInitialized) {
-                    console.log('✅ Using VirtualTourEngine for professional tour experience');
-                    
-                    // Get references from tour engine
-                    scene = renderingSystem.getScene();
-                    camera = renderingSystem.getCamera();
-                    renderer = renderingSystem.getRenderer();
-                    
-                    updateProgress(50);
-                    
-                    // Load classroom model through tour engine
-                    await loadClassroomModelForTour();
-                    
-                    updateProgress(80);
-                    
-                    // Start the tour engine
-                    virtualTourEngine.start();
-                    
-                } else {
-                    console.log('⚠️ Falling back to direct Three.js implementation');
-                    await initializeDirectThreeJS();
-                }
+                // Initialize with direct Three.js implementation
+                console.log('🎮 Using direct Three.js implementation for clean game experience');
+                await initializeDirectThreeJS();
                 
                 updateProgress(90);
                 
@@ -2352,8 +2095,8 @@
                 // Hide Loading Screen
                 setTimeout(() => {
                     document.getElementById('loading').classList.add('hidden');
-                    updateStatusInfo('Ready - Professional Classroom with Virtual Tour!');
-                    showNotification('🏛️ Virtual Campus Tour Ready!');
+                    updateStatusInfo('Ready - Professional Classroom Game!');
+                    showNotification('🎮 Professional Game Ready!');
                     
                     // Initialize sensitivity display
                     updateSensitivityDisplay();
@@ -2367,94 +2110,12 @@
                     }
                 }, 800);
                 
-                console.log('🎉 Professional Classroom Viewer with Virtual Tour initialized successfully!');
+                console.log('🎉 Professional Classroom Game initialized successfully!');
                 
             } catch (error) {
                 console.error('❌ Failed to initialize:', error);
                 showError(`Failed to initialize Professional Classroom: ${error.message}`);
             }
-        }
-        
-        /**
-         * Load classroom model optimized for virtual tour
-         */
-        async function loadClassroomModelForTour() {
-            return new Promise((resolve, reject) => {
-                console.log('📦 Loading classroom model for virtual tour...');
-                updateStatus('Loading classroom model for tour...');
-                
-                const loader = new GLTFLoader();
-                
-                loader.load(
-                    './assets/models/classroom.glb',
-                    
-                    function(gltf) {
-                        try {
-                            console.log('✅ Classroom model loaded for virtual tour!');
-                            
-                            classroomModel = gltf.scene;
-                            scene.add(classroomModel);
-                            
-                            // Professional Model Setup for Virtual Tour
-                            classroomModel.traverse((child) => {
-                                if (child.isMesh) {
-                                    // Optimize for tour performance
-                                    child.castShadow = false;
-                                    child.receiveShadow = false;
-                                    
-                                    // Enhanced materials for tour quality
-                                    if (child.material) {
-                                        child.material.envMapIntensity = 0.5;
-                                        if (child.material.color) {
-                                            child.material.color.multiplyScalar(1.1);
-                                        }
-                                        child.material.needsUpdate = true;
-                                    }
-                                }
-                            });
-                            
-                            // Setup tour-specific camera positioning
-                            const box = new THREE.Box3().setFromObject(classroomModel);
-                            const center = box.getCenter(new THREE.Vector3());
-                            const size = box.getSize(new THREE.Vector3());
-                            
-                            // Position camera at entrance for tour start
-                            camera.position.set(0, 1.6, 8);
-                            camera.lookAt(center);
-                            
-                            // Setup animations if available
-                            if (gltf.animations && gltf.animations.length > 0) {
-                                mixer = new THREE.AnimationMixer(classroomModel);
-                                gltf.animations.forEach((clip) => {
-                                    const action = mixer.clipAction(clip);
-                                    action.play();
-                                });
-                                console.log(`🎬 ${gltf.animations.length} animations loaded for tour`);
-                            }
-                            
-                            // Update model info
-                            document.getElementById('model-info').textContent = 'classroom.glb (Tour Ready)';
-                            
-                            resolve();
-                            
-                        } catch (error) {
-                            console.error('❌ Error setting up classroom model for tour:', error);
-                            reject(error);
-                        }
-                    },
-                    
-                    function(progress) {
-                        const percent = (progress.loaded / progress.total) * 100;
-                        console.log(`📦 Loading progress: ${percent.toFixed(1)}%`);
-                        updateProgress(50 + (percent * 0.3)); // 50-80% range
-                    },
-                    
-                    function(error) {
-                        console.error('❌ Failed to load classroom model:', error);
-                        reject(error);
-                    }
-                );
-            });
         }
         
         /**
@@ -2535,15 +2196,15 @@
             // Create Professional Clock
             clock = new THREE.Clock();
             
-            // Start render loop
-            startProfessionalRenderLoop();
-            
             // Load classroom model
             await loadClassroomModelDirect();
             
             // Setup input and performance systems
             setupSimplifiedInputSystem();
             setupSimplifiedPerformanceMonitoring();
+            
+            // Start render loop AFTER everything is loaded
+            startProfessionalRenderLoop();
         }
         
         /**
@@ -2844,7 +2505,7 @@
         
         // ===== OPTIMIZED RENDER LOOP =====
         function startProfessionalRenderLoop() {
-            console.log('🎮 Starting Optimized Professional Render Loop with Virtual Tour Engine...');
+            console.log('🎮 Starting Optimized Professional Render Loop...');
             
             // Render first frame immediately to prevent white screen
             if (renderer && scene && camera) {
@@ -2853,57 +2514,120 @@
             }
             
             let errorCount = 0;
-            const maxErrors = 3;
+            const maxErrors = 5;
+            let lastErrorTime = 0;
             
             function animate() {
                 try {
+                    // Safety checks before proceeding
+                    if (!renderer || !scene || !camera || !clock) {
+                        console.warn('Core objects not ready, skipping frame');
+                        setTimeout(() => requestAnimationFrame(animate), 16); // Try again next frame
+                        return;
+                    }
+                    
                     requestAnimationFrame(animate);
                     
                     const deltaTime = Math.min(clock.getDelta(), 0.1);
                     
-                    // Update VirtualTourEngine if available
-                    if (virtualTourEngine && virtualTourEngine.gameEngine) {
-                        // Let VirtualTourEngine handle updates and rendering
-                        // The tour engine manages its own render loop
-                        return;
+                    // Update animations (with safety check)
+                    if (mixer) {
+                        try {
+                            mixer.update(deltaTime);
+                        } catch (mixerError) {
+                            console.warn('Mixer update error:', mixerError);
+                        }
                     }
                     
-                    // Fallback to direct Three.js updates
-                    if (mixer) mixer.update(deltaTime);
-                    
-                    // Update player and camera
-                    if (isPointerLocked || mobileInput.enabled) {
-                        updatePlayer(deltaTime);
-                        updateCamera();
+                    // Update player and camera (with safety checks)
+                    if (isPointerLocked || (mobileInput && mobileInput.enabled)) {
+                        try {
+                            if (typeof updatePlayer === 'function') {
+                                updatePlayer(deltaTime);
+                            }
+                            if (typeof updateCamera === 'function') {
+                                updateCamera();
+                            }
+                        } catch (playerError) {
+                            console.warn('Player/Camera update error:', playerError);
+                        }
                     }
                     
-                    // Update orbit controls (only when needed)
-                    if (orbitMode && !isPointerLocked && !mobileInput.enabled) {
-                        controls.update();
+                    // Update orbit controls (with safety checks)
+                    if (orbitMode && !isPointerLocked && !(mobileInput && mobileInput.enabled) && controls) {
+                        try {
+                            controls.update();
+                        } catch (controlsError) {
+                            console.warn('Controls update error:', controlsError);
+                        }
                     }
                     
-                    // Optimized performance monitoring
-                    updatePerformanceMonitor();
-                    updatePerformanceStats();
+                    // Optimized performance monitoring (with safety checks)
+                    try {
+                        if (typeof updatePerformanceMonitor === 'function') {
+                            updatePerformanceMonitor();
+                        }
+                        if (typeof updatePerformanceStats === 'function') {
+                            updatePerformanceStats();
+                        }
+                    } catch (perfError) {
+                        console.warn('Performance monitoring error:', perfError);
+                    }
                     
-                    // Render
+                    // Render (with safety check)
                     if (renderer && scene && camera) {
-                        renderer.render(scene, camera);
+                        try {
+                            renderer.render(scene, camera);
+                        } catch (renderError) {
+                            console.warn('Render error:', renderError);
+                            throw renderError; // Re-throw to trigger error handling
+                        }
                     }
                     
+                    // Reset error count on successful frame
                     errorCount = 0;
                     
                 } catch (error) {
-                    errorCount++;
-                    console.error(`Render error ${errorCount}/${maxErrors}:`, error);
+                    const now = Date.now();
                     
-                    if (errorCount >= maxErrors) {
-                        console.error('Too many render errors, stopping animation');
-                        showError('Rendering failed. Please refresh the page.');
-                        return;
+                    // Reset error count if enough time has passed since last error
+                    if (now - lastErrorTime > 5000) {
+                        errorCount = 0;
                     }
                     
-                    requestAnimationFrame(animate);
+                    errorCount++;
+                    lastErrorTime = now;
+                    
+                    console.error(`Render error ${errorCount}/${maxErrors}:`, error);
+                    console.error('Error stack:', error.stack);
+                    console.error('Render state:', {
+                        renderer: !!renderer,
+                        scene: !!scene,
+                        camera: !!camera,
+                        clock: !!clock,
+                        mixer: !!mixer,
+                        isPointerLocked,
+                        mobileInputEnabled: mobileInput?.enabled,
+                        orbitMode
+                    });
+                    
+                    if (errorCount >= maxErrors) {
+                        console.error('Too many render errors, stopping animation loop');
+                        console.error('Final error state:', {
+                            renderer: !!renderer,
+                            scene: !!scene,
+                            camera: !!camera,
+                            clock: !!clock,
+                            classroomModel: !!classroomModel
+                        });
+                        showError('Rendering failed. Please refresh the page.');
+                        return; // Stop the animation loop completely
+                    }
+                    
+                    // Continue animation loop for recoverable errors
+                    setTimeout(() => {
+                        requestAnimationFrame(animate);
+                    }, 100); // Small delay before retry
                 }
             }
             
@@ -4319,6 +4043,94 @@
             }
         }
         
+        // Mobile-specific fullscreen with landscape mode
+        function toggleFullscreenLandscape() {
+            console.log('🖥️ Mobile fullscreen with landscape requested');
+            
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                document.documentElement.requestFullscreen().then(() => {
+                    console.log('✅ Fullscreen enabled');
+                    
+                    // Force landscape orientation on mobile
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').then(() => {
+                            console.log('✅ Landscape mode locked');
+                            showNotification('🖥️ Fullscreen + Landscape Mode ON');
+                        }).catch((error) => {
+                            console.warn('⚠️ Could not lock landscape:', error);
+                            showNotification('🖥️ Fullscreen Mode ON');
+                        });
+                    } else {
+                        showNotification('🖥️ Fullscreen Mode ON');
+                    }
+                    
+                    updateStatusInfo('🖥️ Mobile fullscreen + landscape enabled');
+                }).catch((error) => {
+                    console.error('❌ Fullscreen failed:', error);
+                    showNotification('❌ Fullscreen not supported');
+                });
+            } else {
+                // Exit fullscreen
+                document.exitFullscreen().then(() => {
+                    console.log('✅ Fullscreen disabled');
+                    
+                    // Unlock orientation
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                        console.log('✅ Orientation unlocked');
+                    }
+                    
+                    updateStatusInfo('🖥️ Fullscreen disabled');
+                    showNotification('🖥️ Fullscreen Mode OFF');
+                }).catch((error) => {
+                    console.error('❌ Exit fullscreen failed:', error);
+                });
+            }
+        }
+        
+        // Exit game function - communicates with Flutter
+        function exitGame() {
+            console.log('🚪 Exit game requested');
+            
+            try {
+                // Try to send message to Flutter parent
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'game_exit',
+                        action: 'back_pressed',
+                        source: 'threejs_game',
+                        timestamp: Date.now()
+                    }, '*');
+                    console.log('✅ Exit message sent to Flutter');
+                }
+                
+                // Also try direct navigation if available
+                if (window.history && window.history.length > 1) {
+                    window.history.back();
+                    console.log('✅ Browser back navigation triggered');
+                }
+                
+                showNotification('🚪 Exiting game...');
+                
+                // Fallback: show exit confirmation
+                setTimeout(() => {
+                    if (confirm('Exit the 3D classroom?')) {
+                        // Last resort: try to close or navigate
+                        if (window.close) {
+                            window.close();
+                        } else {
+                            window.location.href = 'about:blank';
+                        }
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Exit game error:', error);
+                showNotification('❌ Exit failed - use device back button');
+            }
+        }
+        
         // ===== MOBILE RESPONSIVE FUNCTIONS =====
         function toggleMobileInstructions() {
             const instructions = document.getElementById('instructions');
@@ -4542,8 +4354,10 @@
         window.cycleQuality = cycleQuality;
         window.togglePerformance = togglePerformance;
         window.toggleFullscreen = toggleFullscreen;
+        window.toggleFullscreenLandscape = toggleFullscreenLandscape;
+        window.exitGame = exitGame;
         window.toggleMobileInstructions = toggleMobileInstructions;
-        window.showMobileInstructions = showMobileInstructions;
+        // Removed: window.showMobileInstructions - cleaned up for professional mobile UI
         window.toggleSettings = toggleSettings;
         window.togglePerformanceHUD = togglePerformanceHUD;
         // Removed function assignments: showQualityInfo, testQualitySystem, testSettingsButton, takeScreenshot, toggleWireframe, toggleFog, activateBeeMode, activateAntMode

@@ -7,7 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
 import 'package:virtualtouriu/Screens/webgl_room_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
-import 'package:virtualtouriu/core/widgets/glassmorphic_container.dart';
+import 'package:virtualtouriu/core/widgets/unified_glassmorphic_container.dart';
 import 'package:virtualtouriu/core/widgets/circular_control_button.dart';
 import 'package:virtualtouriu/core/widgets/help_item.dart';
 
@@ -321,7 +321,7 @@ class _PanoramaScreenState extends State<PanoramaScreen>
         duration: const Duration(milliseconds: 400),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: GlassmorphicContainer(
+          child: UnifiedGlassmorphicContainer(
             isDark: isDark,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -376,9 +376,9 @@ class _PanoramaScreenState extends State<PanoramaScreen>
           duration: const Duration(milliseconds: 400),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 32.0),
-            child: GlassmorphicContainer(
+            child: UnifiedGlassmorphicContainer(
               isDark: isDark,
-              borderRadius: 30,
+              borderRadius: BorderRadius.circular(30),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -426,14 +426,10 @@ class _PanoramaScreenState extends State<PanoramaScreen>
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
-            child: GlassmorphicContainer(
+            child: UnifiedGlassmorphicContainer(
               isDark: isDark,
-              borderRadius: 24,
+              borderRadius: BorderRadius.circular(24),
               padding: const EdgeInsets.all(32.0),
-              border: Border.all(
-                color: theme.primaryColor.withValues(alpha: 0.3),
-                width: 2,
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -516,14 +512,10 @@ class _PanoramaScreenState extends State<PanoramaScreen>
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
-            child: GlassmorphicContainer(
+            child: UnifiedGlassmorphicContainer(
               isDark: isDark,
-              borderRadius: 24,
+              borderRadius: BorderRadius.circular(24),
               padding: const EdgeInsets.all(32.0),
-              border: Border.all(
-                color: theme.primaryColor.withValues(alpha: 0.3),
-                width: 2,
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

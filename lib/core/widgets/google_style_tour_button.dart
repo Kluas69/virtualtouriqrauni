@@ -116,7 +116,7 @@ class _GoogleStyleTourButtonState extends State<GoogleStyleTourButton>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Start Virtual Tour',
+                            'Play Campus Tour',
                             style: GoogleFonts.roboto(
                               fontSize: widget.isMobile ? 16 : 18,
                               fontWeight: FontWeight.w600,
@@ -125,7 +125,7 @@ class _GoogleStyleTourButtonState extends State<GoogleStyleTourButton>
                             ),
                           ),
                           Text(
-                            'Explore in 360°',
+                            'Explore in 3D Gaming Experience',
                             style: GoogleFonts.roboto(
                               fontSize: widget.isMobile ? 11 : 12,
                               fontWeight: FontWeight.w400,

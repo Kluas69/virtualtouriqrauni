@@ -392,7 +392,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> {
                   duration: const Duration(milliseconds: 700),
                   child: EnhancedExploreSection(
                     isMobile: false,
-                    onTourPressed: () => HomeScreen.navigateToCategories(context),
                   ),
                 ),
                 SizedBox(height: AppSpacing.getSectionSpacing(size)),

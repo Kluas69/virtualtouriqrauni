@@ -8,7 +8,7 @@ import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:virtualtouriu/themes/themes.dart';
 import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
 import 'package:virtualtouriu/core/constants.dart';
-import 'package:virtualtouriu/core/widgets/glassmorphic_container.dart';
+import 'package:virtualtouriu/core/widgets/unified_glassmorphic_container.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/core/widgets/empty_state.dart';
 import 'package:virtualtouriu/core/widgets/loading_state.dart';
@@ -342,19 +342,10 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       toolbarHeight: 70,
       leading: const SizedBox.shrink(),
       automaticallyImplyLeading: false,
-      flexibleSpace: GlassmorphicContainer(
+      flexibleSpace: UnifiedGlassmorphicContainer(
         isDark: isDark,
-        borderRadius: 0,
+        borderRadius: BorderRadius.zero,
         padding: EdgeInsets.zero,
-        border: Border(
-          bottom: BorderSide(
-            color:
-                isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.05),
-            width: 1,
-          ),
-        ),
         child: SafeArea(child: _buildTopNavigationBar(isDark, themeProvider)),
       ),
     );

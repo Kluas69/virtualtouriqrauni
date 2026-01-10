@@ -20,6 +20,7 @@ import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
 import 'package:virtualtouriu/core/widgets/google_style_tour_button.dart';
 import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
 import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
+import 'package:virtualtouriu/Screens/webgl_room_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,6 +31,28 @@ class HomeScreen extends StatefulWidget {
   // Static methods that can be accessed from other classes
   static void navigateToCategories(BuildContext context) {
     AppNavigator.toCategories(context);
+  }
+
+  // Direct navigation to 3D game from home screen
+  static void navigateToGame(BuildContext context) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => WebGLRoomScreen(
+          title: 'Campus Tour',
+          url: 'classroom', // Use classroom as the main campus tour
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeInOutCubic;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
+    );
   }
 
   static Widget buildHeroSection({
@@ -409,7 +432,7 @@ class HomeScreen extends StatefulWidget {
             child: Center(
               child: GoogleStyleTourButton(
                 isMobile: isMobile,
-                onPressed: () => navigateToCategories(context),
+                onPressed: () => navigateToGame(context),
               ),
             ),
           ),

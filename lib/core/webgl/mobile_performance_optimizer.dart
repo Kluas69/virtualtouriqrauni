@@ -173,7 +173,7 @@ class MobilePerformanceOptimizer {
                            html.window.navigator.maxTouchPoints! > 0;
       
       // Get pixel ratio
-      final pixelRatio = html.window.devicePixelRatio ?? 1.0;
+      final pixelRatio = (html.window.devicePixelRatio ?? 1.0).toDouble();
       
       // Determine if low-end device
       final isLowEnd = (isMobile && memoryGB < 3.0) || 
@@ -240,7 +240,7 @@ class MobilePerformanceOptimizer {
         
         if (_touchConfig.useRequestAnimationFrame) {
           // Use requestAnimationFrame for smooth visual updates
-          html.window.requestAnimationFrame((double time) {
+          html.window.requestAnimationFrame((num time) {
             try {
               eventHandler(event);
             } catch (e) {
@@ -388,6 +388,23 @@ class MobilePerformanceOptimizer {
     
     AppLogger.info('Performance preset set to: ${preset.displayName}',
       component: _logComponent);
+  }
+  
+  /// Set quality level (compatibility method for WebGL service)
+  void setQualityLevel(dynamic qualityLevel) {
+    // Convert quality level to performance preset
+    PerformancePreset preset;
+    if (qualityLevel.toString().toLowerCase().contains('low')) {
+      preset = PerformancePreset.low;
+    } else if (qualityLevel.toString().toLowerCase().contains('medium')) {
+      preset = PerformancePreset.medium;
+    } else if (qualityLevel.toString().toLowerCase().contains('high')) {
+      preset = PerformancePreset.high;
+    } else {
+      preset = PerformancePreset.medium; // Default to medium
+    }
+    
+    setPerformancePreset(preset);
   }
   
   /// Enable or disable adaptive quality scaling

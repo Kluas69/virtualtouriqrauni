@@ -271,7 +271,6 @@ class _DesktopHomeScreenState extends State<DesktopHomeScreen> {
             duration: const Duration(milliseconds: 700),
             child: EnhancedExploreSection(
               isMobile: false,
-              onTourPressed: () => HomeScreen.navigateToCategories(context),
             ),
           ),
           SizedBox(height: AppSpacing.getSectionSpacing(size)),

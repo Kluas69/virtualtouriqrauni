@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'platform/platform_utils.dart';
 import 'logging/app_logger.dart';
-import 'assets/app_assets.dart';
+import 'assets/unified_asset_manager.dart';
 
 class LocationCardData {
   final String tag;
@@ -39,10 +39,10 @@ class AppConstants {
   static bool get isMobile => PlatformUtils.isMobile || PlatformUtils.isMobileScreen;
 
   // MOBILE OPTIMIZATION: Image cache sizes based on device
-  static int get imageCacheWidth => isMobile ? AppAssets.mobileImageCacheWidth : AppAssets.defaultImageCacheWidth;
-  static int get imageCacheHeight => isMobile ? AppAssets.mobileImageCacheHeight : AppAssets.defaultImageCacheHeight;
-  static int get thumbnailCacheWidth => isMobile ? AppAssets.mobileThumbnailCacheWidth : AppAssets.thumbnailCacheWidth;
-  static int get thumbnailCacheHeight => isMobile ? AppAssets.mobileThumbnailCacheHeight : AppAssets.thumbnailCacheHeight;
+  static int get imageCacheWidth => isMobile ? UnifiedAssetManager.mobileImageCacheWidth : UnifiedAssetManager.defaultImageCacheWidth;
+  static int get imageCacheHeight => isMobile ? UnifiedAssetManager.mobileImageCacheHeight : UnifiedAssetManager.defaultImageCacheHeight;
+  static int get thumbnailCacheWidth => isMobile ? UnifiedAssetManager.mobileThumbnailCacheWidth : UnifiedAssetManager.thumbnailCacheWidth;
+  static int get thumbnailCacheHeight => isMobile ? UnifiedAssetManager.mobileThumbnailCacheHeight : UnifiedAssetManager.thumbnailCacheHeight;
 
   static Future<void> initialize() async {
     try {
@@ -129,7 +129,7 @@ class AppConstants {
 
       // Load JSON data with shorter timeout and better error handling
       try {
-        final String jsonString = await AssetLoader.loadStringAsset(AppAssets.appDataJson)
+        final String jsonString = await UnifiedAssetManager().loadStringAsset(UnifiedAssetManager.appDataJson)
             .timeout(const Duration(seconds: 5), onTimeout: () {
               AppLogger.warning('JSON loading timed out, using defaults', 
                 component: 'AppConstants');
@@ -214,6 +214,6 @@ class AppConstants {
   }
 
   static String? webglUrlFor(String locationName) {
-    return AppAssets.getWebGLUrl(locationName);
+    return UnifiedAssetManager.getWebGLUrl(locationName);
   }
 }

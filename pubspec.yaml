@@ -28,9 +28,7 @@ dependencies:
 
   # Layout & Scrolling
   flutter_staggered_grid_view: ^0.7.0
-  scroll_snap_list: ^0.9.1
   smooth_page_indicator: ^2.0.1
-  visibility_detector: ^0.4.0+2
 
   # Panorama & 360° View
   panorama: ^0.4.1
@@ -54,13 +52,9 @@ dependencies:
 
   # HTML Rendering (for web content if needed)
   flutter_html: ^3.0.0-beta.2
-  universal_html: ^2.2.4
 
   # Math utilities
   vector_math: ^2.1.4
-
-  # Sensors (for gyroscope support)
-  sensors_plus: ^4.0.2
 
 dev_dependencies:
   flutter_test:
@@ -83,18 +77,3 @@ flutter:
     
     # 3D Models
     - assets/models/
-    
-    # Individual location images (for explicit reference)
-    - lib/images/library.jpg
-    - lib/images/ground.jpg
-    - lib/images/auditorium.jpg
-    - lib/images/class.jpg
-    - lib/images/Amphitheater.jpg
-    - lib/images/cafe.jpg
-    - lib/images/commonroom.jpg
-    - lib/images/playground.jpg
-    - lib/images/swimming.jpg
-    - lib/images/webinarroom.jpg
-    - lib/images/backgroundiu.jpg
-    - lib/images/Main.jpg
-    - lib/images/main2.jpg

@@ -3,11 +3,10 @@ import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../core/webgl/webgl_service_web_simple.dart';
+import '../core/webgl/webgl_service_unified.dart';
 import '../core/logging/app_logger.dart';
 import '../core/platform/platform_utils.dart';
 import '../core/mobile/mobile_game_controller.dart';
-import '../core/widgets/mobile_game_ui.dart';
 
 /// Simplified WebGL Room Screen that properly loads professional_classroom_enhanced.html
 class WebGLRoomScreen extends StatefulWidget {
@@ -30,7 +29,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
   bool _isLoading = true;
   bool _hasError = false;
   String? _errorMessage;
-  late WebGLServiceWebSimple _webglService;
+  late WebGLServiceUnified _webglService;
   html.IFrameElement? _iframe;
   final MobileGameController _gameController = MobileGameController.instance;
   
@@ -38,6 +37,36 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
   void initState() {
     super.initState();
     _initializeWebGL();
+    _setupMessageListener();
+  }
+
+  void _setupMessageListener() {
+    // Listen for messages from the HTML iframe
+    html.window.addEventListener('message', (html.Event event) {
+      final html.MessageEvent messageEvent = event as html.MessageEvent;
+      final data = messageEvent.data;
+      
+      if (data is Map && data['type'] == 'game_exit' && data['action'] == 'back_pressed') {
+        AppLogger.info('Received exit game message from HTML', component: _logComponent);
+        _handleGameExit();
+      }
+    });
+  }
+
+  void _handleGameExit() async {
+    try {
+      // Restore normal orientation when leaving the game
+      if (_isMobileDevice()) {
+        await _gameController.disableLandscapeMode();
+      }
+      
+      // Navigate back
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      AppLogger.error('Error handling game exit: $e', component: _logComponent);
+    }
   }
 
   @override
@@ -65,7 +94,7 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
 
   void _initializeWebGL() {
     try {
-      _webglService = WebGLServiceWebSimple();
+      _webglService = WebGLServiceUnified();
       AppLogger.info('WebGL service initialized', component: _logComponent);
       
       // Initialize the service
@@ -101,29 +130,10 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    // Use mobile game UI for mobile devices
-    if (_isMobileDevice()) {
-      return MobileGameUI(
-        onSettingsPressed: () {
-          _sendMessageToThreeJS('toggle_settings');
-        },
-        onBackPressed: () async {
-          await _gameController.disableLandscapeMode();
-          if (mounted) {
-            Navigator.of(context).pop();
-          }
-        },
-        onFullscreenPressed: () {
-          _sendMessageToThreeJS('toggle_fullscreen');
-        },
-        child: _buildGameContent(isDark),
-      );
-    }
-    
-    // Desktop UI
+    // Use simplified UI for all devices - HTML handles mobile controls natively
     return Scaffold(
       backgroundColor: isDark ? Colors.black : Colors.white,
-      appBar: AppBar(
+      appBar: _isMobileDevice() ? null : AppBar(
         title: Text(
           widget.title,
           style: GoogleFonts.poppins(
@@ -450,39 +460,5 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
       AppLogger.warning('Error during disposal: $e', component: _logComponent);
     }
     super.dispose();
-  }
-
-  void _sendMessageToThreeJS(String action) {
-    try {
-      if (_iframe?.contentWindow != null) {
-        _iframe!.contentWindow!.postMessage({
-          'type': 'mobile_action',
-          'action': action,
-          'source': 'flutter',
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        }, '*');
-        
-        AppLogger.info('Sent message to Three.js: $action', component: _logComponent);
-      } else {
-        // Fallback: try to send to the iframe via document query
-        final iframe = html.document.querySelector('iframe');
-        if (iframe != null && iframe is html.IFrameElement) {
-          iframe.contentWindow?.postMessage({
-            'type': 'mobile_action',
-            'action': action,
-            'source': 'flutter',
-            'timestamp': DateTime.now().millisecondsSinceEpoch,
-          }, '*');
-          
-          AppLogger.info('Sent message to Three.js via fallback: $action', component: _logComponent);
-        } else {
-          AppLogger.warning('No iframe available for message sending', component: _logComponent);
-        }
-      }
-    } catch (e) {
-      AppLogger.error('Failed to send message to Three.js', 
-        component: _logComponent, 
-        error: e);
-    }
   }
 }

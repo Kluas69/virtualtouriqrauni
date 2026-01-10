@@ -96,6 +96,64 @@ class MobileGameController {
     }
   }
   
+  /// Enable fullscreen + landscape mode for mobile gaming (like mobile games)
+  Future<void> enableFullscreenLandscapeMode() async {
+    try {
+      AppLogger.info('Enabling fullscreen + landscape mode for mobile gaming', component: 'MobileGameController');
+      
+      // Force landscape orientation
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      
+      // Enable immersive fullscreen mode (hide all system UI)
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.immersiveSticky,
+        overlays: [],
+      );
+      
+      _isLandscapeMode = true;
+      _isFullscreen = true;
+      
+      AppLogger.info('Fullscreen + landscape mode enabled successfully', component: 'MobileGameController');
+    } catch (e) {
+      AppLogger.error('Failed to enable fullscreen + landscape mode', 
+        component: 'MobileGameController', 
+        error: e);
+    }
+  }
+  
+  /// Exit fullscreen + landscape mode and restore normal mode
+  Future<void> exitFullscreenLandscapeMode() async {
+    try {
+      AppLogger.info('Exiting fullscreen + landscape mode', component: 'MobileGameController');
+      
+      // Restore all orientations
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      
+      // Restore system UI
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
+      
+      _isLandscapeMode = false;
+      _isFullscreen = false;
+      
+      AppLogger.info('Fullscreen + landscape mode exited successfully', component: 'MobileGameController');
+    } catch (e) {
+      AppLogger.error('Failed to exit fullscreen + landscape mode', 
+        component: 'MobileGameController', 
+        error: e);
+    }
+  }
+  
   /// Check if device is in landscape mode
   bool get isLandscapeMode => _isLandscapeMode;
   

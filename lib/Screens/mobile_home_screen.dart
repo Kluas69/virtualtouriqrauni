@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:virtualtouriu/Screens/location_detail_screen.dart';
+import 'package:virtualtouriu/Screens/home_screen.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/utils/image_utils.dart';
 import 'package:virtualtouriu/core/memory/memory_manager.dart';
@@ -11,6 +12,7 @@ import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/widgets/page_counter.dart';
 import 'package:virtualtouriu/core/widgets/google_style_page_indicator.dart';
 import 'package:virtualtouriu/core/widgets/quick_actions_grid.dart';
+import 'package:virtualtouriu/core/widgets/enhanced_explore_section.dart';
 import 'package:virtualtouriu/core/widgets/section_divider.dart';
 import 'package:virtualtouriu/core/design/app_spacing.dart';
 import 'package:virtualtouriu/core/state/futuristic_ui_state.dart';
@@ -221,10 +223,33 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
           ),
           SizedBox(height: size.height * 0.04),
 
-          // Info section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: _buildMobileInfoSection(context, theme, isDark),
+          // Enhanced Explore Section with beautiful background
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  isDark 
+                      ? Colors.white.withValues(alpha: 0.02)
+                      : Colors.blue.withValues(alpha: 0.02),
+                  isDark 
+                      ? Colors.blue.withValues(alpha: 0.03)
+                      : Colors.purple.withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark 
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.black.withValues(alpha: 0.03),
+                width: 1,
+              ),
+            ),
+            child: EnhancedExploreSection(
+              isMobile: true,
+            ),
           ),
           SizedBox(height: AppSpacing.getSectionSpacing(size)),
 
@@ -347,7 +372,7 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Virtual Campus Tour',
+                'Campus Gaming Experience',
                 style: GoogleFonts.roboto(
                   color: Colors.white.withValues(alpha: 0.95),
                   fontSize: 18,
@@ -358,73 +383,6 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
             ],
           ),
         ),
-      ],
-    );
-  }
-
-  // Simplified info section
-  Widget _buildMobileInfoSection(
-    BuildContext context,
-    ThemeData theme,
-    bool isDark,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: theme.primaryColor.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.primaryColor.withValues(alpha: 0.3)),
-          ),
-          child: Text(
-            '360° VIRTUAL TOUR',
-            style: GoogleFonts.roboto(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Explore Iqra University',
-          style: GoogleFonts.roboto(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            color: theme.textTheme.headlineMedium?.color,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Discover our state-of-the-art H-9 Islamabad campus through an immersive virtual experience.',
-          style: GoogleFonts.roboto(
-            fontSize: 15,
-            height: 1.6,
-            color: theme.textTheme.bodyLarge?.color?.withValues(alpha: 0.8),
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Simple stats row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Flexible(
-              child: _buildSimpleStat(Icons.view_in_ar_rounded, '3D Tour', isDark),
-            ),
-            Flexible(
-              child: _buildSimpleStat(Icons.location_city, '8+ Locations', isDark),
-            ),
-            Flexible(
-              child: _buildSimpleStat(Icons.explore, 'HD Quality', isDark),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
       ],
     );
   }
@@ -664,13 +622,13 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        Icons.threesixty_rounded,
+                        Icons.gamepad_rounded,
                         color: Colors.white,
                         size: 12,
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '360°',
+                        '3D',
                         style: GoogleFonts.roboto(
                           color: Colors.white,
                           fontSize: 10,
