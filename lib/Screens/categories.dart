@@ -410,10 +410,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color:
-            isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.black.withValues(alpha: 0.05),
+        color: Colors.transparent, // Made transparent for better dark theme
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color:
@@ -522,7 +519,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
         minHeight: 80,
         maxHeight: 80,
         child: Container(
-          color: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFFAFAFA),
+          color: Colors.transparent, // Made transparent for better dark theme
           child: ResponsiveContainer(
             padding: EdgeInsets.symmetric(
               horizontal: ResponsiveSpacing.medium(config),
@@ -531,10 +528,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
-                color:
-                    isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.white.withValues(alpha: 0.9),
+                color: Colors.transparent, // Made transparent for better dark theme
                 borderRadius: BorderRadius.circular(50),
                 border: Border.all(
                   color:
@@ -677,12 +671,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                         vertical: 8,   // Reduced padding
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            isSelected
+                        color: isSelected
                                 ? theme.primaryColor
-                                : isDark
-                                ? Colors.white.withValues(alpha: 0.06)
-                                : Colors.black.withValues(alpha: 0.04),
+                                : Colors.transparent, // Made transparent for better dark theme
                         borderRadius: BorderRadius.circular(20), // Smaller radius
                         border: Border.all(
                           color:
@@ -835,10 +826,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark 
-                  ? const Color(0xFF1E1E1E)
-                  : Colors.white,
+              color: Colors.transparent, // Made transparent for better dark theme
               borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark 
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.08),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: isDark 
@@ -911,8 +906,12 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: theme.primaryColor.withValues(alpha: 0.1),
+                                color: Colors.transparent, // Made transparent for better dark theme
                                 borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: theme.primaryColor.withValues(alpha: 0.3),
+                                  width: 1,
+                                ),
                               ),
                               child: Text(
                                 data.tag.toUpperCase(),
@@ -932,10 +931,14 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: isDark 
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.black.withValues(alpha: 0.05),
+                              color: Colors.transparent, // Made transparent for better dark theme
                               borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isDark 
+                                    ? Colors.white.withValues(alpha: 0.2)
+                                    : Colors.black.withValues(alpha: 0.1),
+                                width: 1,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -967,8 +970,12 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withValues(alpha: 0.1),
+                    color: Colors.transparent, // Made transparent for better dark theme
                     borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: theme.primaryColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Icon(
                     Icons.arrow_forward_rounded,
@@ -1164,7 +1171,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.transparent, // Made transparent for better dark theme
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
                   ),
@@ -1202,7 +1209,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.6),
+          color: Colors.transparent, // Made transparent for better dark theme
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),

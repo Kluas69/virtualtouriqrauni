@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/Screens/home_screen.dart';
 
 class EnhancedExploreSection extends StatelessWidget {
   final bool isMobile;
+  final bool showButton;
 
   const EnhancedExploreSection({
     super.key,
     required this.isMobile,
+    this.showButton = true, // Default to showing button
   });
 
   @override
@@ -50,36 +52,10 @@ class EnhancedExploreSection extends StatelessWidget {
         vertical: verticalPadding,
       ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            isDark 
-                ? Colors.white.withValues(alpha: 0.03)
-                : theme.primaryColor.withValues(alpha: 0.02),
-            isDark 
-                ? theme.primaryColor.withValues(alpha: 0.05)
-                : Colors.blue.withValues(alpha: 0.03),
-          ],
-        ),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(
           isSmallMobile ? 20 : isMediumMobile ? 22 : isMobile ? 24 : isTablet ? 28 : 32
         ),
-        border: Border.all(
-          color: isDark 
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.black.withValues(alpha: 0.04),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark 
-                ? Colors.black.withValues(alpha: 0.2)
-                : Colors.black.withValues(alpha: 0.04),
-            blurRadius: isSmallMobile ? 16 : isMediumMobile ? 20 : isMobile ? 24 : 32,
-            offset: Offset(0, isSmallMobile ? 4 : isMediumMobile ? 6 : isMobile ? 8 : 12),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,12 +77,15 @@ class EnhancedExploreSection extends StatelessWidget {
           // Features Grid
           _buildFeaturesGrid(theme, isDark, size, isTablet, isDesktop, isSmallMobile, isMediumMobile),
           
-          SizedBox(height: isMobile 
-              ? (isSmallMobile ? 20 : isMediumMobile ? 22 : 24) 
-              : isTablet ? 32 : 40),
-          
-          // Call to Action Button
-          _buildCallToActionButton(theme, isDark, size, isTablet, isDesktop, isSmallMobile, isMediumMobile, context),
+          // Conditionally show the Call to Action Button
+          if (showButton) ...[
+            SizedBox(height: isMobile 
+                ? (isSmallMobile ? 20 : isMediumMobile ? 22 : 24) 
+                : isTablet ? 32 : 40),
+            
+            // Call to Action Button
+            _buildCallToActionButton(theme, isDark, size, isTablet, isDesktop, isSmallMobile, isMediumMobile, context),
+          ],
         ],
       ),
     );
@@ -125,22 +104,10 @@ class EnhancedExploreSection extends StatelessWidget {
               vertical: isSmallMobile ? 6 : isMediumMobile ? 7 : 8,
             ),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.primaryColor,
-                  theme.primaryColor.withValues(alpha: 0.8),
-                ],
-              ),
+              color: theme.primaryColor,
               borderRadius: BorderRadius.circular(
                 isSmallMobile ? 16 : isMediumMobile ? 18 : 20
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.primaryColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -230,28 +197,16 @@ class EnhancedExploreSection extends StatelessWidget {
           isSmallMobile ? 20 : isMediumMobile ? 22 : isMobile ? 24 : isTablet ? 28 : 32
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.primaryColor.withValues(alpha: isDark ? 0.15 : 0.08),
-              theme.primaryColor.withValues(alpha: isDark ? 0.08 : 0.04),
-            ],
-          ),
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.05)
+              : theme.primaryColor.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(
             isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : isTablet ? 24 : 28
           ),
           border: Border.all(
-            color: theme.primaryColor.withValues(alpha: isDark ? 0.25 : 0.15),
-            width: 1.5,
+            color: theme.primaryColor.withValues(alpha: 0.2),
+            width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: theme.primaryColor.withValues(alpha: isDark ? 0.15 : 0.08),
-              blurRadius: isSmallMobile ? 16 : isMediumMobile ? 20 : isMobile ? 24 : isTablet ? 28 : 32,
-              offset: Offset(0, isSmallMobile ? 8 : isMediumMobile ? 10 : isMobile ? 12 : isTablet ? 14 : 16),
-            ),
-          ],
         ),
         child: isDesktop ? _buildDesktopFeatureLayout(theme, isDark) : _buildMobileTabletFeatureLayout(theme, isDark, isTablet, isSmallMobile, isMediumMobile),
       ),
@@ -265,20 +220,8 @@ class EnhancedExploreSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.primaryColor,
-                theme.primaryColor.withValues(alpha: 0.8),
-              ],
-            ),
+            color: theme.primaryColor,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: theme.primaryColor.withValues(alpha: 0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
           ),
           child: const Icon(
             Icons.threed_rotation_rounded,
@@ -332,22 +275,10 @@ class EnhancedExploreSection extends StatelessWidget {
                 isSmallMobile ? 16 : isMediumMobile ? 18 : isTablet ? 22 : 20
               ),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.primaryColor,
-                    theme.primaryColor.withValues(alpha: 0.8),
-                  ],
-                ),
+                color: theme.primaryColor,
                 borderRadius: BorderRadius.circular(
                   isSmallMobile ? 16 : isMediumMobile ? 18 : 20
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.primaryColor.withValues(alpha: 0.4),
-                    blurRadius: isSmallMobile ? 16 : isMediumMobile ? 18 : 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
               child: Icon(
                 Icons.gamepad_rounded,
@@ -435,18 +366,9 @@ class EnhancedExploreSection extends StatelessWidget {
           vertical: isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : isTablet ? 22 : 24,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              isDark 
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.black.withValues(alpha: 0.02),
-              isDark 
-                  ? Colors.white.withValues(alpha: 0.02)
-                  : Colors.black.withValues(alpha: 0.01),
-            ],
-          ),
+          color: isDark 
+              ? Colors.white.withValues(alpha: 0.03)
+              : Colors.black.withValues(alpha: 0.02),
           borderRadius: BorderRadius.circular(
             isSmallMobile ? 12 : isMediumMobile ? 14 : isMobile ? 16 : isTablet ? 20 : 24
           ),
@@ -517,22 +439,10 @@ class EnhancedExploreSection extends StatelessWidget {
             isSmallMobile ? 12 : isMediumMobile ? 13 : isMobile ? 14 : isTablet ? 16 : 18
           ),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.primaryColor.withValues(alpha: 0.2),
-                theme.primaryColor.withValues(alpha: 0.15),
-              ],
-            ),
+            color: theme.primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(
               isSmallMobile ? 12 : isMediumMobile ? 13 : isMobile ? 14 : 16
             ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.primaryColor.withValues(alpha: 0.15),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Icon(
             icon,
@@ -576,74 +486,430 @@ class EnhancedExploreSection extends StatelessWidget {
   }
 
   Widget _buildCallToActionButton(ThemeData theme, bool isDark, Size size, bool isTablet, bool isDesktop, bool isSmallMobile, bool isMediumMobile, BuildContext context) {
+    // Calculate responsive font size based on screen width and text scale factor
+    final textScaleFactor = MediaQuery.of(context).textScaleFactor;
+    final baseSize = isSmallMobile 
+        ? 14.0 
+        : isMediumMobile 
+            ? 15.0 
+            : isMobile 
+                ? 16.0 
+                : isTablet 
+                    ? 17.0 
+                    : 18.0;
+    
+    // Adjust for user's text scale preference but keep it reasonable
+    final responsiveFontSize = baseSize / textScaleFactor.clamp(0.8, 1.3);
+    
+    // Ensure minimum readable size
+    final finalFontSize = responsiveFontSize.clamp(12.0, 22.0);
+    
     return FadeInUp(
       duration: const Duration(milliseconds: 950),
       delay: const Duration(milliseconds: 350),
       child: Center(
-        child: Container(
+        child: _FuturisticTourButton(
           width: isMobile ? double.infinity : isTablet ? 300 : 350,
           height: isSmallMobile ? 52 : isMediumMobile ? 56 : isMobile ? 60 : isTablet ? 64 : 68,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.primaryColor,
-                theme.primaryColor.withValues(alpha: 0.8),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(
-              isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : isTablet ? 22 : 24
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.primaryColor.withValues(alpha: 0.4),
-                blurRadius: isSmallMobile ? 16 : isMediumMobile ? 20 : isMobile ? 24 : 28,
-                offset: Offset(0, isSmallMobile ? 6 : isMediumMobile ? 8 : isMobile ? 10 : 12),
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => HomeScreen.navigateToGame(context),
-              borderRadius: BorderRadius.circular(
-                isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : isTablet ? 22 : 24
-              ),
+          borderRadius: isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : isTablet ? 22 : 24,
+          iconSize: isSmallMobile ? 24 : isMediumMobile ? 26 : isMobile ? 28 : isTablet ? 30 : 32,
+          fontSize: finalFontSize,
+          horizontalPadding: isSmallMobile ? 20 : isMediumMobile ? 24 : isMobile ? 28 : 32,
+          verticalPadding: isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : 22,
+          spacing: isSmallMobile ? 10 : isMediumMobile ? 12 : 14,
+          arrowSize: isSmallMobile ? 20 : isMediumMobile ? 22 : isMobile ? 24 : isTablet ? 26 : 28,
+          theme: theme,
+          isDark: isDark,
+          onPressed: () => HomeScreen.navigateToGame(context),
+        ),
+      ),
+    );
+  }
+}
+
+// Enhanced Futuristic Tour Button Widget
+class _FuturisticTourButton extends StatefulWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+  final double iconSize;
+  final double fontSize;
+  final double horizontalPadding;
+  final double verticalPadding;
+  final double spacing;
+  final double arrowSize;
+  final ThemeData theme;
+  final bool isDark;
+  final VoidCallback onPressed;
+
+  const _FuturisticTourButton({
+    required this.width,
+    required this.height,
+    required this.borderRadius,
+    required this.iconSize,
+    required this.fontSize,
+    required this.horizontalPadding,
+    required this.verticalPadding,
+    required this.spacing,
+    required this.arrowSize,
+    required this.theme,
+    required this.isDark,
+    required this.onPressed,
+  });
+
+  @override
+  State<_FuturisticTourButton> createState() => _FuturisticTourButtonState();
+}
+
+class _FuturisticTourButtonState extends State<_FuturisticTourButton>
+    with TickerProviderStateMixin {
+  late AnimationController _hoverController;
+  late AnimationController _pressController;
+  late AnimationController _glowController;
+  late AnimationController _particleController;
+  
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _elevationAnimation;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _particleAnimation;
+  late Animation<Color?> _gradientAnimation;
+
+  bool _isHovered = false;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize animation controllers
+    _hoverController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    
+    _pressController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
+    
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    
+    _particleController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    );
+
+    // Initialize animations
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _elevationAnimation = Tween<double>(
+      begin: 4.0,
+      end: 12.0,
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    _glowAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.8,
+    ).animate(CurvedAnimation(
+      parent: _glowController,
+      curve: Curves.easeInOut,
+    ));
+
+    _particleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _particleController,
+      curve: Curves.easeInOut,
+    ));
+
+    _gradientAnimation = ColorTween(
+      begin: widget.theme.primaryColor,
+      end: widget.theme.primaryColor.withValues(alpha: 0.8),
+    ).animate(CurvedAnimation(
+      parent: _hoverController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start continuous animations
+    _glowController.repeat(reverse: true);
+    _particleController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _hoverController.dispose();
+    _pressController.dispose();
+    _glowController.dispose();
+    _particleController.dispose();
+    super.dispose();
+  }
+
+  void _onHover(bool isHovered) {
+    setState(() => _isHovered = isHovered);
+    if (isHovered) {
+      _hoverController.forward();
+    } else {
+      _hoverController.reverse();
+    }
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() => _isPressed = true);
+    _pressController.forward();
+    HapticFeedback.lightImpact();
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() => _isPressed = false);
+    _pressController.reverse();
+  }
+
+  void _onTapCancel() {
+    setState(() => _isPressed = false);
+    _pressController.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        _hoverController,
+        _pressController,
+        _glowController,
+        _particleController,
+      ]),
+      builder: (context, child) {
+        return MouseRegion(
+          onEnter: (_) => _onHover(true),
+          onExit: (_) => _onHover(false),
+          child: GestureDetector(
+            onTapDown: _onTapDown,
+            onTapUp: _onTapUp,
+            onTapCancel: _onTapCancel,
+            onTap: widget.onPressed,
+            child: Transform.scale(
+              scale: _scaleAnimation.value * (1.0 - (_pressController.value * 0.05)),
               child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 20 : isMediumMobile ? 24 : isMobile ? 28 : 32,
-                  vertical: isSmallMobile ? 16 : isMediumMobile ? 18 : isMobile ? 20 : 22,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.play_circle_filled_rounded,
-                      size: isSmallMobile ? 24 : isMediumMobile ? 26 : isMobile ? 28 : isTablet ? 30 : 32,
-                      color: Colors.white,
+                width: widget.width,
+                height: widget.height,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(widget.borderRadius),
+                  boxShadow: [
+                    // Main shadow
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: _elevationAnimation.value,
+                      offset: Offset(0, _elevationAnimation.value / 2),
                     ),
-                    SizedBox(width: isSmallMobile ? 10 : isMediumMobile ? 12 : 14),
-                    Text(
-                      'Play Campus Tour',
-                      style: GoogleFonts.roboto(
-                        fontSize: isSmallMobile ? 16 : isMediumMobile ? 17 : isMobile ? 18 : isTablet ? 19 : 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                    // Glow effect
+                    BoxShadow(
+                      color: widget.theme.primaryColor.withValues(alpha: _glowAnimation.value * 0.5),
+                      blurRadius: _elevationAnimation.value * 2,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
+                ),
+                child: Stack(
+                  children: [
+                    // Background gradient
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            widget.theme.primaryColor,
+                            widget.theme.primaryColor.withValues(alpha: 0.8),
+                            widget.theme.primaryColor.withValues(alpha: 0.9),
+                          ],
+                          stops: const [0.0, 0.5, 1.0],
+                        ),
                       ),
                     ),
-                    SizedBox(width: isSmallMobile ? 8 : isMediumMobile ? 10 : 12),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: isSmallMobile ? 20 : isMediumMobile ? 22 : isMobile ? 24 : isTablet ? 26 : 28,
-                      color: Colors.white,
+                    
+                    // Animated border glow
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: _glowAnimation.value * 0.3),
+                          width: 1.5,
+                        ),
+                      ),
                     ),
+                    
+                    // Particle effects overlay
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(widget.borderRadius),
+                      child: CustomPaint(
+                        painter: _ParticleEffectPainter(
+                          animation: _particleAnimation.value,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                        size: Size(widget.width, widget.height),
+                      ),
+                    ),
+                    
+                    // Button content
+                    Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(widget.borderRadius),
+                      child: InkWell(
+                        onTap: widget.onPressed,
+                        borderRadius: BorderRadius.circular(widget.borderRadius),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: widget.horizontalPadding,
+                            vertical: widget.verticalPadding,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              // 3D/VR Icon with glow
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.white.withValues(alpha: _glowAnimation.value * 0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 0),
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(
+                                  Icons.view_in_ar_rounded,
+                                  size: widget.iconSize,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(width: widget.spacing),
+                              
+                              // Text with futuristic font - Enhanced Responsive
+                              Flexible(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    widget.width < 280 ? 'Play Tour' : 'Play Campus Tour', // Shorter text for very small screens
+                                    style: GoogleFonts.orbitron(
+                                      fontSize: widget.fontSize,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      letterSpacing: widget.fontSize * 0.06, // Responsive letter spacing
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.white.withValues(alpha: _glowAnimation.value * 0.5),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 0),
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: widget.spacing * 0.8),
+                              
+                              // Animated arrow
+                              AnimatedRotation(
+                                turns: _isHovered ? 0.125 : 0.0,
+                                duration: const Duration(milliseconds: 200),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(6),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.white.withValues(alpha: _glowAnimation.value * 0.2),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 0),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: widget.arrowSize,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    // Holographic ring effect
+                    if (_isHovered)
+                      Positioned.fill(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(widget.borderRadius),
+                            border: Border.all(
+                              color: Colors.cyan.withValues(alpha: 0.4),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+}
+
+// Custom painter for particle effects
+class _ParticleEffectPainter extends CustomPainter {
+  final double animation;
+  final Color color;
+
+  _ParticleEffectPainter({
+    required this.animation,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Create floating particles
+    for (int i = 0; i < 8; i++) {
+      final progress = (animation + (i * 0.125)) % 1.0;
+      final x = (size.width * 0.2) + (size.width * 0.6 * progress);
+      final y = size.height * 0.5 + (20 * (0.5 - progress).abs());
+      final radius = 2.0 * (1.0 - progress);
+      
+      if (radius > 0.5) {
+        canvas.drawCircle(
+          Offset(x, y),
+          radius,
+          paint..color = color.withValues(alpha: color.alpha * (1.0 - progress)),
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

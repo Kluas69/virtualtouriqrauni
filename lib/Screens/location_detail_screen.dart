@@ -392,11 +392,8 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
         padding: const EdgeInsets.all(8),
         child: Container(
           decoration: BoxDecoration(
-            // Material Design 3 surface container colors
-            color:
-                isDark
-                    ? const Color(0xFF2D2D30).withValues(alpha: 0.8) // Dark surface variant
-                    : const Color(0xFFFFFBFE).withValues(alpha: 0.95), // Light surface
+            // Made transparent for better theme integration
+            color: Colors.transparent,
             shape: BoxShape.circle,
             // Material Design 3 shadows
             boxShadow: [
@@ -630,11 +627,8 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
           child: Container(
             padding: EdgeInsets.all(ResponsiveSpacing.medium(config)),
             decoration: BoxDecoration(
-              // Material Design 3 surface container colors
-              color:
-                  isDark
-                      ? const Color(0xFF2D2D30) // Dark surface variant
-                      : const Color(0xFFF7F2FA), // Light surface variant
+              // Made transparent for better theme integration
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               // Material Design 3 border
               border: Border.all(
@@ -661,8 +655,12 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4285F4).withValues(alpha: 0.1), // Google Blue matching chatbot
+                    color: Colors.transparent, // Made transparent for better theme integration
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF4285F4).withValues(alpha: 0.3), // Google Blue border
+                      width: 1,
+                    ),
                   ),
                   child: Icon(
                     feature['icon'] ?? Icons.star_outline,

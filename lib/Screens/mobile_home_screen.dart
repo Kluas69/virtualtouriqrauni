@@ -223,33 +223,10 @@ class _MobileHomeScreenOptimizedState extends State<MobileHomeScreenOptimized> {
           ),
           SizedBox(height: size.height * 0.04),
 
-          // Enhanced Explore Section with beautiful background
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  isDark 
-                      ? Colors.white.withValues(alpha: 0.02)
-                      : Colors.blue.withValues(alpha: 0.02),
-                  isDark 
-                      ? Colors.blue.withValues(alpha: 0.03)
-                      : Colors.purple.withValues(alpha: 0.02),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: isDark 
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.black.withValues(alpha: 0.03),
-                width: 1,
-              ),
-            ),
-            child: EnhancedExploreSection(
-              isMobile: true,
-            ),
+          // Enhanced Explore Section with button
+          EnhancedExploreSection(
+            isMobile: true,
+            showButton: true, // Keep the button in this section
           ),
           SizedBox(height: AppSpacing.getSectionSpacing(size)),
 

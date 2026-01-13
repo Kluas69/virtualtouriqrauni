@@ -1,4 +1,3 @@
-// lib/Screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +12,6 @@ import 'package:virtualtouriu/core/logging/app_logger.dart';
 import 'package:virtualtouriu/core/widgets/location_card.dart';
 import 'package:virtualtouriu/core/widgets/stat_card.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
-import 'package:virtualtouriu/responsive/Responsive_Layout.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 import 'package:virtualtouriu/core/routing/app_routes.dart';
 import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
