@@ -33,6 +33,9 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Chrome device data (not needed for production)
+.dart_tool/chrome-device/
+
 # Symbolication related
 app.*.symbols
 

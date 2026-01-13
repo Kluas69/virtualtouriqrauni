@@ -3,7 +3,8 @@
 /// Handles responsive design with performance optimization
 
 import 'package:flutter/material.dart';
-import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
+import 'package:virtualtouriu/core/performance/performance_monitor.dart';
+import 'package:virtualtouriu/core/assets/asset_manager.dart';
 
 /// Screen size categories with precise breakpoints
 enum ScreenSize {
@@ -466,10 +467,9 @@ class ResponsiveImage extends StatelessWidget {
         final size = sizeBuilder?.call(config) ?? AdaptiveImageSize.card(config);
         
         return OptimizedImage(
-          imagePath: imagePath,
+          path: imagePath,
           fit: fit,
-          width: size.width,
-          height: size.height,
+          targetSize: Size(size.width, size.height),
           placeholder: placeholder,
           errorWidget: errorWidget,
         );

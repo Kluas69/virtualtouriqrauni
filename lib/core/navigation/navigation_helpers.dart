@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:virtualtouriu/core/routing/app_routes.dart';
 import 'package:virtualtouriu/core/constants.dart';
 import 'package:virtualtouriu/core/logging/app_logger.dart';
+import 'package:virtualtouriu/Screens/webgl_room_screen.dart';
 
 /// Navigation helper methods for common navigation patterns
 class NavigationHelpers {
@@ -86,6 +87,46 @@ class NavigationHelpers {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage ?? 'Navigation failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Navigate to 3D game/WebGL room
+  static Future<void> navigateToGame(BuildContext context) async {
+    try {
+      AppLogger.info('Navigating to 3D game',
+          component: _logComponent);
+
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => WebGLRoomScreen(
+            title: 'Campus Tour',
+            url: 'classroom',
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(1.0, 0.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            var offsetAnimation = animation.drive(tween);
+            return SlideTransition(position: offsetAnimation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+    } catch (e) {
+      AppLogger.error('Failed to navigate to 3D game',
+          component: _logComponent,
+          error: e);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to open 3D tour'),
             backgroundColor: Colors.red,
           ),
         );

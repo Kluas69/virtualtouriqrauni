@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../animation/animation_config.dart';
-import '../state/futuristic_ui_state.dart';
-import 'unified_glassmorphic_container.dart';
+import '../state/ui_state.dart';
+import 'glass_container.dart';
 
 /// Smart search bar with AI suggestions and voice input
 class SmartSearchBar extends StatefulWidget {
@@ -105,7 +105,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
     final query = _controller.text;
     
     // Update state
-    context.read<FuturisticUIState>().updateSearchQuery(query);
+    context.read<UIState>().updateSearchQuery(query);
     
     // Debounce search
     _debounceTimer?.cancel();
@@ -124,7 +124,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
       _isExpanded = true;
     });
     _animationController.forward();
-    context.read<FuturisticUIState>().toggleSearchExpanded();
+    context.read<UIState>().toggleSearchExpanded();
   }
 
   void _collapseSearchBar() {
@@ -133,7 +133,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
         _isExpanded = false;
       });
       _animationController.reverse();
-      context.read<FuturisticUIState>().toggleSearchExpanded();
+      context.read<UIState>().toggleSearchExpanded();
     }
     _hideSuggestionsOverlay();
   }
@@ -141,7 +141,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
   void _showSuggestionsOverlay() {
     _hideSuggestionsOverlay();
     
-    final suggestions = context.read<FuturisticUIState>().suggestions;
+    final suggestions = context.read<UIState>().suggestions;
     if (suggestions.isEmpty) return;
 
     _overlayEntry = OverlayEntry(
@@ -320,7 +320,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
     _hideSuggestionsOverlay();
     
     // Add to search history
-    context.read<FuturisticUIState>().addToSearchHistory(suggestion.title);
+    context.read<UIState>().addToSearchHistory(suggestion.title);
     
     widget.onSuggestionSelected(suggestion);
     
@@ -330,7 +330,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
 
   void _startVoiceInput() {
     // Set voice listening state
-    context.read<FuturisticUIState>().setVoiceListening(true);
+    context.read<UIState>().setVoiceListening(true);
     
     // Haptic feedback
     HapticFeedback.mediumImpact();
@@ -339,7 +339,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
     // For now, simulate voice input
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
-        context.read<FuturisticUIState>().setVoiceListening(false);
+        context.read<UIState>().setVoiceListening(false);
         _controller.text = 'Library'; // Simulated voice result
         _onTextChange();
       }
@@ -349,7 +349,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
   void _clearSearch() {
     _controller.clear();
     _hideSuggestionsOverlay();
-    context.read<FuturisticUIState>().updateSearchQuery('');
+    context.read<UIState>().updateSearchQuery('');
     HapticFeedback.lightImpact();
   }
 
@@ -365,14 +365,14 @@ class _SmartSearchBarState extends State<SmartSearchBar>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<FuturisticUIState>(
+    return Consumer<UIState>(
       builder: (context, state, child) {
         return CompositedTransformTarget(
           link: _layerLink,
           child: AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
-              return UnifiedGlassmorphicContainer.searchBar(
+              return GlassContainer.searchBar(
                 isDark: widget.isDark,
                 isFocused: _isFocused,
                 child: SizedBox(
@@ -414,7 +414,7 @@ class _SmartSearchBarState extends State<SmartSearchBar>
                           ),
                           onSubmitted: (value) {
                             if (value.isNotEmpty) {
-                              context.read<FuturisticUIState>().addToSearchHistory(value);
+                              context.read<UIState>().addToSearchHistory(value);
                               widget.onSearch(value);
                             }
                           },

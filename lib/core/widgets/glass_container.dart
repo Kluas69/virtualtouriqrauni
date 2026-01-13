@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Unified glassmorphic container that replaces all variants
-/// Reduces code duplication from 6 widgets to 1 parameterized widget
-class UnifiedGlassmorphicContainer extends StatefulWidget {
+/// Glass container that provides glassmorphic effects
+/// Reduces code duplication with parameterized variants
+class GlassContainer extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
@@ -15,7 +15,7 @@ class UnifiedGlassmorphicContainer extends StatefulWidget {
   final Duration animationDuration;
   final VoidCallback? onTap;
   
-  const UnifiedGlassmorphicContainer({
+  const GlassContainer({
     Key? key,
     required this.child,
     this.padding,
@@ -37,7 +37,7 @@ class UnifiedGlassmorphicContainer extends StatefulWidget {
     bool isFocused = false,
     VoidCallback? onTap,
   }) {
-    return UnifiedGlassmorphicContainer(
+    return GlassContainer(
       variant: GlassmorphicVariant.searchBar,
       isDark: isDark,
       onTap: onTap,
@@ -52,7 +52,7 @@ class UnifiedGlassmorphicContainer extends StatefulWidget {
     bool isDark = false,
     VoidCallback? onTap,
   }) {
-    return UnifiedGlassmorphicContainer(
+    return GlassContainer(
       variant: GlassmorphicVariant.quickAction,
       isDark: isDark,
       onTap: onTap,
@@ -68,7 +68,7 @@ class UnifiedGlassmorphicContainer extends StatefulWidget {
     bool isDark = false,
     VoidCallback? onTap,
   }) {
-    return UnifiedGlassmorphicContainer(
+    return GlassContainer(
       variant: GlassmorphicVariant.languageSelector,
       isDark: isDark,
       onTap: onTap,
@@ -78,10 +78,10 @@ class UnifiedGlassmorphicContainer extends StatefulWidget {
   }
 
   @override
-  State<UnifiedGlassmorphicContainer> createState() => _UnifiedGlassmorphicContainerState();
+  State<GlassContainer> createState() => _GlassContainerState();
 }
 
-class _UnifiedGlassmorphicContainerState extends State<UnifiedGlassmorphicContainer>
+class _GlassContainerState extends State<GlassContainer>
     with SingleTickerProviderStateMixin {
   AnimationController? _animationController;
   Animation<double>? _scaleAnimation;

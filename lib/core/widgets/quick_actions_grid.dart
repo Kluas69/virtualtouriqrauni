@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../animation/animation_config.dart';
-import '../state/futuristic_ui_state.dart';
+import '../state/ui_state.dart';
 import '../design/app_spacing.dart';
 import '../../Screens/categories.dart';
 import '../../Screens/about_university_screen.dart';
@@ -251,7 +251,7 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
     });
 
     // Update global state
-    context.read<FuturisticUIState>().setHoveredActionIndex(
+    context.read<UIState>().setHoveredActionIndex(
       isHovered ? widget.index : -1,
     );
   }
@@ -284,7 +284,7 @@ class _EnhancedQuickActionCardState extends State<EnhancedQuickActionCard> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     
-    return Consumer<FuturisticUIState>(
+    return Consumer<UIState>(
       builder: (context, state, child) {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 200),

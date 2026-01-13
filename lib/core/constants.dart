@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'platform/platform_utils.dart';
 import 'logging/app_logger.dart';
-import 'assets/unified_asset_manager.dart';
+import 'assets/asset_manager.dart';
 
 class LocationCardData {
   final String tag;

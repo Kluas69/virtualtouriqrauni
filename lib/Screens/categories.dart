@@ -8,15 +8,16 @@ import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:virtualtouriu/themes/themes.dart';
 import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
 import 'package:virtualtouriu/core/constants.dart';
-import 'package:virtualtouriu/core/widgets/unified_glassmorphic_container.dart';
+import 'package:virtualtouriu/core/widgets/glass_container.dart';
 import 'package:virtualtouriu/core/widgets/tag_badge.dart';
 import 'package:virtualtouriu/core/widgets/empty_state.dart';
 import 'package:virtualtouriu/core/widgets/loading_state.dart';
 import 'package:virtualtouriu/core/widgets/error_state.dart';
+import 'package:virtualtouriu/core/assets/asset_manager.dart';
 import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/core/logging/app_logger.dart';
 import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
-import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
+import 'package:virtualtouriu/core/performance/performance_monitor.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -342,7 +343,7 @@ class _CategoriesScreenState extends State<CategoriesScreen>
       toolbarHeight: 70,
       leading: const SizedBox.shrink(),
       automaticallyImplyLeading: false,
-      flexibleSpace: UnifiedGlassmorphicContainer(
+      flexibleSpace: GlassContainer(
         isDark: isDark,
         borderRadius: BorderRadius.zero,
         padding: EdgeInsets.zero,
@@ -854,10 +855,9 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                     width: 70,
                     height: 70,
                     child: OptimizedImage(
-                      imagePath: data.imagePath,
+                      path: data.imagePath,
                       fit: BoxFit.cover,
-                      width: 70,
-                      height: 70,
+                      targetSize: const Size(70, 70),
                     ),
                   ),
                 ),
@@ -1063,19 +1063,23 @@ class _CategoriesScreenState extends State<CategoriesScreen>
                 // Use optimized image loading
                 config.isMobile
                     ? OptimizedImage(
-                        imagePath: data.imagePath,
+                        path: data.imagePath,
                         fit: BoxFit.cover,
-                        width: config.contentWidth / config.gridColumns,
-                        height: baseHeight,
+                        targetSize: Size(
+                          config.contentWidth / config.gridColumns,
+                          baseHeight,
+                        ),
                       )
                     : AnimatedScale(
                         scale: isHovered ? 1.08 : 1.0,
                         duration: const Duration(milliseconds: 200),
                         child: OptimizedImage(
-                          imagePath: data.imagePath,
+                          path: data.imagePath,
                           fit: BoxFit.cover,
-                          width: config.contentWidth / config.gridColumns,
-                          height: baseHeight,
+                          targetSize: Size(
+                            config.contentWidth / config.gridColumns,
+                            baseHeight,
+                          ),
                         ),
                       ),
                 Container(

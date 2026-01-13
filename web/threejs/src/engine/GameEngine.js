@@ -12,6 +12,7 @@ import { PhysicsSystem } from '../systems/PhysicsSystem.js';
 import { AssetSystem } from '../systems/AssetSystem.js';
 import { InputSystem } from '../systems/InputSystem.js';
 import { PerformanceSystem } from '../systems/PerformanceSystem.js';
+import { DoorInteractionSystem } from '../systems/DoorInteractionSystem.js';
 import { ErrorHandler } from '../core/ErrorHandler.js';
 
 export class GameEngine {
@@ -38,6 +39,7 @@ export class GameEngine {
         this.systemOrder = [
             'input',
             'physics', 
+            'doors',
             'rendering',
             'performance'
         ];
@@ -170,10 +172,20 @@ export class GameEngine {
             await performanceSystem.initialize();
             this.systems.set('performance', performanceSystem);
             
+            // Door interaction system (professional door mechanics)
+            const doorInteractionSystem = new DoorInteractionSystem({
+                maxInteractionDistance: 5.0,
+                enableUI: true,
+                enableSounds: true,
+                debugMode: this.options.enableDebug
+            });
+            await doorInteractionSystem.initialize(this);
+            this.systems.set('doors', doorInteractionSystem);
+            
             console.log('✅ All game systems initialized');
             
             // Verify critical systems are ready
-            const criticalSystems = ['rendering', 'physics', 'assets', 'input'];
+            const criticalSystems = ['rendering', 'physics', 'assets', 'input', 'doors'];
             const missingSystems = criticalSystems.filter(name => !this.systems.has(name));
             
             if (missingSystems.length > 0) {

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../animation/animation_config.dart';
-import '../state/futuristic_ui_state.dart';
-import 'unified_glassmorphic_container.dart';
+import '../state/ui_state.dart';
+import 'glass_container.dart';
 
 /// Language selector with animated flags and RTL support
 class LanguageSelector extends StatefulWidget {
@@ -122,7 +122,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
       _isDropdownOpen = true;
     });
     
-    context.read<FuturisticUIState>().toggleLanguageDropdown();
+    context.read<UIState>().toggleLanguageDropdown();
     _animationController.forward();
     
     _overlayEntry = OverlayEntry(
@@ -154,7 +154,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
       _isDropdownOpen = false;
     });
     
-    context.read<FuturisticUIState>().toggleLanguageDropdown();
+    context.read<UIState>().toggleLanguageDropdown();
     
     _overlayEntry?.remove();
     _overlayEntry = null;
@@ -167,7 +167,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
   Widget _buildLanguageDropdown() {
     return Material(
       color: Colors.transparent,
-      child: UnifiedGlassmorphicContainer.languageSelector(
+      child: GlassContainer.languageSelector(
         isDark: widget.isDark,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -242,7 +242,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
   void _selectLanguage(Language language) {
     if (language.code != widget.currentLanguage.code) {
       // Update state
-      context.read<FuturisticUIState>().setCurrentLanguage(language);
+      context.read<UIState>().setCurrentLanguage(language);
       
       // Trigger callback
       widget.onLanguageChanged(language);
@@ -280,7 +280,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<FuturisticUIState>(
+    return Consumer<UIState>(
       builder: (context, state, child) {
         return CompositedTransformTarget(
           link: _layerLink,
@@ -296,7 +296,7 @@ class _LanguageSelectorState extends State<LanguageSelector>
                     scale: _scaleAnimation.value,
                     child: Transform.rotate(
                       angle: _rotationAnimation.value,
-                      child: UnifiedGlassmorphicContainer.languageSelector(
+                      child: GlassContainer.languageSelector(
                         isDark: widget.isDark,
                         child: Container(
                           padding: const EdgeInsets.symmetric(

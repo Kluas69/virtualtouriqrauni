@@ -31,4 +31,39 @@ class UnifiedAIAnalyticsService {
       
       // Initialize services in order
       _firebaseService = FirebaseAnalyticsService();
-      _databaseService = AIAnalyticsDatab
+      _databaseService = AIAnalyticsDatabaseService();
+      _aggregatorService = AIAnalyticsAggregator();
+      
+      await _firebaseService.initialize();
+      await _databaseService.initialize();
+      await _aggregatorService.initialize();
+      
+      _isInitialized = true;
+      AppLogger.info('Unified AI Analytics Service initialized successfully', component: _logComponent);
+      
+    } catch (e) {
+      AppLogger.error('Failed to initialize analytics service: $e', component: _logComponent);
+      rethrow;
+    }
+  }
+  
+  /// Log an analytics event
+  Future<void> logEvent(String name, Map<String, dynamic>? parameters) async {
+    if (!_isInitialized) return;
+    
+    try {
+      // Log to Firebase
+      await _firebaseService.logEvent(name, parameters);
+      
+      // Store in local database
+      await _databaseService.storeData({
+        'event': name,
+        'parameters': parameters,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+      
+    } catch (e) {
+      AppLogger.error('Failed to log analytics event: $e', component: _logComponent);
+    }
+  }
+}

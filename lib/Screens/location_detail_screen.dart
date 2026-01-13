@@ -12,7 +12,8 @@ import 'package:virtualtouriu/core/widgets/theme_toggle_button.dart';
 import 'package:virtualtouriu/core/memory/memory_manager.dart';
 import 'package:virtualtouriu/themes/themes.dart';
 import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
-import 'package:virtualtouriu/core/performance/performance_optimizer.dart';
+import 'package:virtualtouriu/core/performance/performance_monitor.dart';
+import 'package:virtualtouriu/core/assets/asset_manager.dart';
 
 class LocationDetailScreen extends StatefulWidget {
   final String locationName;
@@ -441,16 +442,20 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
             // Use optimized image loader
             config.isMobile
                 ? OptimizedImage(
-                    imagePath: widget.locationData.imagePath,
+                    path: widget.locationData.imagePath,
                     fit: BoxFit.cover,
-                    width: config.width,
-                    height: config.isMobile ? 350 : 500,
+                    targetSize: Size(
+                      config.width,
+                      config.isMobile ? 350 : 500,
+                    ),
                   )
                 : OptimizedImage(
-                    imagePath: widget.locationData.imagePath,
+                    path: widget.locationData.imagePath,
                     fit: BoxFit.cover,
-                    width: config.width,
-                    height: config.isMobile ? 350 : 500,
+                    targetSize: Size(
+                      config.width,
+                      config.isMobile ? 350 : 500,
+                    ),
                   ),
             Container(
               decoration: BoxDecoration(

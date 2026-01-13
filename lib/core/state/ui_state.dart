@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../animation/animation_config.dart';
 
-/// Enhanced state management for futuristic UI components
-class FuturisticUIState extends ChangeNotifier {
+/// Enhanced state management for UI components
+class UIState extends ChangeNotifier {
   // Search state
   String _searchQuery = '';
   List<SearchSuggestion> _suggestions = [];

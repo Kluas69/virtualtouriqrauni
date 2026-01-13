@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:virtualtouriu/Screens/home_screen.dart';
+import 'package:virtualtouriu/core/navigation/navigation_helpers.dart';
 
-class EnhancedExploreSection extends StatelessWidget {
+class CampusTourSection extends StatelessWidget {
   final bool isMobile;
   final bool showButton;
 
-  const EnhancedExploreSection({
+  const CampusTourSection({
     super.key,
     required this.isMobile,
     this.showButton = true, // Default to showing button
@@ -520,7 +520,7 @@ class EnhancedExploreSection extends StatelessWidget {
           arrowSize: isSmallMobile ? 20 : isMediumMobile ? 22 : isMobile ? 24 : isTablet ? 26 : 28,
           theme: theme,
           isDark: isDark,
-          onPressed: () => HomeScreen.navigateToGame(context),
+          onPressed: () => NavigationHelpers.navigateToGame(context),
         ),
       ),
     );

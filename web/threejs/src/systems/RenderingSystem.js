@@ -192,7 +192,7 @@ export class RenderingSystem {
      * Setup Professional Studio-Quality Lighting System
      */
     setupLighting() {
-        console.log('� Seetting up Professional Studio-Quality Lighting System...');
+        console.log('💡 Setting up Professional Studio-Quality Lighting System...');
         
         // 1. PROFESSIONAL AMBIENT LIGHTING - Provides base illumination
         const ambientLight = new THREE.AmbientLight(0x404040, 0.6); // Balanced ambient
