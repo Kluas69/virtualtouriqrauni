@@ -11,7 +11,7 @@ import { InputHandler } from './InputHandler.js';
 
 export class PlayerState {
     constructor() {
-        this.position = new THREE.Vector3(0, 2.0, 5); // Start lower for better ground detection
+        this.position = new THREE.Vector3(0, 1.6, 15); // Start lower for better ground detection
         this.rotation = new THREE.Euler(0, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.isGrounded = false; // Start not grounded to allow falling
