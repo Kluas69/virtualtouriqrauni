@@ -1,6 +1,6 @@
 import 'webgl_service.dart';
-import 'webgl_service_impl.dart'
-    if (dart.library.html) 'webgl_service_web_simple.dart';
+import 'webgl_service_unified.dart'
+    if (dart.library.html) 'webgl_service_unified.dart';
 
 /// Factory for creating platform-specific WebGL service instances
 class WebGLFactory {
@@ -14,9 +14,8 @@ class WebGLFactory {
   
   /// Creates the appropriate WebGL service implementation
   static WebGLService _createWebGLService() {
-    // On web: returns WebGLServiceWeb()
-    // On other platforms: returns WebGLServiceStub()
-    return createWebGLService();
+    // Returns the unified WebGL service
+    return WebGLServiceUnified();
   }
   
   /// Resets the singleton instance (useful for testing)

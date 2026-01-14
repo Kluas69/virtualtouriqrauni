@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../logging/app_logger.dart';
 import '../design/app_spacing.dart';
+import '../constants.dart';
 
 class ChatbotWidget extends StatefulWidget {
   final Function(String)? onNavigate;
@@ -42,10 +43,10 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
   ];
 
   final List<String> _quickActions = [
-    'Show me campus facilities',
     'Where is the library?',
-    'Tell me about departments',
-    'Take me on a tour',
+    'Tell me about the cafeteria',
+    'Take me to the auditorium',
+    'Show campus facilities',
   ];
 
   final String openAiApiKey =
@@ -86,7 +87,7 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
     _messages.add(
       ChatMessage(
         text:
-            'Welcome to IQRA University Virtual Tour! 🎓\n\nI can help you explore our H-9 Islamabad campus. Ask me about any facility like Library, Cafeteria, Auditorium, or say "Take me to the Swimming Pool"!',
+            'Welcome to IQRA University Virtual Tour! 🎓\n\nI can help you explore our H-9 Islamabad campus.\n\n• Ask "Where is the Library?" for information\n• Say "Take me to the Library" for navigation\n\nWhat would you like to know?',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -176,20 +177,29 @@ class _ChatbotWidgetState extends State<ChatbotWidget>
 You are a friendly and knowledgeable virtual tour guide for IQRA University's H-9 Islamabad Campus.
 
 Available locations:
-- Library
-- Play Area
-- Auditorium
-- Class Rooms
-- Amphitheater
-- Cafeteria
-- Common Room
-- Playground
-- Swimming Pool
-- Webinar Room
+- Library: A state-of-the-art learning hub with vast collections of books and digital resources
+- Play Area: Modern recreational facilities with sports courts
+- Auditorium: Premium venue with cutting-edge audio-visual technology
+- Class Rooms: Contemporary learning spaces with modern teaching aids
+- Amphitheater: Open-air venue for outdoor events and performances
+- Cafeteria: Vibrant dining space with diverse cuisine options
+- Common Room: Collaborative space for meetings and discussions
+- Playground: Expansive outdoor facilities for sports
+- Swimming Pool: Olympic-standard swimming facility
+- Webinar Room: Technology-enabled rooms for virtual meetings
 
-When the user asks to visit, go to, see, or explore a location, clearly mention the exact location name so navigation buttons can appear.
+IMPORTANT INSTRUCTIONS:
+1. If the user asks "where is [location]" or "tell me about [location]", provide ONLY information about that location. DO NOT suggest navigation.
+2. If the user says "take me to [location]" or "go to [location]" or "visit [location]", then mention the location name clearly and suggest they can navigate there.
+3. Be concise and helpful. Keep responses under 100 words unless asked for details.
+4. Only mention navigation when the user explicitly asks to go/visit/navigate to a place.
 
-Be helpful, concise, and engaging. Encourage exploration!
+Examples:
+- User: "Where is the library?" → Answer: "The Library is our state-of-the-art learning hub located in the main academic building. It features vast collections of books, digital resources, and quiet study spaces."
+- User: "Take me to the library" → Answer: "I'll help you navigate to the Library! It's our main learning hub with extensive book collections and study spaces. Click the navigation button below to get directions."
+- User: "Tell me about the cafeteria" → Answer: "The Cafeteria is a vibrant dining space offering diverse cuisine options and comfortable seating where students can relax and socialize."
+
+Be helpful, concise, and engaging!
 ''';
 
     try {
@@ -217,57 +227,107 @@ Be helpful, concise, and engaging. Encourage exploration!
         return 'Sorry, I encountered an error. Please try again.';
       }
     } catch (e) {
-      return 'Here are some places you can explore: Library, Cafeteria, Auditorium, Swimming Pool, and more! What would you like to see?';
+      return 'Here are some places you can explore: Library, Cafeteria, Auditorium, Swimming Pool, and more! What would you like to know about?';
     }
   }
 
   List<String> _detectNavigation(String userMessage, String aiResponse) {
-    final combinedText =
-        '${userMessage.toLowerCase()} ${aiResponse.toLowerCase()}';
-    final keywords = [
-      'visit',
-      'go to',
-      'show',
+    final userLower = userMessage.toLowerCase();
+    
+    // Navigation keywords that indicate user wants to visit a location
+    final navigationKeywords = [
+      'take me to',
       'take me',
-      'tour',
-      'where',
-      'navigate',
-      'see',
-      'explore',
+      'go to',
+      'visit',
+      'navigate to',
+      'show me the way to',
+      'how do i get to',
+      'directions to',
+      'bring me to',
+      'i want to go to',
+      'i want to visit',
+      'can you take me to',
+      'lead me to',
     ];
 
-    if (keywords.any((k) => combinedText.contains(k))) {
-      return _locations
-          .where((loc) => combinedText.contains(loc.toLowerCase()))
-          .toList();
+    // Check if user explicitly wants to navigate
+    final wantsNavigation = navigationKeywords.any((keyword) => userLower.contains(keyword));
+    
+    if (!wantsNavigation) {
+      // User is just asking for information, don't show navigation buttons
+      return [];
     }
-    return [];
+
+    // User wants to navigate - find matching locations
+    final detectedLocations = <String>[];
+    final combinedText = '${userMessage.toLowerCase()} ${aiResponse.toLowerCase()}';
+    
+    for (final location in _locations) {
+      if (combinedText.contains(location.toLowerCase())) {
+        detectedLocations.add(location);
+      }
+    }
+
+    return detectedLocations;
   }
 
   void _handleNavigation(String location) {
-    AppLogger.debug('Navigation button clicked',
+    AppLogger.info('Navigation button clicked',
       component: 'ChatbotWidget',
       metadata: {'location': location});
 
-    // Call the parent's navigation handler
-    if (widget.onNavigate != null) {
-      widget.onNavigate!(location);
-      AppLogger.debug('onNavigate called successfully',
-        component: 'ChatbotWidget');
-    } else {
-      AppLogger.warning('onNavigate callback is null',
-        component: 'ChatbotWidget');
-    }
+    try {
+      // Find the matching location data
+      final locationData = AppConstants.locationCards.firstWhere(
+        (loc) => loc.title.toLowerCase() == location.toLowerCase(),
+        orElse: () => AppConstants.locationCards.first,
+      );
 
-    // Close the chatbot after a short delay to allow navigation
-    Future.delayed(const Duration(milliseconds: 500), () {
+      AppLogger.info('Found location data',
+        component: 'ChatbotWidget',
+        metadata: {
+          'location': location,
+          'locationData': locationData.title,
+        });
+
+      // Navigate to the location detail screen using correct route
       if (mounted) {
-        setState(() {
-          _isOpen = false;
-          _animationController.reverse();
+        Navigator.pushNamed(
+          context,
+          '/location',  // Correct route name from AppRoutes
+          arguments: {
+            'locationData': locationData,
+            'locationName': locationData.title,
+            'imagePath': locationData.imagePath,
+          },
+        ).then((_) {
+          AppLogger.info('Navigation completed',
+            component: 'ChatbotWidget',
+            metadata: {'location': location});
+        }).catchError((error) {
+          AppLogger.error('Navigation failed',
+            component: 'ChatbotWidget',
+            error: error,
+            metadata: {'location': location});
+        });
+
+        // Close the chatbot after navigation
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _isOpen = false;
+              _animationController.reverse();
+            });
+          }
         });
       }
-    });
+    } catch (e) {
+      AppLogger.error('Error in navigation handler',
+        component: 'ChatbotWidget',
+        error: e,
+        metadata: {'location': location});
+    }
   }
 
   @override

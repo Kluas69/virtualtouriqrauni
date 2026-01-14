@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:virtualtouriu/core/animation/clean_animations.dart';
+import 'package:virtualtouriu/core/utils/image_utils.dart';
 
 /// Enhanced image loader with progressive loading, fade-in animations,
 /// and memory-efficient caching

@@ -47,9 +47,12 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_pageController.hasClients) {
-      _updatePageController();
-    }
+    // Force update on first build and screen size changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _updatePageController();
+      }
+    });
   }
 
   void _initializeControllers() {
@@ -60,7 +63,7 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
     _selectedIndex = middleIndex;
 
     _pageController = PageController(
-      viewportFraction: 0.85, // Will be updated in didChangeDependencies
+      viewportFraction: 0.30, // Default to desktop, will update in build
       initialPage: middleIndex,
     )..addListener(_onPageScroll);
   }
@@ -69,22 +72,26 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
     final size = MediaQuery.of(context).size;
     final newViewportFraction = _calculateViewportFraction(size.width);
     
-    if (_pageController.viewportFraction != newViewportFraction) {
-      final currentPage = _pageController.page ?? _selectedIndex.toDouble();
+    if ((_pageController.viewportFraction - newViewportFraction).abs() > 0.01) {
+      final currentPage = _pageController.hasClients 
+          ? (_pageController.page ?? _selectedIndex.toDouble())
+          : _selectedIndex.toDouble();
+      
       _pageController.dispose();
       
-      _pageController = PageController(
-        viewportFraction: newViewportFraction,
-        initialPage: currentPage.round(),
-      )..addListener(_onPageScroll);
+      setState(() {
+        _pageController = PageController(
+          viewportFraction: newViewportFraction,
+          initialPage: currentPage.round(),
+        )..addListener(_onPageScroll);
+      });
     }
   }
 
   double _calculateViewportFraction(double width) {
-    if (width < 600) return 0.85; // Mobile
-    if (width < 1024) return 0.45; // Tablet
-    if (width < 1440) return 0.35; // Desktop
-    return 0.28; // Ultrawide
+    if (width < 600) return 0.85; // Mobile - shows 1 card
+    if (width < 1024) return 0.45; // Tablet - shows ~2 cards
+    return 0.30; // Desktop - shows 3 smaller cards side-by-side
   }
 
   void _handleScroll() {
@@ -448,7 +455,7 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
         ? size.height * 0.40
         : config.isTablet
             ? (size.width * 0.22).clamp(420.0, 520.0)
-            : (size.width * 0.20).clamp(420.0, 520.0);
+            : (size.width * 0.18).clamp(380.0, 480.0); // Desktop - smaller height for narrower cards
 
     return FadeInUp(
       duration: const Duration(milliseconds: 1000),
@@ -523,23 +530,29 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
             itemBuilder: (context, index) {
               final card = AppConstants.locationCards[index];
               final isSelected = index == _selectedIndex;
+              
+              // On desktop, show all cards at full scale and opacity
+              // On mobile/tablet, scale down non-selected cards
+              final shouldScale = config.isMobile || config.isTablet;
+              final targetScale = shouldScale ? (isSelected ? 1.0 : 0.92) : 1.0;
+              final targetOpacity = shouldScale ? (isSelected ? 1.0 : 0.7) : 1.0;
 
               return TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.92, end: isSelected ? 1.0 : 0.92),
+                tween: Tween(begin: 0.92, end: targetScale),
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeOutCubic,
                 builder: (context, scale, child) {
                   return Transform.scale(
                     scale: scale,
                     child: Opacity(
-                      opacity: isSelected ? 1.0 : 0.7,
+                      opacity: targetOpacity,
                       child: Container(
                         margin: EdgeInsets.symmetric(
-                          horizontal: config.isMobile ? 8 : 12,
+                          horizontal: config.isMobile ? 8 : (config.isDesktop ? 8 : 12),
                         ),
                         child: LocationCard(
                           data: card,
-                          isHovered: isSelected,
+                          isHovered: false, // Let individual cards handle their own hover state
                           onTap: () {
                             NavigationHelpers.navigateToLocation(context, card);
                           },
