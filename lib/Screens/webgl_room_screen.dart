@@ -1,6 +1,7 @@
 import 'dart:html' as html;
 import 'dart:ui_web' as ui_web;
 import 'dart:math' as math;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,16 +9,19 @@ import '../core/webgl/webgl_service_unified.dart';
 import '../core/logging/app_logger.dart';
 import '../core/platform/platform_utils.dart';
 import '../core/mobile/mobile_game_controller.dart';
+import '../core/models/spawn_config.dart';
 
 /// Simplified WebGL Room Screen that properly loads professional_classroom_enhanced.html
 class WebGLRoomScreen extends StatefulWidget {
   final String url;
   final String title;
+  final SpawnConfig? spawnConfig;
 
   const WebGLRoomScreen({
     super.key,
     required this.url,
     required this.title,
+    this.spawnConfig,
   });
 
   @override
@@ -889,6 +893,8 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
         // Add load event listener
         _iframe!.onLoad.listen((_) {
           AppLogger.info('3D viewer iframe loaded successfully', component: _logComponent);
+          // Send spawn configuration to WebGL engine
+          _sendSpawnConfigToWebGL();
         });
 
         _iframe!.onError.listen((event) {
@@ -903,6 +909,38 @@ class _WebGLRoomScreenState extends State<WebGLRoomScreen> {
     return HtmlElementView(
       viewType: viewType,
     );
+  }
+
+  /// SPAWN SYSTEM: Send spawn configuration to WebGL engine via postMessage
+  void _sendSpawnConfigToWebGL() {
+    if (widget.spawnConfig == null) {
+      AppLogger.info('No spawn config to send', component: _logComponent);
+      return;
+    }
+
+    try {
+      final spawnData = {
+        'type': 'SPAWN_CONFIG',
+        'data': widget.spawnConfig!.toJson(),
+      };
+
+      final message = jsonEncode(spawnData);
+      
+      // Send message to iframe
+      _iframe?.contentWindow?.postMessage(message, '*');
+      
+      AppLogger.info('Spawn config sent to WebGL',
+        component: _logComponent,
+        metadata: {
+          'location': widget.spawnConfig!.locationName,
+          'position': widget.spawnConfig!.position.toString(),
+          'rotation': widget.spawnConfig!.rotation.toString(),
+        });
+    } catch (e) {
+      AppLogger.error('Error sending spawn config to WebGL',
+        component: _logComponent,
+        error: e);
+    }
   }
 
   Widget _buildFallbackViewer(bool isDark) {

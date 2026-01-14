@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'platform/platform_utils.dart';
 import 'logging/app_logger.dart';
 import 'assets/asset_manager.dart';
+import 'models/spawn_config.dart';
 
 class LocationCardData {
   final String tag;
@@ -34,6 +35,10 @@ class AppConstants {
   static late String fallbackPanoramaImage;
   static late Map<String, List<Map<String, dynamic>>> panoramaHotspots;
   static late Map<String, List<Map<String, dynamic>>> locationFeatures;
+  
+  // SPAWN SYSTEM: Location-specific 3D spawn configurations
+  static late Map<String, SpawnConfig> locationSpawnConfigs;
+  static late SpawnConfig defaultSpawnConfig;
 
   // MOBILE OPTIMIZATION: Detect platform
   static bool get isMobile => PlatformUtils.isMobile || PlatformUtils.isMobileScreen;
@@ -163,6 +168,48 @@ class AppConstants {
             'hotspots': panoramaHotspots.length,
             'features': locationFeatures.length,
           });
+        
+        // SPAWN SYSTEM: Load spawn configurations
+        try {
+          final Map<String, dynamic> spawnConfigsJson = 
+              json['locationSpawnConfigs'] as Map<String, dynamic>? ?? {};
+          
+          locationSpawnConfigs = {};
+          for (final entry in spawnConfigsJson.entries) {
+            try {
+              final config = SpawnConfig.fromJson(entry.value as Map<String, dynamic>);
+              // Validate and clamp coordinates to safe bounds
+              locationSpawnConfigs[entry.key] = config.isValid() 
+                  ? config 
+                  : config.clampToBounds();
+              
+              if (!config.isValid()) {
+                AppLogger.warning('Spawn config for ${entry.key} had invalid coordinates, clamped to safe bounds',
+                  component: 'AppConstants');
+              }
+            } catch (configError) {
+              AppLogger.error('Error parsing spawn config for ${entry.key}',
+                component: 'AppConstants',
+                error: configError);
+            }
+          }
+          
+          // Initialize default spawn configuration
+          defaultSpawnConfig = SpawnConfig.defaultConfig();
+          
+          AppLogger.info('Spawn configurations loaded successfully',
+            component: 'AppConstants',
+            metadata: {'count': locationSpawnConfigs.length});
+            
+        } catch (spawnError) {
+          AppLogger.error('Error loading spawn configurations, using defaults',
+            component: 'AppConstants',
+            error: spawnError);
+          
+          // Initialize with safe defaults
+          locationSpawnConfigs = {};
+          defaultSpawnConfig = SpawnConfig.defaultConfig();
+        }
       } catch (jsonError) {
         AppLogger.error('Error loading JSON, using defaults', 
           component: 'AppConstants',
@@ -173,6 +220,8 @@ class AppConstants {
         fallbackPanoramaImage = '';
         panoramaHotspots = {};
         locationFeatures = {};
+        locationSpawnConfigs = {};
+        defaultSpawnConfig = SpawnConfig.defaultConfig();
       }
 
       AppLogger.info('AppConstants initialization completed successfully', 
@@ -189,6 +238,8 @@ class AppConstants {
       fallbackPanoramaImage = '';
       panoramaHotspots = {};
       locationFeatures = {};
+      locationSpawnConfigs = {};
+      defaultSpawnConfig = SpawnConfig.defaultConfig();
       
       // Re-throw to let caller handle
       rethrow;
@@ -202,14 +253,45 @@ class AppConstants {
     return _initializationFuture!;
   }
 
+  /// SPAWN SYSTEM: Get spawn configuration for a location
+  /// Returns the spawn config for the given location name, or default if not found
+  static SpawnConfig getSpawnConfigFor(String locationName) {
+    final config = locationSpawnConfigs[locationName];
+    if (config == null) {
+      AppLogger.warning('No spawn config for $locationName, using default',
+        component: 'AppConstants',
+        metadata: {'location': locationName});
+      return defaultSpawnConfig;
+    }
+    return config;
+  }
+
+  /// SPAWN SYSTEM: Check if a location has a spawn configuration
+  static bool hasSpawnConfig(String locationName) {
+    return locationSpawnConfigs.containsKey(locationName);
+  }
+
   static String viewTypeFor(String locationName) {
-    // FIXED: Removed mobile fallback for WebGL – now loads on mobile too (with warning in WebGlRoomScreen)
-    // Updated to support multiple WebGL rooms
-    if (locationName == 'Class Rooms' || 
-        locationName == 'Library' || 
-        locationName == 'Auditorium') {
+    // SPAWN SYSTEM: All locations now support WebGL with dynamic spawn coordinates
+    // Return 'webgl' for all 10 campus locations
+    const webglLocations = [
+      'Library',
+      'Play Area',
+      'Auditorium',
+      'Class Rooms',
+      'Amphitheater',
+      'Cafeteria',
+      'Common Room',
+      'Playground',
+      'Swimming Pool',
+      'Webinar Room',
+    ];
+    
+    if (webglLocations.contains(locationName)) {
       return 'webgl';
     }
+    
+    // Fallback to panorama for any other locations
     return 'panorama';
   }
 

@@ -1,27 +1,39 @@
 /**
  * CharacterSystem - Professional character representation and management
  * Handles player character mesh, animations, and visual representation
+ * SPAWN SYSTEM: Integrated with SpawnManager for location-specific spawning
  */
 
 import * as THREE from 'three';
+import { SpawnManager } from './SpawnManager.js';
 
 export class CharacterSystem {
-    constructor(scene, options = {}) {
+    constructor(scene, options = {}, camera = null) {
         this.scene = scene;
+        this.camera = camera; // SPAWN SYSTEM: Store camera reference for rotation application
         this.options = {
             characterType: 'capsule',
             visible: false, // Hidden by default for first-person
             debugMode: false,
             enableAnimations: false,
             autoSpawn: true, // AUTOMATIC SPAWNING ENABLED
-            spawnDelay: 1000, // 1 second delay after scene load
+            spawnDelay: 2000, // 2 second delay to ensure spawn config arrives via postMessage
             ...options
         };
+        
+        // SPAWN SYSTEM: Initialize spawn manager
+        this.spawnManager = new SpawnManager();
         
         // Character properties
         this.characterMesh = null;
         this.boundingBox = new THREE.Box3();
-        this.position = new THREE.Vector3(9.6, -0.2, -28.1); // Spawn at out_road location
+        // SPAWN SYSTEM: Use default spawn config position instead of hardcoded value
+        const defaultConfig = this.spawnManager.defaultSpawnConfig;
+        this.position = new THREE.Vector3(
+            defaultConfig.position.x,
+            defaultConfig.position.y,
+            defaultConfig.position.z
+        );
         this.rotation = new THREE.Euler(0, 0, 0);
         this.spawned = false;
         
@@ -40,7 +52,7 @@ export class CharacterSystem {
             this.scheduleAutoSpawn();
         }
         
-        console.log('✅ CharacterSystem initialized with auto-spawn enabled');
+        console.log('✅ CharacterSystem initialized with auto-spawn and SpawnManager enabled');
     }
 
     /**
@@ -89,12 +101,28 @@ export class CharacterSystem {
     
     /**
      * Spawn character automatically (no click required)
+     * SPAWN SYSTEM: Uses SpawnManager to get location-specific spawn coordinates
      */
     spawnCharacter() {
         if (this.spawned) {
             console.log('👤 Character already spawned');
             return;
         }
+        
+        // SPAWN SYSTEM: Get spawn configuration from SpawnManager
+        const spawnConfig = this.spawnManager.getSpawnConfig();
+        console.log('[CharacterSystem] ===== SPAWN DEBUG =====');
+        console.log('[CharacterSystem] Current position BEFORE spawn:', this.position.toArray());
+        console.log('[CharacterSystem] Spawn config received:', this.spawnManager.describeConfig(spawnConfig));
+        console.log('[CharacterSystem] Spawn config position:', spawnConfig.position);
+        
+        // Apply spawn position
+        this.applySpawnPosition(spawnConfig);
+        
+        console.log('[CharacterSystem] Position AFTER applySpawnPosition:', this.position.toArray());
+        
+        // Apply spawn rotation (camera orientation)
+        this.applySpawnRotation(spawnConfig);
         
         // Set character to spawn position
         this.updatePosition(this.position);
@@ -108,12 +136,74 @@ export class CharacterSystem {
             this.createDebugHelpers();
         }
         
-        console.log('🎯 Character automatically spawned at position:', this.position);
+        console.log('[CharacterSystem] ===== SPAWN COMPLETE =====');
+        console.log('[CharacterSystem] Final character position:', this.position.toArray());
+        console.log('[CharacterSystem] Final character rotation:', {
+            x: this.rotation.x,
+            y: this.rotation.y,
+            z: this.rotation.z
+        });
         
         // Trigger spawn callback if available
         if (window.classroomViewer && window.classroomViewer.onCharacterSpawned) {
             window.classroomViewer.onCharacterSpawned(this.position, this.rotation);
         }
+    }
+
+    /**
+     * SPAWN SYSTEM: Apply spawn position from configuration
+     * @param {Object} spawnConfig - Spawn configuration with position data
+     */
+    applySpawnPosition(spawnConfig) {
+        if (!spawnConfig || !spawnConfig.position) {
+            console.warn('[CharacterSystem] Invalid spawn config, using default position');
+            return;
+        }
+        
+        // Set character position from spawn config
+        this.position.set(
+            spawnConfig.position.x,
+            spawnConfig.position.y,
+            spawnConfig.position.z
+        );
+        
+        console.log('[CharacterSystem] Applied spawn position:', this.position.toArray());
+    }
+
+    /**
+     * SPAWN SYSTEM: Apply spawn rotation (camera orientation) from configuration
+     * @param {Object} spawnConfig - Spawn configuration with rotation data
+     */
+    applySpawnRotation(spawnConfig) {
+        if (!spawnConfig || !spawnConfig.rotation) {
+            console.warn('[CharacterSystem] Invalid spawn config, using default rotation');
+            return;
+        }
+        
+        // Set character rotation from spawn config
+        this.rotation.set(
+            spawnConfig.rotation.pitch,
+            spawnConfig.rotation.yaw,
+            spawnConfig.rotation.roll,
+            'YXZ' // Yaw-Pitch-Roll order for correct rotation
+        );
+        
+        // Apply rotation to camera if available
+        if (this.camera) {
+            this.camera.rotation.set(
+                spawnConfig.rotation.pitch,
+                spawnConfig.rotation.yaw,
+                spawnConfig.rotation.roll,
+                'YXZ'
+            );
+            console.log('[CharacterSystem] Applied spawn rotation to camera');
+        }
+        
+        console.log('[CharacterSystem] Applied spawn rotation:', {
+            pitch: spawnConfig.rotation.pitch,
+            yaw: spawnConfig.rotation.yaw,
+            roll: spawnConfig.rotation.roll
+        });
     }
 
     /**

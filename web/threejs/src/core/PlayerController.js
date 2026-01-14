@@ -11,7 +11,9 @@ import { InputHandler } from './InputHandler.js';
 
 export class PlayerState {
     constructor() {
-        this.position = new THREE.Vector3(9.6, -0.2, -28.1); // Spawn at out_road location
+        // SPAWN SYSTEM: Use default spawn position (0, 1.6, 5) instead of hardcoded value
+        // This will be overridden by CharacterSystem's spawn config when it spawns
+        this.position = new THREE.Vector3(0, 1.6, 5); // Default spawn position
         this.rotation = new THREE.Euler(0, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.isGrounded = false;
@@ -44,10 +46,13 @@ export class PlayerController {
         this.playerState = new PlayerState();
         
         // Initialize subsystems
-        this.characterSystem = new CharacterSystem(scene, this.options);
+        this.characterSystem = new CharacterSystem(scene, this.options, camera); // Pass camera for spawn rotation
         this.physicsEngine = new PhysicsEngine(this.options);
         this.cameraController = new CameraController(camera, this.options);
         this.inputHandler = new InputHandler(this.options);
+        
+        // SPAWN SYSTEM: Listen for character spawn events to sync PlayerState position
+        this.setupSpawnListener();
         
         // Set character to BEE-SIZE by default for maximum navigation
         setTimeout(() => {
@@ -62,6 +67,46 @@ export class PlayerController {
         
         console.log('✅ PlayerController initialized with BEE-SIZED character for maximum navigation');
         console.log('🐝 Character size: 2mm wide (bee-sized) - fits through ANY gap imaginable!');
+    }
+
+    /**
+     * SPAWN SYSTEM: Setup listener for character spawn events
+     * Syncs PlayerState position with CharacterSystem spawn position
+     */
+    setupSpawnListener() {
+        // Store reference to original callback
+        const originalCallback = window.classroomViewer?.onCharacterSpawned;
+        
+        // Create our callback that syncs PlayerState
+        const spawnCallback = (position, rotation) => {
+            console.log('[PlayerController] Character spawned, syncing PlayerState position');
+            console.log('[PlayerController] Spawn position:', position.toArray());
+            
+            // Sync PlayerState with CharacterSystem spawn position
+            this.playerState.position.copy(position);
+            this.playerState.rotation.copy(rotation);
+            
+            // Reset physics state
+            this.playerState.velocity.set(0, 0, 0);
+            this.playerState.isGrounded = false;
+            
+            // Update camera to new position
+            this.camera.position.copy(position);
+            this.camera.rotation.copy(rotation);
+            
+            console.log('[PlayerController] PlayerState synced with spawn position');
+            
+            // Call original callback if it exists
+            if (originalCallback) {
+                originalCallback(position, rotation);
+            }
+        };
+        
+        // Register our callback
+        if (!window.classroomViewer) {
+            window.classroomViewer = {};
+        }
+        window.classroomViewer.onCharacterSpawned = spawnCallback;
     }
 
     /**

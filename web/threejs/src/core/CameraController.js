@@ -40,6 +40,26 @@ export class CameraController {
     }
 
     /**
+     * SPAWN SYSTEM: Set initial camera orientation from spawn configuration
+     * @param {number} pitch - Pitch angle in radians (looking up/down)
+     * @param {number} yaw - Yaw angle in radians (looking left/right)
+     * @param {number} roll - Roll angle in radians (tilting head)
+     */
+    setInitialOrientation(pitch, yaw, roll) {
+        // Apply rotation to camera
+        this.camera.rotation.set(pitch, yaw, roll, 'YXZ');
+        
+        // Store as target rotation for smooth transitions
+        this.targetRotation.set(pitch, yaw, roll, 'YXZ');
+        
+        console.log('[CameraController] Initial orientation set:', {
+            pitch: pitch,
+            yaw: yaw,
+            roll: roll
+        });
+    }
+
+    /**
      * Follow player character based on current camera mode
      * @param {Object} playerState - Player state object
      * @param {number} delta - Time delta

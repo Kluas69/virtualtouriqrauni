@@ -360,5 +360,87 @@
         "actionType": "snackbar"
       }
     ]
+  },
+  "locationSpawnConfigs": {
+    "Library": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Library",
+      "description": "Placeholder spawn for Library - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Play Area": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Play Area",
+      "description": "Placeholder spawn for Play Area - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Auditorium": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Auditorium",
+      "description": "Placeholder spawn for Auditorium - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Class Rooms": {
+      "position": { "x": -16.9, "y": 0.6, "z": -0.6 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Class Rooms",
+      "description": "Classroom spawn at specified coordinates",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Amphitheater": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Amphitheater",
+      "description": "Placeholder spawn for Amphitheater - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Cafeteria": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Cafeteria",
+      "description": "Placeholder spawn for Cafeteria - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Common Room": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Common Room",
+      "description": "Placeholder spawn for Common Room - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Playground": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Playground",
+      "description": "Placeholder spawn for Playground - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Swimming Pool": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Swimming Pool",
+      "description": "Placeholder spawn for Swimming Pool - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    },
+    "Webinar Room": {
+      "position": { "x": 0.0, "y": 1.6, "z": 5.0 },
+      "rotation": { "pitch": 0.0, "yaw": 0.0, "roll": 0.0 },
+      "locationName": "Webinar Room",
+      "description": "Placeholder spawn for Webinar Room - coordinates to be provided",
+      "scaleFactor": 1.0,
+      "environmentType": "classroom"
+    }
   }
 }

@@ -14,6 +14,7 @@ import 'package:virtualtouriu/themes/themes.dart';
 import 'package:virtualtouriu/core/responsive/adaptive_layout.dart';
 import 'package:virtualtouriu/core/performance/performance_monitor.dart';
 import 'package:virtualtouriu/core/assets/asset_manager.dart';
+import 'package:virtualtouriu/core/logging/app_logger.dart';
 
 class LocationDetailScreen extends StatefulWidget {
   final String locationName;
@@ -105,84 +106,79 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
   void _openTour() {
     if (!mounted) return;
 
+    // SPAWN SYSTEM: Get spawn configuration for this location
+    final spawnConfig = AppConstants.getSpawnConfigFor(widget.locationData.name);
+    
+    // Log spawn configuration for debugging
+    AppLogger.info('Opening tour with spawn config',
+      component: 'LocationDetailScreen',
+      metadata: {
+        'location': widget.locationData.name,
+        'spawnX': spawnConfig.position.x,
+        'spawnY': spawnConfig.position.y,
+        'spawnZ': spawnConfig.position.z,
+        'hasCustomConfig': AppConstants.hasSpawnConfig(widget.locationData.name),
+      });
+
     final viewType = AppConstants.viewTypeFor(widget.locationData.name);
 
     if (viewType == 'webgl') {
-      final url = AppConstants.webglUrlFor(widget.locationData.name);
-      if (url == null || url.isEmpty) {
-        // Virtual tour not available - show helpful message for mobile users
-        if (MediaQuery.of(context).size.width < 600) {
-          _showMobileWebGLUnavailableDialog();
-        }
-        return;
-      }
-
-      // Special handling for classroom - use the integrated 3D viewer
-      if (widget.locationData.name.toLowerCase().contains('classroom') || 
-          url.contains('classroom')) {
-        
-        // For mobile devices, show a warning about 3D performance
-        if (MediaQuery.of(context).size.width < 600) {
-          _showMobile3DWarningDialog(() {
-            // CRITICAL FIX: Use Navigator.of(context).push instead of Navigator.push
-            // to prevent page refresh issues in Flutter web
-            Navigator.of(context, rootNavigator: false).push(
-              PageRouteBuilder(
-                pageBuilder: (_, __, ___) => WebGLRoomScreen(
-                  title: widget.locationData.name, 
-                  url: 'classroom' // Use 'classroom' as room ID for Three.js
-                ),
-                transitionsBuilder: (_, animation, __, child) =>
-                    FadeTransition(opacity: animation, child: child),
-                transitionDuration: const Duration(milliseconds: 400),
-                settings: RouteSettings(
-                  name: '/webgl/${widget.locationData.name}',
-                  arguments: {'url': 'classroom', 'title': widget.locationData.name},
-                ),
+      // All locations now use the classroom 3D model with location-specific spawn points
+      
+      // For mobile devices, show a warning about 3D performance
+      if (MediaQuery.of(context).size.width < 600) {
+        _showMobile3DWarningDialog(() {
+          // CRITICAL FIX: Use Navigator.of(context).push instead of Navigator.push
+          // to prevent page refresh issues in Flutter web
+          Navigator.of(context, rootNavigator: false).push(
+            PageRouteBuilder(
+              pageBuilder: (_, __, ___) => WebGLRoomScreen(
+                title: widget.locationData.name, 
+                url: 'classroom', // Use 'classroom' as room ID for Three.js
+                spawnConfig: spawnConfig, // Pass spawn configuration
               ),
-            );
-          });
-          return;
-        }
-        
-        // For desktop/tablet, proceed directly
-        Navigator.of(context, rootNavigator: false).push(
-          PageRouteBuilder(
-            pageBuilder: (_, __, ___) => WebGLRoomScreen(
-              title: widget.locationData.name, 
-              url: 'classroom' // Use 'classroom' as room ID for Three.js
+              transitionsBuilder: (_, animation, __, child) =>
+                  FadeTransition(opacity: animation, child: child),
+              transitionDuration: const Duration(milliseconds: 400),
+              settings: RouteSettings(
+                name: '/webgl/${widget.locationData.name}',
+                arguments: {
+                  'url': 'classroom',
+                  'title': widget.locationData.name,
+                  'spawnConfig': spawnConfig.toJson(),
+                },
+              ),
             ),
-            transitionsBuilder: (_, animation, __, child) =>
-                FadeTransition(opacity: animation, child: child),
-            transitionDuration: const Duration(milliseconds: 400),
-            settings: RouteSettings(
-              name: '/webgl/${widget.locationData.name}',
-              arguments: {'url': 'classroom', 'title': widget.locationData.name},
-            ),
-          ),
-        );
+          );
+        });
         return;
       }
-
-      // For other WebGL content, use the original approach
+      
+      // For desktop/tablet, proceed directly
       Navigator.of(context, rootNavigator: false).push(
         PageRouteBuilder(
           pageBuilder: (_, __, ___) => WebGLRoomScreen(
             title: widget.locationData.name, 
-            url: url
+            url: 'classroom', // Use 'classroom' as room ID for Three.js
+            spawnConfig: spawnConfig, // Pass spawn configuration
           ),
           transitionsBuilder: (_, animation, __, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 400),
           settings: RouteSettings(
             name: '/webgl/${widget.locationData.name}',
-            arguments: {'url': url, 'title': widget.locationData.name},
+            arguments: {
+              'url': 'classroom',
+              'title': widget.locationData.name,
+              'spawnConfig': spawnConfig.toJson(),
+            },
           ),
         ),
       );
       return;
     }
 
+    // Fallback to panorama for non-WebGL locations
     Navigator.of(context, rootNavigator: false).push(
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => PanoramaScreen(
@@ -524,7 +520,7 @@ class _LocationDetailScreenState extends State<LocationDetailScreen>
               duration: const Duration(milliseconds: 600),
               child: Center(
                 child: CustomButton(
-                  text: widget.locationData.name.toLowerCase().contains('classroom') 
+                  text: AppConstants.viewTypeFor(widget.locationData.name) == 'webgl'
                       ? 'Start Professional 3D Tour'
                       : 'Start Virtual Tour',
                   onPressed: _openTour,

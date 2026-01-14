@@ -3243,7 +3243,7 @@
         
         // Game-like Player System
         const player = {
-            position: { x: 9.6, y: -0.2, z: -28.1 }, // Spawn at out_road location
+            position: { x: 10.6, y: -0.2, z: -27.8 }, // Default campus tour spawn (will be overridden by location-specific configs)
             size: { radius: 0.3, height: 1.8 },
             velocity: { x: 0, y: 0, z: 0 },
             speed: 3.5,
@@ -3285,6 +3285,101 @@
             normalCameraHeight: 1.6, // Human eye level when standing (1.6m)
             crouchCameraHeight: 1.0 // Human eye level when crouching (1.0m)
         };
+        
+        // ===== SPAWN SYSTEM: Dynamic Location-Specific Spawning =====
+        const spawnSystem = {
+            defaultConfig: {
+                position: { x: 10.6, y: -0.2, z: -27.8 },
+                rotation: { pitch: 0, yaw: 0, roll: 0 },
+                locationName: 'default',
+                description: 'Default campus tour spawn position'
+            },
+            currentConfig: null,
+            
+            // Setup message listener for spawn configs from Flutter
+            setupMessageListener() {
+                window.addEventListener('message', (event) => {
+                    try {
+                        let data = event.data;
+                        
+                        // Handle string messages (JSON encoded)
+                        if (typeof data === 'string') {
+                            try {
+                                data = JSON.parse(data);
+                            } catch (parseError) {
+                                return; // Not JSON, ignore
+                            }
+                        }
+                        
+                        // Check if this is a spawn config message
+                        if (data && data.type === 'SPAWN_CONFIG' && data.data) {
+                            this.currentConfig = data.data;
+                            console.log('[SpawnSystem] ===== SPAWN CONFIG RECEIVED =====');
+                            console.log('[SpawnSystem] Location:', this.currentConfig.locationName);
+                            console.log('[SpawnSystem] Position:', this.currentConfig.position);
+                            console.log('[SpawnSystem] Rotation:', this.currentConfig.rotation);
+                            console.log('[SpawnSystem] =========================================');
+                            
+                            // Apply spawn config immediately if player is already initialized
+                            if (player) {
+                                this.applySpawnConfig();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[SpawnSystem] Error processing message:', error);
+                    }
+                });
+                
+                console.log('[SpawnSystem] Message listener initialized');
+            },
+            
+            // Get spawn configuration with priority: postMessage > default
+            getSpawnConfig() {
+                if (this.currentConfig) {
+                    console.log('[SpawnSystem] Using spawn config from postMessage');
+                    return this.currentConfig;
+                } else {
+                    console.log('[SpawnSystem] Using default spawn config');
+                    return this.defaultConfig;
+                }
+            },
+            
+            // Apply spawn configuration to player
+            applySpawnConfig() {
+                const config = this.getSpawnConfig();
+                
+                console.log('[SpawnSystem] ===== APPLYING SPAWN CONFIG =====');
+                console.log('[SpawnSystem] Before - Player position:', player.position);
+                
+                // Apply position
+                player.position.x = config.position.x;
+                player.position.y = config.position.y;
+                player.position.z = config.position.z;
+                player.previousY = config.position.y;
+                
+                console.log('[SpawnSystem] After - Player position:', player.position);
+                
+                // Apply rotation to camera system
+                if (config.rotation) {
+                    cameraSystem.pitch = config.rotation.pitch || 0;
+                    cameraSystem.yaw = config.rotation.yaw || 0;
+                    console.log('[SpawnSystem] Applied rotation - Pitch:', cameraSystem.pitch, 'Yaw:', cameraSystem.yaw);
+                }
+                
+                // Update camera position if it exists
+                if (camera) {
+                    const eyeHeight = player.position.y + player.normalCameraHeight;
+                    camera.position.set(player.position.x, eyeHeight, player.position.z);
+                    console.log('[SpawnSystem] Updated camera position:', camera.position);
+                }
+                
+                console.log('[SpawnSystem] ===== SPAWN CONFIG APPLIED =====');
+                console.log('[SpawnSystem] Final player position:', player.position);
+            }
+        };
+        
+        // Initialize spawn system message listener
+        spawnSystem.setupMessageListener();
         
         // Game-like Camera System with Smoothing
         const cameraSystem = {
@@ -6132,8 +6227,18 @@
         
         // ===== CONTROL FUNCTIONS =====
         function resetPlayer() {
-            // Reset player position to out_road spawn
-            player.position = { x: 9.6, y: -0.2, z: -28.1 };
+            // SPAWN SYSTEM: Use spawn config instead of hardcoded position
+            const spawnConfig = spawnSystem.getSpawnConfig();
+            
+            console.log('[resetPlayer] ===== RESETTING PLAYER =====');
+            console.log('[resetPlayer] Using spawn config:', spawnConfig);
+            
+            // Apply spawn position
+            player.position = { 
+                x: spawnConfig.position.x, 
+                y: spawnConfig.position.y, 
+                z: spawnConfig.position.z 
+            };
             player.velocity = { x: 0, y: 0, z: 0 };
             player.onGround = true;
             player.isFalling = false;
@@ -6145,7 +6250,7 @@
             
             // Log current position for debugging
             console.log('🎯 Player spawned at:', player.position);
-            console.log('📍 Navigate to out_road and press P to log coordinates');
+            console.log('📍 Location:', spawnConfig.locationName);
             
             // Reset professional jumping system
             player.wantsToJump = false;
@@ -6160,9 +6265,14 @@
             player.crouchTransition = 0;
             player.size.height = player.normalHeight;
             
-            // Reset camera system
-            cameraSystem.pitch = 0;
-            cameraSystem.yaw = Math.PI; // Face building (180 degrees)
+            // Reset camera system with spawn rotation
+            if (spawnConfig.rotation) {
+                cameraSystem.pitch = spawnConfig.rotation.pitch || 0;
+                cameraSystem.yaw = spawnConfig.rotation.yaw || Math.PI;
+            } else {
+                cameraSystem.pitch = 0;
+                cameraSystem.yaw = Math.PI; // Face building (180 degrees)
+            }
             
             // Reset camera to floor level (game-like spawn)
             const eyeHeight = player.position.y + player.normalCameraHeight;
@@ -6172,14 +6282,18 @@
                 player.position.z
             );
             
-            // Set camera rotation to face building (180 degrees)
+            // Set camera rotation
             camera.rotation.order = 'YXZ';
-            camera.rotation.y = Math.PI; // Face building
-            camera.rotation.x = 0;
+            camera.rotation.y = cameraSystem.yaw;
+            camera.rotation.x = cameraSystem.pitch;
             
             // Reset camera smoothing system
             cameraSystem.smoothedY = eyeHeight;
             cameraSystem.lastPlayerY = player.position.y;
+            
+            console.log('[resetPlayer] Camera position:', camera.position);
+            console.log('[resetPlayer] Camera rotation - Pitch:', cameraSystem.pitch, 'Yaw:', cameraSystem.yaw);
+            console.log('[resetPlayer] ===== PLAYER RESET COMPLETE =====');
             
             // If in orbit mode, set camera to look at floor level
             if (orbitMode && classroomModel) {
