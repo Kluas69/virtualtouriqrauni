@@ -2060,6 +2060,7 @@
                 <div><strong>Space</strong> - Jump (professional mechanics)</div>
                 <div><strong>Shift</strong> - Run faster</div>
                 <div><strong>C</strong> - Hold to crouch (CS:GO style)</div>
+                <div><strong>P</strong> - Log current position (for spawn setup)</div>
                 <div><strong>ESC</strong> - Exit navigation mode</div>
                 <div><strong>F</strong> - Toggle fullscreen</div>
             </div>
@@ -3242,18 +3243,18 @@
         
         // Game-like Player System
         const player = {
-            position: { x: 0, y: 1.7, z: 5 }, // Start at human eye level (1.7m)
-            size: { radius: 0.3, height: 1.8 }, // Realistic human height (1.8m total)
+            position: { x: 9.6, y: -0.2, z: -28.1 }, // Spawn at out_road location
+            size: { radius: 0.3, height: 1.8 },
             velocity: { x: 0, y: 0, z: 0 },
-            speed: 3.5, // Optimized for realistic game movement
-            jumpPower: 12, // Professional FPS jump power
-            onGround: true, // Start on ground
-            onRamp: false, // Track if player is on a ramp
-            onStairs: false, // Track if player is on stairs
-            isFalling: false, // Track if player is in free fall
-            fallStartY: 0, // Track where fall started
-            previousY: 1.7, // Track previous Y position for direction detection
-            mode: 'normal', // normal, bee, ant
+            speed: 3.5,
+            jumpPower: 12,
+            onGround: true,
+            onRamp: false,
+            onStairs: false,
+            isFalling: false,
+            fallStartY: 0,
+            previousY: -0.2,
+            mode: 'normal',
             // Game-like movement
             moveForward: false,
             moveBackward: false,
@@ -3288,7 +3289,7 @@
         // Game-like Camera System with Smoothing
         const cameraSystem = {
             pitch: 0, // Up/down rotation
-            yaw: 0,   // Left/right rotation
+            yaw: Math.PI,   // Left/right rotation (Math.PI = 180 degrees, facing building)
             sensitivity: 0.002,
             maxPitch: Math.PI / 2 - 0.1, // Prevent over-rotation
             // Camera smoothing system to prevent shaking during stair transitions
@@ -4105,12 +4106,16 @@
             // Create Professional Camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const initialEyeHeight = player.position.y + player.size.height - 0.1;
-            camera.position.set(0, initialEyeHeight, 5);
+            camera.position.set(player.position.x, initialEyeHeight, player.position.z);
             
             // Initialize camera smoothing system
             cameraSystem.smoothedY = initialEyeHeight;
             cameraSystem.lastPlayerY = player.position.y;
-            camera.lookAt(0, 0, 0);
+            
+            // Set initial camera rotation to face building (180 degrees)
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = Math.PI; // Face building
+            camera.rotation.x = 0;
             
             // Create Professional Renderer
             renderer = new THREE.WebGLRenderer({ 
@@ -4392,6 +4397,16 @@
                         if (isPointerLocked) {
                             document.exitPointerLock();
                         }
+                        break;
+                    case 'KeyP':
+                        // Log current player position for spawn point configuration
+                        console.log('📍 CURRENT POSITION:');
+                        console.log(`   X: ${player.position.x.toFixed(3)}`);
+                        console.log(`   Y: ${player.position.y.toFixed(3)}`);
+                        console.log(`   Z: ${player.position.z.toFixed(3)}`);
+                        console.log(`   Camera Yaw: ${cameraSystem.yaw.toFixed(3)}`);
+                        console.log(`   Camera Pitch: ${cameraSystem.pitch.toFixed(3)}`);
+                        showNotification(`📍 Position logged to console: (${player.position.x.toFixed(1)}, ${player.position.y.toFixed(1)}, ${player.position.z.toFixed(1)})`);
                         break;
                     case 'KeyF':
                         // Professional door interaction (prevent default fullscreen)
@@ -6117,16 +6132,20 @@
         
         // ===== CONTROL FUNCTIONS =====
         function resetPlayer() {
-            // Reset player position to spawn on floor like a game
-            player.position = { x: 0, y: player.spawnHeight, z: 5 };
+            // Reset player position to out_road spawn
+            player.position = { x: 9.6, y: -0.2, z: -28.1 };
             player.velocity = { x: 0, y: 0, z: 0 };
-            player.onGround = true; // Always spawn on ground
-            player.isFalling = false; // Reset falling state
-            player.fallStartY = 0; // Reset fall start position
+            player.onGround = true;
+            player.isFalling = false;
+            player.fallStartY = 0;
             player.moveForward = false;
             player.moveBackward = false;
             player.moveLeft = false;
             player.moveRight = false;
+            
+            // Log current position for debugging
+            console.log('🎯 Player spawned at:', player.position);
+            console.log('📍 Navigate to out_road and press P to log coordinates');
             
             // Reset professional jumping system
             player.wantsToJump = false;
@@ -6143,7 +6162,7 @@
             
             // Reset camera system
             cameraSystem.pitch = 0;
-            cameraSystem.yaw = 0;
+            cameraSystem.yaw = Math.PI; // Face building (180 degrees)
             
             // Reset camera to floor level (game-like spawn)
             const eyeHeight = player.position.y + player.normalCameraHeight;
@@ -6152,7 +6171,11 @@
                 eyeHeight, // Eye level from floor
                 player.position.z
             );
-            camera.rotation.set(0, 0, 0);
+            
+            // Set camera rotation to face building (180 degrees)
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = Math.PI; // Face building
+            camera.rotation.x = 0;
             
             // Reset camera smoothing system
             cameraSystem.smoothedY = eyeHeight;

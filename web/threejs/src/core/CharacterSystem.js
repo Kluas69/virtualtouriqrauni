@@ -21,7 +21,7 @@ export class CharacterSystem {
         // Character properties
         this.characterMesh = null;
         this.boundingBox = new THREE.Box3();
-        this.position = new THREE.Vector3(0, 1.6, 15);
+        this.position = new THREE.Vector3(9.6, -0.2, -28.1); // Spawn at out_road location
         this.rotation = new THREE.Euler(0, 0, 0);
         this.spawned = false;
         

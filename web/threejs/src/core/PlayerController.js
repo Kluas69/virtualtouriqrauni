@@ -11,7 +11,7 @@ import { InputHandler } from './InputHandler.js';
 
 export class PlayerState {
     constructor() {
-        this.position = new THREE.Vector3(0, 1.6, 15);
+        this.position = new THREE.Vector3(9.6, -0.2, -28.1); // Spawn at out_road location
         this.rotation = new THREE.Euler(0, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.isGrounded = false;
