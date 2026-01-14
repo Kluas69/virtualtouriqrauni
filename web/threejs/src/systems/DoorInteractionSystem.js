@@ -46,8 +46,6 @@ export class DoorInteractionSystem {
         
         // Input handling
         this.inputCallbacks = new Map();
-        
-        console.log('✅ DoorInteractionSystem initialized');
     }
     
     /**
@@ -74,15 +72,13 @@ export class DoorInteractionSystem {
         
         // Auto-detect doors in scene
         this.autoDetectDoors();
-        
-        console.log('🚪 DoorInteractionSystem initialized with professional features');
     }
     
     /**
      * Setup input handling for door interactions
      */
     setupInputHandling() {
-        // Register F key handler
+        // Register F key handler for desktop
         const keydownCallback = (event) => {
             if (event.code === 'KeyF' && this.activeDoor) {
                 this.interactWithDoor(this.activeDoor);
@@ -92,24 +88,84 @@ export class DoorInteractionSystem {
         this.inputSystem.on('keydown', keydownCallback);
         this.inputCallbacks.set('keydown', keydownCallback);
         
-        console.log('⌨️ Door interaction input handling setup');
+        // Register mobile tap handler
+        this.setupMobileTapHandler();
+    }
+    
+    /**
+     * Setup mobile tap gesture handler for door interactions
+     * Implements professional touch detection with tap validation
+     */
+    setupMobileTapHandler() {
+        let touchStartTime = 0;
+        let touchStartPos = { x: 0, y: 0 };
+        const TAP_MAX_DURATION = 300; // Max duration for tap (ms)
+        const TAP_MAX_MOVEMENT = 10; // Max movement for tap (pixels)
+        
+        // Touch start handler
+        const touchStartCallback = (event) => {
+            if (event.touches.length === 1) {
+                touchStartTime = Date.now();
+                touchStartPos = {
+                    x: event.touches[0].clientX,
+                    y: event.touches[0].clientY
+                };
+            }
+        };
+        
+        // Touch end handler - detect tap gesture
+        const touchEndCallback = (event) => {
+            // Only process single tap (not multi-touch)
+            if (event.changedTouches.length !== 1) return;
+            
+            const touchEndTime = Date.now();
+            const touchDuration = touchEndTime - touchStartTime;
+            
+            // Get touch end position
+            const touchEndPos = {
+                x: event.changedTouches[0].clientX,
+                y: event.changedTouches[0].clientY
+            };
+            
+            // Calculate movement distance
+            const deltaX = touchEndPos.x - touchStartPos.x;
+            const deltaY = touchEndPos.y - touchStartPos.y;
+            const movement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // Validate tap gesture (quick touch with minimal movement)
+            const isTap = touchDuration < TAP_MAX_DURATION && movement < TAP_MAX_MOVEMENT;
+            
+            if (isTap && this.activeDoor) {
+                // Trigger door interaction
+                this.interactWithDoor(this.activeDoor);
+                
+                // Prevent default to avoid any click events
+                event.preventDefault();
+            }
+        };
+        
+        // Register touch event listeners
+        document.addEventListener('touchstart', touchStartCallback, { passive: true });
+        document.addEventListener('touchend', touchEndCallback, { passive: false });
+        
+        // Store callbacks for cleanup
+        this.inputCallbacks.set('touchstart', touchStartCallback);
+        this.inputCallbacks.set('touchend', touchEndCallback);
     }
     
     /**
      * Setup UI elements for door interactions
      */
     setupUI() {
-        // Create interaction prompt
+        // Create simple interaction prompt
         this.uiElements.interactionPrompt = this.createInteractionPrompt();
         
         // Create enhanced crosshair
         this.uiElements.crosshair = this.createCrosshair();
-        
-        console.log('🎨 Door interaction UI setup');
     }
     
     /**
-     * Create interaction prompt UI element with professional styling
+     * Create simple interaction prompt
      * @returns {HTMLElement} Prompt element
      */
     createInteractionPrompt() {
@@ -117,25 +173,19 @@ export class DoorInteractionSystem {
         prompt.id = 'door-interaction-prompt';
         prompt.style.cssText = `
             position: fixed;
-            bottom: 25%;
+            bottom: 30%;
             left: 50%;
-            transform: translate(-50%, 0) scale(0.9);
-            background: rgba(0, 0, 0, 0.85);
-            color: #00ff88;
-            padding: 14px 24px;
-            border-radius: 10px;
+            transform: translate(-50%, 0);
+            color: white;
             font-family: 'Segoe UI', 'Arial', sans-serif;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 16px;
+            font-weight: 500;
             text-align: center;
             pointer-events: none;
             z-index: 1000;
             opacity: 0;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid #00ff88;
-            box-shadow: 0 4px 24px rgba(0, 255, 136, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            letter-spacing: 0.5px;
+            transition: opacity 0.2s ease;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         `;
         
         document.body.appendChild(prompt);
@@ -203,8 +253,6 @@ export class DoorInteractionSystem {
                 doorCount++;
             }
         });
-        
-        console.log(`🔍 Auto-detected ${doorCount} doors in scene`);
     }
     
     /**
@@ -254,8 +302,6 @@ export class DoorInteractionSystem {
             originalPosition: doorObject.position.clone(),
             originalRotation: doorObject.rotation.clone()
         });
-        
-        console.log(`🚪 Registered door: ${interactionComponent.name} (${doorId.substring(0, 8)}...)`);
     }
     
     /**
@@ -276,24 +322,6 @@ export class DoorInteractionSystem {
         if (this.options.enableUI) {
             this.updateUI();
         }
-        
-        // Debug logging (throttled to avoid spam)
-        if (this.options.debugMode && Math.random() < 0.01) {
-            this.logDebugInfo();
-        }
-    }
-    
-    /**
-     * Log debug information about door system
-     */
-    logDebugInfo() {
-        console.log('🔧 Door System Debug:', {
-            totalDoors: this.doors.size,
-            activeDoor: this.activeDoor ? this.activeDoor.component.name : 'none',
-            animatingDoors: this.animatingDoors.size,
-            cameraPosition: this.camera ? this.camera.position : 'no camera',
-            doorsInRange: Array.from(this.doors.values()).filter(d => d.component.playerInRange).length
-        });
     }
     
     /**
@@ -446,6 +474,12 @@ export class DoorInteractionSystem {
             // Add professional highlight effect with pulsing glow
             object.traverse((child) => {
                 if (child.isMesh && child.material) {
+                    // Clone material if not already cloned (prevents affecting other doors)
+                    if (!child.materialCloned) {
+                        child.material = child.material.clone();
+                        child.materialCloned = true;
+                    }
+                    
                     // Store original material properties
                     if (!child.originalEmissive) {
                         child.originalEmissive = child.material.emissive ? child.material.emissive.clone() : new THREE.Color(0x000000);
@@ -542,8 +576,6 @@ export class DoorInteractionSystem {
                 this.animationTweens.delete(doorId);
             }
         });
-        
-        console.log(`🎬 Animating door: ${component.name} (${isOpening ? 'opening' : 'closing'})`);
     }
     
     /**
@@ -576,8 +608,6 @@ export class DoorInteractionSystem {
                 
                 // Clean up animation
                 tween.stop();
-                
-                console.log(`✅ Door animation complete: ${component.name}`);
             }
         }
     }
@@ -590,47 +620,65 @@ export class DoorInteractionSystem {
         const crosshair = this.uiElements.crosshair;
         
         if (this.activeDoor && this.activeDoor.component.canInteract()) {
-            // Show interaction prompt with smooth fade-in
+            // Show interaction prompt
             if (prompt) {
-                const doorName = this.activeDoor.component.name;
                 const state = this.activeDoor.component.state;
                 const action = (state === 'closed' || state === 'closing') ? 'Open' : 'Close';
                 
-                prompt.textContent = `[F] ${action} ${doorName}`;
+                // Detect platform and show appropriate prompt
+                const isMobile = this.isMobilePlatform();
+                const interactionKey = isMobile ? 'Tap' : '[F]';
+                
+                prompt.textContent = `${interactionKey} to ${action}`;
                 prompt.style.opacity = '1';
-                prompt.style.transform = 'translate(-50%, -50%) scale(1)';
             }
             
-            // Enhance crosshair with game-like interaction feedback
+            // Enhance crosshair
             if (crosshair) {
                 crosshair.style.transform = 'translate(-50%, -50%) scale(1.3)';
                 crosshair.style.filter = 'drop-shadow(0 0 10px #00ff88) brightness(1.5)';
                 
-                // Change crosshair color to indicate interactable
                 const crosshairLines = crosshair.querySelectorAll('div');
                 crosshairLines.forEach(line => {
                     line.style.background = '#00ff88';
                 });
             }
         } else {
-            // Hide interaction prompt with smooth fade-out
+            // Hide interaction prompt
             if (prompt) {
                 prompt.style.opacity = '0';
-                prompt.style.transform = 'translate(-50%, -50%) scale(0.9)';
             }
             
-            // Reset crosshair to default state
+            // Reset crosshair
             if (crosshair) {
                 crosshair.style.transform = 'translate(-50%, -50%) scale(1)';
                 crosshair.style.filter = 'none';
                 
-                // Reset crosshair color
                 const crosshairLines = crosshair.querySelectorAll('div');
                 crosshairLines.forEach(line => {
                     line.style.background = 'white';
                 });
             }
         }
+    }
+    
+    /**
+     * Detect if running on mobile platform
+     * @returns {boolean} True if mobile platform
+     */
+    isMobilePlatform() {
+        // Check for touch support
+        const hasTouchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        // Check for mobile user agent
+        const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+        const isMobileUA = mobileRegex.test(navigator.userAgent);
+        
+        // Check screen size (mobile typically < 768px width)
+        const isSmallScreen = window.innerWidth < 768;
+        
+        // Consider it mobile if it has touch support AND (mobile UA OR small screen)
+        return hasTouchSupport && (isMobileUA || isSmallScreen);
     }
     
     /**
@@ -689,7 +737,6 @@ export class DoorInteractionSystem {
             }
             
             this.doors.delete(doorId);
-            console.log(`🗑️ Removed door: ${doorObject.name}`);
         }
     }
     
@@ -723,13 +770,6 @@ export class DoorInteractionSystem {
         if (settings.strictProximity !== undefined) {
             this.options.strictProximity = settings.strictProximity;
         }
-        
-        console.log('🔧 Proximity settings updated:', {
-            maxDistance: this.options.maxInteractionDistance,
-            fovAngle: this.options.fovAngle,
-            heightTolerance: this.options.heightTolerance,
-            strictMode: this.options.strictProximity
-        });
     }
     
     /**
@@ -820,7 +860,13 @@ export class DoorInteractionSystem {
         
         // Remove input callbacks
         for (const [event, callback] of this.inputCallbacks) {
-            this.inputSystem.off(event, callback);
+            if (event === 'touchstart' || event === 'touchend') {
+                // Remove touch event listeners from document
+                document.removeEventListener(event, callback);
+            } else {
+                // Remove other event listeners from input system
+                this.inputSystem.off(event, callback);
+            }
         }
         this.inputCallbacks.clear();
         
@@ -836,7 +882,5 @@ export class DoorInteractionSystem {
         this.doors.clear();
         this.animatingDoors.clear();
         this.activeDoor = null;
-        
-        console.log('🗑️ DoorInteractionSystem disposed');
     }
 }
