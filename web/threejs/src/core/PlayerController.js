@@ -11,16 +11,21 @@ import { InputHandler } from './InputHandler.js';
 
 export class PlayerState {
     constructor() {
-        this.position = new THREE.Vector3(0, 1.6, 15); // Start lower for better ground detection
+        this.position = new THREE.Vector3(0, 1.6, 15);
         this.rotation = new THREE.Euler(0, 0, 0);
         this.velocity = new THREE.Vector3(0, 0, 0);
-        this.isGrounded = false; // Start not grounded to allow falling
+        this.isGrounded = false;
         this.isMoving = false;
         this.movementSpeed = 5.0;
         this.rotationSpeed = 2.0;
-        this.jumpHeight = 1.5;
+        this.jumpHeight = 5.0; // Increased for better jump feel
         this.health = 100;
         this.stamina = 100;
+        
+        // Jump control
+        this.canJump = true;
+        this.jumpCooldown = 0;
+        this.jumpCooldownTime = 0.2; // 200ms cooldown between jumps
     }
 }
 
@@ -60,7 +65,7 @@ export class PlayerController {
     }
 
     /**
-     * Main update loop - called every frame
+     * Main update loop - called every frame with professional jump handling
      * @param {number} delta - Time since last frame
      */
     update(delta) {
@@ -72,9 +77,26 @@ export class PlayerController {
         // Apply movement based on input
         this.movePlayer(movement, delta, isRunning);
         
-        // Handle jumping
-        if (isJumping) {
-            this.physicsEngine.jump(this.playerState);
+        // Update jump cooldown
+        if (this.playerState.jumpCooldown > 0) {
+            this.playerState.jumpCooldown -= delta;
+            if (this.playerState.jumpCooldown <= 0) {
+                this.playerState.canJump = true;
+            }
+        }
+        
+        // Handle jumping with anti-spam protection
+        if (isJumping && this.playerState.canJump && this.playerState.isGrounded) {
+            const jumpSuccess = this.physicsEngine.jump(this.playerState);
+            if (jumpSuccess) {
+                // Set cooldown to prevent jump spamming
+                this.playerState.canJump = false;
+                this.playerState.jumpCooldown = this.playerState.jumpCooldownTime;
+                
+                if (this.options.debugMode) {
+                    console.log('🦘 Jump executed successfully');
+                }
+            }
         }
 
         // Update physics simulation
@@ -273,7 +295,7 @@ export class PlayerController {
     }
 
     /**
-     * Update debug information
+     * Update debug information with jump state
      * @private
      */
     updateDebugInfo() {
@@ -283,6 +305,8 @@ export class PlayerController {
             velocity: this.playerState.velocity,
             isGrounded: this.playerState.isGrounded,
             isMoving: this.playerState.isMoving,
+            canJump: this.playerState.canJump,
+            jumpCooldown: this.playerState.jumpCooldown.toFixed(3),
             cameraMode: this.cameraController.mode
         };
         

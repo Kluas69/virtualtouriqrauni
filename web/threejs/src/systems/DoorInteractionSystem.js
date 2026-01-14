@@ -9,11 +9,14 @@ import { InteractionComponent } from '../components/InteractionComponent.js';
 export class DoorInteractionSystem {
     constructor(options = {}) {
         this.options = {
-            maxInteractionDistance: 5.0,
+            maxInteractionDistance: 2.5, // Reduced from 5.0 for realistic proximity
             raycastPrecision: 0.1,
             enableUI: true,
             enableSounds: true,
             debugMode: false,
+            strictProximity: true, // Enable strict game-like proximity
+            fovAngle: 60, // Field of view angle in degrees (realistic game FOV)
+            heightTolerance: 1.5, // Reduced from 3.0 for more realistic height check
             ...options
         };
         
@@ -106,7 +109,7 @@ export class DoorInteractionSystem {
     }
     
     /**
-     * Create interaction prompt UI element
+     * Create interaction prompt UI element with professional styling
      * @returns {HTMLElement} Prompt element
      */
     createInteractionPrompt() {
@@ -114,24 +117,25 @@ export class DoorInteractionSystem {
         prompt.id = 'door-interaction-prompt';
         prompt.style.cssText = `
             position: fixed;
-            top: 50%;
+            bottom: 25%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-family: 'Arial', sans-serif;
-            font-size: 16px;
-            font-weight: bold;
+            transform: translate(-50%, 0) scale(0.9);
+            background: rgba(0, 0, 0, 0.85);
+            color: #00ff88;
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
             text-align: center;
             pointer-events: none;
             z-index: 1000;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             border: 2px solid #00ff88;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
-            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 24px rgba(0, 255, 136, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            letter-spacing: 0.5px;
         `;
         
         document.body.appendChild(prompt);
@@ -211,12 +215,12 @@ export class DoorInteractionSystem {
     registerDoor(doorObject, config = {}) {
         const doorId = doorObject.uuid;
         
-        // Create interaction component
+        // Create interaction component with realistic game-like range
         const interactionComponent = new InteractionComponent({
             type: 'door',
             name: doorObject.name || 'Door',
             interactionKey: 'KeyF',
-            interactionRange: 3.0,
+            interactionRange: 2.0, // Reduced from 3.0 for realistic proximity (arm's reach)
             interactionPrompt: 'Press F to open door',
             animationDuration: 1.2,
             openAngle: 90,
@@ -255,23 +259,26 @@ export class DoorInteractionSystem {
     }
     
     /**
-     * Update system (called every frame)
+     * Update system (called every frame) with performance optimizations
      * @param {number} deltaTime - Time since last frame
      */
     update(deltaTime) {
-        // Update door proximity detection
+        // Performance optimization: Skip proximity checks if no doors registered
+        if (this.doors.size === 0) return;
+        
+        // Update door proximity detection (optimized for 60fps)
         this.updateProximityDetection();
         
         // Update door animations
         this.updateAnimations(deltaTime);
         
-        // Update UI
+        // Update UI (only if enabled)
         if (this.options.enableUI) {
             this.updateUI();
         }
         
-        // Debug logging (only occasionally to avoid spam)
-        if (this.options.debugMode && Math.random() < 0.01) { // 1% chance per frame
+        // Debug logging (throttled to avoid spam)
+        if (this.options.debugMode && Math.random() < 0.01) {
             this.logDebugInfo();
         }
     }
@@ -290,7 +297,8 @@ export class DoorInteractionSystem {
     }
     
     /**
-     * Update proximity detection using advanced raycasting and distance checks
+     * Update proximity detection using professional game-like raycasting and distance checks
+     * Implements multi-layered validation: distance, FOV, height, and line-of-sight
      */
     updateProximityDetection() {
         if (!this.camera) return;
@@ -303,51 +311,102 @@ export class DoorInteractionSystem {
         const cameraDirection = new THREE.Vector3();
         this.camera.getWorldDirection(cameraDirection);
         
-        // Check each door with multiple detection methods
-        for (const [doorId, doorData] of this.doors) {
+        // Setup raycaster for line-of-sight check
+        this.raycaster.set(cameraPosition, cameraDirection);
+        this.raycaster.far = this.options.maxInteractionDistance;
+        
+        // Check each door with professional game-like validation
+        for (const [, doorData] of this.doors) {
             const { object, component } = doorData;
             
-            // Method 1: Direct distance check to door center
+            // === LAYER 1: DISTANCE CHECK (Primary Filter) ===
             const doorPosition = new THREE.Vector3();
             object.getWorldPosition(doorPosition);
-            const directDistance = cameraPosition.distanceTo(doorPosition);
             
-            // Method 2: Bounding box distance (more accurate for complex door shapes)
+            // Calculate accurate distance to door surface (not just center)
             const boundingBox = new THREE.Box3().setFromObject(object);
             const closestPoint = boundingBox.clampPoint(cameraPosition, new THREE.Vector3());
-            const boundingBoxDistance = cameraPosition.distanceTo(closestPoint);
+            const surfaceDistance = cameraPosition.distanceTo(closestPoint);
             
-            // Method 3: Enhanced distance calculation considering door size
-            const doorSize = boundingBox.getSize(new THREE.Vector3());
-            const maxDoorDimension = Math.max(doorSize.x, doorSize.y, doorSize.z);
-            const adjustedRange = component.interactionRange + (maxDoorDimension * 0.5);
-            
-            // Use the most accurate distance
-            const actualDistance = Math.min(directDistance, boundingBoxDistance);
-            
-            // Check if door is within interaction range
-            if (actualDistance <= adjustedRange) {
-                // Method 4: Field of view check (door must be somewhat visible)
-                const directionToDoor = new THREE.Vector3().subVectors(doorPosition, cameraPosition).normalize();
-                const dotProduct = cameraDirection.dot(directionToDoor);
-                const isInFOV = dotProduct > -0.7; // Allow doors in a wider field of view (about 135°)
-                
-                // Method 5: Height check (player and door should be on similar level)
-                const heightDifference = Math.abs(cameraPosition.y - doorPosition.y);
-                const isOnSameLevel = heightDifference <= 3.0; // Allow 3 units height difference
-                
-                // Door is valid if it meets distance, FOV, and height criteria
-                if (isInFOV && isOnSameLevel) {
-                    if (actualDistance < closestDistance) {
-                        closestDistance = actualDistance;
-                        closestDoor = doorData;
-                    }
-                    component.setPlayerInRange(true);
-                } else {
-                    component.setPlayerInRange(false);
-                }
-            } else {
+            // Early exit if too far (performance optimization)
+            if (surfaceDistance > component.interactionRange) {
                 component.setPlayerInRange(false);
+                continue;
+            }
+            
+            // === LAYER 2: FIELD OF VIEW CHECK (Must be looking at door) ===
+            const directionToDoor = new THREE.Vector3()
+                .subVectors(doorPosition, cameraPosition)
+                .normalize();
+            
+            const dotProduct = cameraDirection.dot(directionToDoor);
+            
+            // Convert FOV angle to dot product threshold
+            // For 60° FOV: cos(60°) = 0.5, we use slightly wider for better UX
+            const fovThreshold = Math.cos(THREE.MathUtils.degToRad(this.options.fovAngle));
+            const isInFOV = dotProduct >= fovThreshold;
+            
+            if (!isInFOV) {
+                component.setPlayerInRange(false);
+                continue;
+            }
+            
+            // === LAYER 3: HEIGHT CHECK (Same floor level) ===
+            const heightDifference = Math.abs(cameraPosition.y - doorPosition.y);
+            const isOnSameLevel = heightDifference <= this.options.heightTolerance;
+            
+            if (!isOnSameLevel) {
+                component.setPlayerInRange(false);
+                continue;
+            }
+            
+            // === LAYER 4: LINE-OF-SIGHT RAYCAST (No obstacles blocking) ===
+            let hasLineOfSight = true;
+            
+            if (this.options.strictProximity) {
+                // Cast ray to door to check for obstacles
+                const rayDirection = directionToDoor.clone();
+                this.raycaster.set(cameraPosition, rayDirection);
+                this.raycaster.far = surfaceDistance + 0.5; // Slight buffer
+                
+                // Get all intersections
+                const intersects = this.raycaster.intersectObjects(this.scene.children, true);
+                
+                // Check if door is the first object hit (or very close to first)
+                if (intersects.length > 0) {
+                    const firstHit = intersects[0];
+                    
+                    // Check if first hit is the door or its children
+                    let isDoorHit = false;
+                    let currentObject = firstHit.object;
+                    
+                    while (currentObject) {
+                        if (currentObject === object || currentObject.uuid === object.uuid) {
+                            isDoorHit = true;
+                            break;
+                        }
+                        currentObject = currentObject.parent;
+                    }
+                    
+                    // If something else is blocking, no line of sight
+                    if (!isDoorHit && firstHit.distance < surfaceDistance - 0.1) {
+                        hasLineOfSight = false;
+                    }
+                }
+            }
+            
+            if (!hasLineOfSight) {
+                component.setPlayerInRange(false);
+                continue;
+            }
+            
+            // === LAYER 5: PRIORITY SELECTION (Closest valid door) ===
+            // All checks passed - this door is valid for interaction
+            component.setPlayerInRange(true);
+            
+            if (surfaceDistance < closestDistance) {
+                closestDistance = surfaceDistance;
+                closestDoor = doorData;
             }
         }
         
@@ -376,7 +435,7 @@ export class DoorInteractionSystem {
     }
     
     /**
-     * Highlight door when in range
+     * Highlight door when in range with professional visual feedback
      * @param {Object} doorData - Door data
      * @param {boolean} highlight - Whether to highlight
      */
@@ -384,20 +443,44 @@ export class DoorInteractionSystem {
         const { object } = doorData;
         
         if (highlight) {
-            // Add highlight effect
+            // Add professional highlight effect with pulsing glow
             object.traverse((child) => {
                 if (child.isMesh && child.material) {
+                    // Store original material properties
                     if (!child.originalEmissive) {
-                        child.originalEmissive = child.material.emissive.clone();
+                        child.originalEmissive = child.material.emissive ? child.material.emissive.clone() : new THREE.Color(0x000000);
+                        child.originalEmissiveIntensity = child.material.emissiveIntensity || 0;
                     }
-                    child.material.emissive.setHex(0x004400); // Subtle green glow
+                    
+                    // Apply subtle interactive glow (game-like feedback)
+                    if (child.material.emissive) {
+                        child.material.emissive.setHex(0x00ff88); // Bright cyan-green
+                        child.material.emissiveIntensity = 0.3;
+                    }
+                    
+                    // Add slight brightness boost
+                    if (child.material.color) {
+                        if (!child.originalColor) {
+                            child.originalColor = child.material.color.clone();
+                        }
+                        child.material.color.multiplyScalar(1.1);
+                    }
                 }
             });
         } else {
-            // Remove highlight effect
+            // Remove highlight effect and restore original appearance
             object.traverse((child) => {
-                if (child.isMesh && child.material && child.originalEmissive) {
-                    child.material.emissive.copy(child.originalEmissive);
+                if (child.isMesh && child.material) {
+                    // Restore original emissive
+                    if (child.originalEmissive && child.material.emissive) {
+                        child.material.emissive.copy(child.originalEmissive);
+                        child.material.emissiveIntensity = child.originalEmissiveIntensity || 0;
+                    }
+                    
+                    // Restore original color
+                    if (child.originalColor && child.material.color) {
+                        child.material.color.copy(child.originalColor);
+                    }
                 }
             });
         }
@@ -500,34 +583,52 @@ export class DoorInteractionSystem {
     }
     
     /**
-     * Update UI elements
+     * Update UI elements with smooth animations
      */
     updateUI() {
         const prompt = this.uiElements.interactionPrompt;
         const crosshair = this.uiElements.crosshair;
         
         if (this.activeDoor && this.activeDoor.component.canInteract()) {
-            // Show interaction prompt
+            // Show interaction prompt with smooth fade-in
             if (prompt) {
-                prompt.textContent = this.activeDoor.component.getPrompt();
+                const doorName = this.activeDoor.component.name;
+                const state = this.activeDoor.component.state;
+                const action = (state === 'closed' || state === 'closing') ? 'Open' : 'Close';
+                
+                prompt.textContent = `[F] ${action} ${doorName}`;
                 prompt.style.opacity = '1';
+                prompt.style.transform = 'translate(-50%, -50%) scale(1)';
             }
             
-            // Enhance crosshair
+            // Enhance crosshair with game-like interaction feedback
             if (crosshair) {
-                crosshair.style.transform = 'translate(-50%, -50%) scale(1.2)';
-                crosshair.style.filter = 'drop-shadow(0 0 8px #00ff88)';
+                crosshair.style.transform = 'translate(-50%, -50%) scale(1.3)';
+                crosshair.style.filter = 'drop-shadow(0 0 10px #00ff88) brightness(1.5)';
+                
+                // Change crosshair color to indicate interactable
+                const crosshairLines = crosshair.querySelectorAll('div');
+                crosshairLines.forEach(line => {
+                    line.style.background = '#00ff88';
+                });
             }
         } else {
-            // Hide interaction prompt
+            // Hide interaction prompt with smooth fade-out
             if (prompt) {
                 prompt.style.opacity = '0';
+                prompt.style.transform = 'translate(-50%, -50%) scale(0.9)';
             }
             
-            // Reset crosshair
+            // Reset crosshair to default state
             if (crosshair) {
                 crosshair.style.transform = 'translate(-50%, -50%) scale(1)';
                 crosshair.style.filter = 'none';
+                
+                // Reset crosshair color
+                const crosshairLines = crosshair.querySelectorAll('div');
+                crosshairLines.forEach(line => {
+                    line.style.background = 'white';
+                });
             }
         }
     }
@@ -603,6 +704,32 @@ export class DoorInteractionSystem {
             activeDoor: this.activeDoor ? this.activeDoor.component.name : null,
             interactionRange: this.options.maxInteractionDistance
         };
+    }
+    
+    /**
+     * Configure proximity detection settings (for fine-tuning)
+     * @param {Object} settings - Proximity settings
+     */
+    configureProximity(settings = {}) {
+        if (settings.maxInteractionDistance !== undefined) {
+            this.options.maxInteractionDistance = settings.maxInteractionDistance;
+        }
+        if (settings.fovAngle !== undefined) {
+            this.options.fovAngle = settings.fovAngle;
+        }
+        if (settings.heightTolerance !== undefined) {
+            this.options.heightTolerance = settings.heightTolerance;
+        }
+        if (settings.strictProximity !== undefined) {
+            this.options.strictProximity = settings.strictProximity;
+        }
+        
+        console.log('🔧 Proximity settings updated:', {
+            maxDistance: this.options.maxInteractionDistance,
+            fovAngle: this.options.fovAngle,
+            heightTolerance: this.options.heightTolerance,
+            strictMode: this.options.strictProximity
+        });
     }
     
     /**
