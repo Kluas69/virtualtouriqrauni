@@ -85,7 +85,7 @@ class DeveloperCredit extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Designed & Built by Zahid Iqbal',
+                'Designed & Built by Zahid & Muez ',
                 style: GoogleFonts.roboto(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -150,7 +150,7 @@ class DeveloperCredit extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Designed & Built by Zahid Iqbal',
+                    'Designed & Built by Zahid & Muez',
                     style: GoogleFonts.roboto(
                       fontSize: _getTitleFontSize(size),
                       fontWeight: FontWeight.w600,
@@ -224,6 +224,9 @@ class DeveloperCredit extends StatelessWidget {
     final badges = [
       _TechBadge('Flutter', const Color(0xFF4285F4)), // Google Blue
       _TechBadge('Three.js', const Color(0xFF34A853)), // Google Green
+      _TechBadge('Maya', const Color(0xFF00B4D8)), // Maya Cyan
+      _TechBadge('Unity', const Color(0xFFFF6B35)), // Unity Orange
+      _TechBadge('Substance', const Color(0xFFE63946)), // Substance Red
       _TechBadge('3D', const Color(0xFFFF9800)), // Material Orange
       _TechBadge('WebGL', const Color(0xFF9C27B0)), // Material Purple
       _TechBadge('Firebase', const Color(0xFFFF5722)), // Material Deep Orange

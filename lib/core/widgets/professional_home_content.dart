@@ -451,11 +451,12 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
 
   Widget _buildCarouselSection(AdaptiveConfig config, bool isDark, ThemeData theme) {
     final size = MediaQuery.of(context).size;
+    // Reduced card heights for more compact design
     final cardHeight = config.isMobile 
-        ? size.height * 0.40
+        ? size.height * 0.35  // Reduced from 0.40
         : config.isTablet
-            ? (size.width * 0.22).clamp(420.0, 520.0)
-            : (size.width * 0.18).clamp(380.0, 480.0); // Desktop - smaller height for narrower cards
+            ? (size.width * 0.20).clamp(360.0, 450.0)  // Reduced from 0.22
+            : (size.width * 0.16).clamp(320.0, 400.0); // Reduced from 0.18
 
     return FadeInUp(
       duration: const Duration(milliseconds: 1000),
@@ -519,6 +520,7 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
   Widget _buildCarousel(AdaptiveConfig config, double cardHeight) {
     return Stack(
       alignment: Alignment.center,
+      clipBehavior: Clip.none,
       children: [
         SizedBox(
           height: cardHeight,
@@ -531,36 +533,34 @@ class _ProfessionalHomeContentState extends State<ProfessionalHomeContent> {
               final card = AppConstants.locationCards[index];
               final isSelected = index == _selectedIndex;
               
-              // On desktop, show all cards at full scale and opacity
-              // On mobile/tablet, scale down non-selected cards
-              final shouldScale = config.isMobile || config.isTablet;
-              final targetScale = shouldScale ? (isSelected ? 1.0 : 0.92) : 1.0;
-              final targetOpacity = shouldScale ? (isSelected ? 1.0 : 0.7) : 1.0;
+              // Google-style subtle scale - selected is slightly bigger
+              final targetScale = isSelected ? 1.0 : 0.94;
+              
+              // Subtle opacity difference for depth
+              final targetOpacity = isSelected ? 1.0 : 0.7;
 
-              return TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.92, end: targetScale),
-                duration: const Duration(milliseconds: 400),
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
                 curve: Curves.easeOutCubic,
-                builder: (context, scale, child) {
-                  return Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: targetOpacity,
-                      child: Container(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: config.isMobile ? 8 : (config.isDesktop ? 8 : 12),
-                        ),
-                        child: LocationCard(
-                          data: card,
-                          isHovered: false, // Let individual cards handle their own hover state
-                          onTap: () {
-                            NavigationHelpers.navigateToLocation(context, card);
-                          },
-                        ),
-                      ),
+                margin: EdgeInsets.symmetric(
+                  horizontal: config.isMobile ? 10 : (config.isDesktop ? 12 : 10),
+                  vertical: isSelected ? 0 : 8,
+                ),
+                child: Transform.scale(
+                  scale: targetScale,
+                  child: AnimatedOpacity(
+                    opacity: targetOpacity,
+                    duration: const Duration(milliseconds: 350),
+                    curve: Curves.easeOutCubic,
+                    child: LocationCard(
+                      data: card,
+                      isHovered: false,
+                      onTap: () {
+                        NavigationHelpers.navigateToLocation(context, card);
+                      },
                     ),
-                  );
-                },
+                  ),
+                ),
               );
             },
           ),
