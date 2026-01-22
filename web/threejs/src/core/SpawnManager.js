@@ -20,7 +20,7 @@ export class SpawnManager {
   constructor() {
     // Default spawn configuration (classroom entrance)
     this.defaultSpawnConfig = {
-      position: { x: 0, y: 1.6, z: 5 },
+      position: { x: -23.5, y: 1.7, z: -14.7 },
       rotation: { pitch: 0, yaw: 0, roll: 0 },
       locationName: 'default',
       scaleFactor: 1.0,

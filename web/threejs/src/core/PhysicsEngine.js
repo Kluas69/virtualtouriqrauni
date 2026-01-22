@@ -318,36 +318,42 @@ export class PhysicsEngine {
             return distanceToGround <= 0.05;
         }
         
-        const rayDistance = 0.5;
+        const rayDistance = 1.0; // Increased for better detection
         let groundHits = 0;
         let closestGroundDistance = Infinity;
         let groundY = this.options.groundLevel;
         
         // Get nearby objects for raycasting (optimization)
-        const nearbyObjects = this.getNearbyObjects(playerState.position, 2.0);
+        const nearbyObjects = this.getNearbyObjects(playerState.position, 3.0);
         const objectMeshes = nearbyObjects.map(data => data.object);
         
         if (objectMeshes.length === 0) {
-            return false;
+            // Fallback to ground level check
+            const distanceToGround = playerState.position.y - this.options.groundLevel;
+            return distanceToGround <= 0.1;
         }
         
-        // Use multiple rays for reliable ground detection
+        // Use multiple rays for reliable ground detection (professional approach)
         const rayOffsets = [
             { x: 0, z: 0 },      // Center
-            { x: 0.05, z: 0 },   // Right
-            { x: -0.05, z: 0 },  // Left
-            { x: 0, z: 0.05 },   // Forward
-            { x: 0, z: -0.05 },  // Backward
+            { x: 0.1, z: 0 },    // Right
+            { x: -0.1, z: 0 },   // Left
+            { x: 0, z: 0.1 },    // Forward
+            { x: 0, z: -0.1 },   // Backward
+            { x: 0.07, z: 0.07 }, // Diagonal corners
+            { x: -0.07, z: 0.07 },
+            { x: 0.07, z: -0.07 },
+            { x: -0.07, z: -0.07 }
         ];
         
-        for (let i = 0; i < rayOffsets.length; i++) {
+        for (let i = 0; i < Math.min(rayOffsets.length, this.raycasterPool.length); i++) {
             const offset = rayOffsets[i];
             const raycaster = this.raycasterPool[i];
             
             // Cast ray from slightly above player position
             const rayOrigin = this.tempVector.set(
                 playerState.position.x + offset.x,
-                playerState.position.y + 0.05,
+                playerState.position.y + 0.1,
                 playerState.position.z + offset.z
             );
             
@@ -372,20 +378,28 @@ export class PhysicsEngine {
             this.metrics.raycastChecks++;
         }
         
-        // Require 2+ hits for reliability
-        if (groundHits >= 2 && closestGroundDistance < 0.15) {
+        // Professional ground detection logic
+        const tolerance = 0.15; // 15cm tolerance
+        const isCloseToGround = closestGroundDistance < tolerance;
+        
+        // Require multiple hits for reliability, but allow single hit if very close
+        if ((groundHits >= 3) || (groundHits >= 1 && isCloseToGround)) {
             const targetY = groundY + 0.001;
             
-            // Only snap if falling
-            if (playerState.velocity.y <= 0) {
+            // Only snap if falling or very close to ground
+            if (playerState.velocity.y <= 0 || Math.abs(playerState.position.y - groundY) < 0.1) {
                 playerState.position.y = targetY;
             }
             
             if (this.options.debugMode) {
-                console.log(`🟢 Grounded: ${groundHits} hits, distance=${closestGroundDistance.toFixed(4)}m`);
+                console.log(`🟢 Grounded: ${groundHits} hits, distance=${closestGroundDistance.toFixed(4)}m, groundY=${groundY.toFixed(3)}`);
             }
             
             return true;
+        }
+        
+        if (this.options.debugMode && groundHits > 0) {
+            console.log(`🟡 Partial ground detection: ${groundHits} hits, distance=${closestGroundDistance.toFixed(4)}m`);
         }
         
         return false;

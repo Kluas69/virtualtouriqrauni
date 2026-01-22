@@ -2061,6 +2061,11 @@
                 <div><strong>Shift</strong> - Run faster</div>
                 <div><strong>C</strong> - Hold to crouch (CS:GO style)</div>
                 <div><strong>P</strong> - Log current position (for spawn setup)</div>
+                <div><strong>G</strong> - Toggle ground collision debug</div>
+                <div><strong>H</strong> - Force ground detection</div>
+                <div><strong>T</strong> - Texture diagnostic report</div>
+                <div><strong>R</strong> - Restore all textures</div>
+                <div><strong>B</strong> - Balance bench brightness</div>
                 <div><strong>ESC</strong> - Exit navigation mode</div>
                 <div><strong>F</strong> - Toggle fullscreen</div>
             </div>
@@ -2347,6 +2352,21 @@
                                 '📱 Smart controls'
                             ],
                             usage: 'Maintains optimal classroom temperature and air quality for comfortable learning.'
+                        }
+                    },
+                    {
+                        name: 'Bench',
+                        materialNames: ['Bench', 'bench', 'Seat', 'seat', 'Chair', 'chair', 'LR_Complete2_Bench', 'LR_Complete2_Seat'],
+                        info: {
+                            title: '🪑 Student Seating',
+                            description: 'Comfortable seating area for students',
+                            details: [
+                                '🪑 Ergonomic design',
+                                '📚 Study-friendly positioning',
+                                '🎒 Storage space underneath',
+                                '🧽 Easy to clean surface'
+                            ],
+                            usage: 'Provides comfortable seating for students during lectures and study sessions.'
                         }
                     },
                     {
@@ -3243,7 +3263,7 @@
         
         // Game-like Player System
         const player = {
-            position: { x: 10.6, y: -0.2, z: -27.8 }, // Default campus tour spawn (will be overridden by location-specific configs)
+            position: { x: -23.5, y: 1.7, z: -14.7 }, // Updated spawn coordinates
             size: { radius: 0.3, height: 1.8 },
             velocity: { x: 0, y: 0, z: 0 },
             speed: 3.5,
@@ -3253,7 +3273,7 @@
             onStairs: false,
             isFalling: false,
             fallStartY: 0,
-            previousY: -0.2,
+            previousY: 1.7, // Updated to match new Y coordinate
             mode: 'normal',
             // Game-like movement
             moveForward: false,
@@ -3270,6 +3290,7 @@
             coyoteTime: 0, // Grace period after leaving ground
             maxCoyoteTime: 0.15, // 150ms coyote time
             spawnHeight: 1.7, // Human floor spawn height (1.7m)
+            forceGroundCheck: true, // Force ground detection on spawn
             // Movement smoothing
             acceleration: 15, // How fast player reaches max speed
             friction: 12, // How fast player stops
@@ -3289,7 +3310,7 @@
         // ===== SPAWN SYSTEM: Dynamic Location-Specific Spawning =====
         const spawnSystem = {
             defaultConfig: {
-                position: { x: 10.6, y: -0.2, z: -27.8 },
+                position: { x: -23.5, y: 1.7, z: -14.7 },
                 rotation: { pitch: 0, yaw: 0, roll: 0 },
                 locationName: 'default',
                 description: 'Default campus tour spawn position'
@@ -4366,13 +4387,85 @@
                                     
                                     // Professional Material Enhancement for baked lighting
                                     if (child.material) {
+                                        // PROFESSIONAL TEXTURE PRESERVATION
+                                        // Store original texture maps before any modifications
+                                        const originalMaps = {
+                                            map: child.material.map,
+                                            normalMap: child.material.normalMap,
+                                            roughnessMap: child.material.roughnessMap,
+                                            metalnessMap: child.material.metalnessMap,
+                                            aoMap: child.material.aoMap,
+                                            emissiveMap: child.material.emissiveMap
+                                        };
+                                        
+                                        // Professional material settings that preserve textures
                                         child.material.envMapIntensity = 0.3; // Reduced for baked lighting
+                                        
                                         // Ensure materials work well with baked lighting
                                         if (child.material.color) {
                                             child.material.color.multiplyScalar(1.1); // Slight brightness boost
                                         }
+                                        
+                                        // CRITICAL: Preserve all texture maps
+                                        Object.keys(originalMaps).forEach(mapType => {
+                                            if (originalMaps[mapType]) {
+                                                child.material[mapType] = originalMaps[mapType];
+                                                // Ensure texture is properly configured
+                                                if (child.material[mapType].isTexture) {
+                                                    child.material[mapType].needsUpdate = true;
+                                                    child.material[mapType].flipY = false; // GLTF standard
+                                                }
+                                            }
+                                        });
+                                        
+                                        // Professional material settings for benches and windows
+                                        const meshName = child.name.toLowerCase();
+                                        const materialName = child.material.name.toLowerCase();
+                                        
+                                        if (meshName.includes('bench') || materialName.includes('bench') ||
+                                            meshName.includes('seat') || materialName.includes('seat') ||
+                                            meshName.includes('chair') || materialName.includes('chair')) {
+                                            console.log(`🪑 BALANCED BENCH BRIGHTNESS: ${child.name}`);
+                                            // PROFESSIONAL BALANCED BENCH SETTINGS
+                                            child.material.roughness = 0.5; // Natural wood roughness
+                                            child.material.metalness = 0.0; // Non-metallic wood
+                                            child.material.envMapIntensity = 0.8; // Moderate reflection
+                                            
+                                            if (child.material.color) {
+                                                child.material.color.multiplyScalar(2.8); // Balanced brightness
+                                            }
+                                            
+                                            // If no texture, use natural wood color
+                                            if (!child.material.map) {
+                                                child.material.color.setHex(0xCD853F); // Natural wood (Peru)
+                                                child.material.color.multiplyScalar(2.2);
+                                            }
+                                        }
+                                        
+                                        if (meshName.includes('window') || materialName.includes('window')) {
+                                            console.log(`🪟 Optimizing window material: ${child.name}`);
+                                            // Window-specific material settings
+                                            child.material.roughness = 0.1; // Glass smoothness
+                                            child.material.metalness = 0.0; // Non-metallic glass
+                                            child.material.transparent = true;
+                                            child.material.opacity = 0.8; // Semi-transparent
+                                            if (child.material.color) {
+                                                child.material.color.multiplyScalar(1.3); // Brighten windows
+                                            }
+                                        }
+                                        
                                         // Optimize material for performance
                                         child.material.needsUpdate = true;
+                                        
+                                        // Debug logging for texture verification
+                                        if (window.debugMode) {
+                                            console.log(`🎨 Material processed: ${child.name}`, {
+                                                hasMap: !!child.material.map,
+                                                hasNormalMap: !!child.material.normalMap,
+                                                hasRoughnessMap: !!child.material.roughnessMap,
+                                                color: child.material.color?.getHexString()
+                                            });
+                                        }
                                     }
                                 }
                             });
@@ -4415,6 +4508,19 @@
                             
                             // 🎯 INITIALIZE INTERACTIVE OBJECTS SYSTEM
                             initializeInteractiveObjects();
+                            
+                            // 🎨 PROFESSIONAL TEXTURE RESTORATION
+                            setTimeout(() => {
+                                console.log('🎨 Running automatic texture restoration...');
+                                restoreAllTextures();
+                                enhanceAllMaterials();
+                                
+                                // 🪑 BALANCED BENCH BRIGHTNESS FIX
+                                console.log('🪑 Running balanced bench brightness fix...');
+                                fixBenchBrightness();
+                                
+                                console.log('✅ Automatic texture restoration complete');
+                            }, 500);
                             
                             // AUTO-SPAWN: Automatically enable FPS mode and spawn character for immediate gameplay
                             setTimeout(() => {
@@ -4502,6 +4608,68 @@
                         console.log(`   Camera Yaw: ${cameraSystem.yaw.toFixed(3)}`);
                         console.log(`   Camera Pitch: ${cameraSystem.pitch.toFixed(3)}`);
                         showNotification(`📍 Position logged to console: (${player.position.x.toFixed(1)}, ${player.position.y.toFixed(1)}, ${player.position.z.toFixed(1)})`);
+                        break;
+                    case 'KeyG':
+                        // Toggle debug mode for ground collision
+                        window.debugMode = !window.debugMode;
+                        console.log(`🔧 Debug mode: ${window.debugMode ? 'ON' : 'OFF'}`);
+                        showNotification(`🔧 Ground collision debug: ${window.debugMode ? 'ON' : 'OFF'}`);
+                        break;
+                    case 'KeyH':
+                        // Manual ground detection trigger
+                        console.log('🎯 Manual ground detection triggered...');
+                        forceGroundDetection();
+                        showNotification('🎯 Ground detection forced');
+                        break;
+                    case 'KeyT':
+                        // Texture debugging - Professional diagnostic tool
+                        console.log('🎨 TEXTURE DIAGNOSTIC REPORT:');
+                        if (classroomModel) {
+                            let textureCount = 0;
+                            let missingTextures = 0;
+                            
+                            classroomModel.traverse((child) => {
+                                if (child.isMesh && child.material) {
+                                    const meshName = child.name || 'unnamed';
+                                    const materialName = child.material.name || 'unnamed';
+                                    
+                                    console.log(`\n📦 Mesh: "${meshName}" | Material: "${materialName}"`);
+                                    
+                                    // Check all texture maps
+                                    const maps = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'];
+                                    maps.forEach(mapType => {
+                                        if (child.material[mapType]) {
+                                            textureCount++;
+                                            console.log(`  ✅ ${mapType}: ${child.material[mapType].image?.src || 'embedded'}`);
+                                        } else {
+                                            missingTextures++;
+                                            console.log(`  ❌ ${mapType}: missing`);
+                                        }
+                                    });
+                                    
+                                    // Material properties
+                                    console.log(`  🎨 Color: #${child.material.color?.getHexString() || 'none'}`);
+                                    console.log(`  ✨ Roughness: ${child.material.roughness || 'default'}`);
+                                    console.log(`  🔧 Metalness: ${child.material.metalness || 'default'}`);
+                                }
+                            });
+                            
+                            console.log(`\n📊 SUMMARY: ${textureCount} textures found, ${missingTextures} missing`);
+                            showNotification(`🎨 Texture Report: ${textureCount} textures, ${missingTextures} missing`);
+                        }
+                        break;
+                    case 'KeyB':
+                        // Balanced bench brightness fix
+                        console.log('🪑 Balancing bench brightness...');
+                        const benchesFixed = fixBenchBrightness();
+                        showNotification(`🪑 Bench brightness balanced: ${benchesFixed} benches enhanced`);
+                        break;
+                    case 'KeyR':
+                        // Restore all textures - Professional fix
+                        console.log('🔧 Restoring all textures...');
+                        const result = restoreAllTextures();
+                        enhanceAllMaterials();
+                        showNotification(`🎨 Textures restored: ${result.restoredCount}/${result.processedCount}`);
                         break;
                     case 'KeyF':
                         // Professional door interaction (prevent default fullscreen)
@@ -5657,7 +5825,7 @@
             };
         }
         
-        // ===== ADVANCED GROUND COLLISION DETECTION =====
+        // ===== PROFESSIONAL GROUND COLLISION DETECTION =====
         function checkAdvancedGroundCollision() {
             const raycaster = new THREE.Raycaster();
             const playerPosition = new THREE.Vector3(
@@ -5668,10 +5836,27 @@
             
             const downDirection = new THREE.Vector3(0, -1, 0);
             raycaster.set(playerPosition, downDirection);
-            raycaster.far = 2.0; // Check up to 2 units down
+            raycaster.far = 10.0; // Check up to 10 units down for better detection
             
-            let groundY = player.spawnHeight;
+            let groundY = 0.0; // Default ground level
             let foundGround = false;
+            
+            // Professional multi-ray ground detection (like AAA games)
+            const rayOffsets = [
+                { x: 0, z: 0 },        // Center
+                { x: 0.3, z: 0 },      // Right
+                { x: -0.3, z: 0 },     // Left  
+                { x: 0, z: 0.3 },      // Forward
+                { x: 0, z: -0.3 },     // Backward
+                { x: 0.2, z: 0.2 },    // Diagonal corners
+                { x: -0.2, z: 0.2 },
+                { x: 0.2, z: -0.2 },
+                { x: -0.2, z: -0.2 }
+            ];
+            
+            let groundHits = 0;
+            let closestGroundY = Infinity;
+            let allGroundHits = [];
             
             // Check for ground collision with all objects
             const allObjects = [];
@@ -5679,7 +5864,7 @@
             // Add classroom model objects
             if (classroomModel) {
                 classroomModel.traverse((child) => {
-                    if (child.isMesh) {
+                    if (child.isMesh && child.visible) {
                         allObjects.push(child);
                     }
                 });
@@ -5690,23 +5875,284 @@
                 allObjects.push(...invisibleColliders);
             }
             
-            const intersects = raycaster.intersectObjects(allObjects, false);
-            
-            if (intersects.length > 0) {
-                const closestIntersect = intersects[0];
-                groundY = closestIntersect.point.y;
-                foundGround = true;
+            // Multi-ray detection for reliability
+            for (let i = 0; i < rayOffsets.length; i++) {
+                const offset = rayOffsets[i];
+                const rayOrigin = new THREE.Vector3(
+                    player.position.x + offset.x,
+                    player.position.y + 0.1,
+                    player.position.z + offset.z
+                );
                 
-                // Check if we're on a ramp
-                if (closestIntersect.object.userData && closestIntersect.object.userData.isRampCollider) {
-                    // On a ramp - smooth movement
-                    player.onRamp = true;
-                } else {
-                    player.onRamp = false;
+                raycaster.set(rayOrigin, downDirection);
+                const intersects = raycaster.intersectObjects(allObjects, true);
+                
+                if (intersects.length > 0) {
+                    const closestIntersect = intersects[0];
+                    const hitY = closestIntersect.point.y;
+                    
+                    // Only count hits that are reasonably close to player (within 10 units)
+                    if (Math.abs(hitY - player.position.y) < 10.0) {
+                        groundHits++;
+                        allGroundHits.push(hitY);
+                        
+                        if (hitY < closestGroundY) {
+                            closestGroundY = hitY;
+                            groundY = hitY;
+                            foundGround = true;
+                            
+                            // Check if we're on a ramp
+                            if (closestIntersect.object.userData && closestIntersect.object.userData.isRampCollider) {
+                                player.onRamp = true;
+                            } else {
+                                player.onRamp = false;
+                            }
+                        }
+                    }
                 }
             }
             
-            return { groundY, foundGround };
+            // Professional ground detection logic
+            if (groundHits >= 1) { // Even single hit is valid if we find ground
+                foundGround = true;
+                
+                // Calculate average ground height for stability
+                if (allGroundHits.length > 1) {
+                    const avgGroundY = allGroundHits.reduce((sum, y) => sum + y, 0) / allGroundHits.length;
+                    // Use average if it's close to the closest hit
+                    if (Math.abs(avgGroundY - closestGroundY) < 0.5) {
+                        groundY = avgGroundY;
+                    }
+                }
+            } else {
+                foundGround = false;
+                player.onRamp = false;
+                // Use default ground level if no geometry found
+                groundY = 0.0;
+            }
+            
+            if (window.debugMode) {
+                console.log(`🔍 Ground check: ${groundHits} hits, groundY: ${groundY.toFixed(3)}, playerY: ${player.position.y.toFixed(3)}`);
+            }
+            
+            return { groundY, foundGround, groundHits };
+        }
+        
+        // ===== PROFESSIONAL TEXTURE RESTORATION SYSTEM =====
+        function restoreAllTextures() {
+            if (!classroomModel) {
+                console.warn('🎨 No model loaded for texture restoration');
+                return;
+            }
+            
+            console.log('🔧 PROFESSIONAL TEXTURE RESTORATION STARTING...');
+            let restoredCount = 0;
+            let processedCount = 0;
+            
+            classroomModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    processedCount++;
+                    const meshName = child.name || 'unnamed';
+                    const materialName = child.material.name || 'unnamed';
+                    
+                    // Professional material restoration
+                    if (child.material.map) {
+                        // Ensure texture is properly configured
+                        child.material.map.needsUpdate = true;
+                        child.material.map.flipY = false; // GLTF standard
+                        child.material.map.wrapS = THREE.RepeatWrapping;
+                        child.material.map.wrapT = THREE.RepeatWrapping;
+                        
+                        // Professional texture filtering
+                        child.material.map.magFilter = THREE.LinearFilter;
+                        child.material.map.minFilter = THREE.LinearMipmapLinearFilter;
+                        child.material.map.generateMipmaps = true;
+                        
+                        restoredCount++;
+                    }
+                    
+                    // Restore normal maps
+                    if (child.material.normalMap) {
+                        child.material.normalMap.needsUpdate = true;
+                        child.material.normalMap.flipY = false;
+                        restoredCount++;
+                    }
+                    
+                    // Professional material settings for specific objects
+                    const lowerName = meshName.toLowerCase() + ' ' + materialName.toLowerCase();
+                    
+                    if (lowerName.includes('bench')) {
+                        // Bench material optimization
+                        child.material.roughness = 0.8;
+                        child.material.metalness = 0.1;
+                        if (child.material.color) {
+                            child.material.color.setHex(0x8B4513); // Wood brown if no texture
+                        }
+                        console.log(`🪑 Restored bench material: ${meshName}`);
+                    }
+                    
+                    if (lowerName.includes('window')) {
+                        // Window material optimization
+                        child.material.roughness = 0.05;
+                        child.material.metalness = 0.0;
+                        child.material.transparent = true;
+                        child.material.opacity = 0.7;
+                        if (child.material.color) {
+                            child.material.color.setHex(0x87CEEB); // Sky blue if no texture
+                        }
+                        console.log(`🪟 Restored window material: ${meshName}`);
+                    }
+                    
+                    // Force material update
+                    child.material.needsUpdate = true;
+                }
+            });
+            
+            console.log(`✅ Texture restoration complete: ${restoredCount} textures restored on ${processedCount} objects`);
+            
+            // Force a render to show changes
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+            
+            return { restoredCount, processedCount };
+        }
+        
+        // ===== BALANCED BENCH BRIGHTNESS FIX =====
+        function fixBenchBrightness() {
+            if (!classroomModel) {
+                console.warn('🪑 No model loaded for bench brightness fix');
+                return;
+            }
+            
+            console.log('🪑 BALANCING BENCH BRIGHTNESS - PROFESSIONAL ENHANCEMENT...');
+            let benchesFixed = 0;
+            
+            classroomModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    const meshName = child.name.toLowerCase() || '';
+                    const materialName = child.material.name.toLowerCase() || '';
+                    const lowerName = meshName + ' ' + materialName;
+                    
+                    // Detect benches with multiple keywords
+                    const isBench = lowerName.includes('bench') || 
+                                   lowerName.includes('seat') || 
+                                   lowerName.includes('chair') ||
+                                   lowerName.includes('furniture') ||
+                                   meshName.includes('bench') ||
+                                   materialName.includes('bench');
+                    
+                    if (isBench) {
+                        benchesFixed++;
+                        
+                        // BALANCED BRIGHTNESS BOOST FOR BENCHES
+                        if (child.material.color) {
+                            // Reset color to ensure we start fresh
+                            child.material.color.setRGB(1, 1, 1); // Start with white
+                            child.material.color.multiplyScalar(2.8); // Balanced brightness
+                        }
+                        
+                        // PROFESSIONAL BENCH MATERIAL SETTINGS
+                        child.material.roughness = 0.4; // Smoother for more light reflection
+                        child.material.metalness = 0.0; // Non-metallic wood
+                        child.material.envMapIntensity = 1.2; // High reflection
+                        
+                        // FORCE NATURAL WOOD COLOR IF NO TEXTURE
+                        if (!child.material.map) {
+                            child.material.color.setHex(0xCD853F); // Natural wood color (Peru)
+                            child.material.color.multiplyScalar(2.2); // Moderate brightness
+                        }
+                        
+                        // TEXTURE ENHANCEMENT FOR BENCHES
+                        if (child.material.map) {
+                            child.material.map.encoding = THREE.sRGBEncoding;
+                            child.material.map.needsUpdate = true;
+                            // Moderate texture brightness
+                            if (child.material.color) {
+                                child.material.color.multiplyScalar(1.8);
+                            }
+                        }
+                        
+                        // FORCE MATERIAL UPDATE
+                        child.material.needsUpdate = true;
+                        
+                        console.log(`🪑 BENCH BALANCED: "${child.name}" - Color: #${child.material.color.getHexString()}`);
+                    }
+                }
+            });
+            
+            console.log(`✅ BENCH BRIGHTNESS BALANCE COMPLETE: ${benchesFixed} benches enhanced`);
+            
+            // Force render to show changes immediately
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+            
+            return benchesFixed;
+        }
+        
+        // ===== PROFESSIONAL MATERIAL ENHANCEMENT SYSTEM =====
+        function enhanceAllMaterials() {
+            if (!classroomModel) return;
+            
+            console.log('🎨 ENHANCING ALL MATERIALS...');
+            
+            classroomModel.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    // Professional PBR material settings
+                    if (child.material.isMeshStandardMaterial || child.material.isMeshPhysicalMaterial) {
+                        // Enhance material properties
+                        child.material.envMapIntensity = 0.4;
+                        
+                        // Professional lighting response
+                        if (!child.material.map) {
+                            // If no diffuse texture, enhance color
+                            if (child.material.color) {
+                                child.material.color.multiplyScalar(1.2);
+                            }
+                        }
+                        
+                        // Professional surface properties
+                        if (child.material.roughness === undefined) {
+                            child.material.roughness = 0.5;
+                        }
+                        if (child.material.metalness === undefined) {
+                            child.material.metalness = 0.1;
+                        }
+                        
+                        child.material.needsUpdate = true;
+                    }
+                }
+            });
+            
+            console.log('✅ Material enhancement complete');
+        }
+        function forceGroundDetection() {
+            const groundCheck = checkAdvancedGroundCollision();
+            
+            if (groundCheck.foundGround) {
+                const targetY = groundCheck.groundY + 0.01; // 1cm above ground
+                player.position.y = targetY;
+                player.velocity.y = 0;
+                player.onGround = true;
+                
+                if (window.debugMode) {
+                    console.log(`🎯 FORCED ground snap: Y=${targetY.toFixed(3)} (${groundCheck.groundHits} hits)`);
+                }
+                
+                return true;
+            } else {
+                // No ground found - use fallback ground level
+                player.position.y = 0.1; // 10cm above default ground
+                player.velocity.y = 0;
+                player.onGround = true;
+                
+                if (window.debugMode) {
+                    console.log(`🎯 FALLBACK ground snap: Y=0.1 (no geometry found)`);
+                }
+                
+                return false;
+            }
         }
         
         // ===== ENHANCED COLLISION DETECTION WITH STAIR SUPPORT =====
@@ -5988,9 +6434,42 @@
             // 🎮 PROFESSIONAL JUMPING SYSTEM (CS:GO/Valorant Style)
             updateProfessionalJumpSystem(deltaTime);
             
+            // CONTINUOUS GROUND DETECTION (every 10 frames for performance)
+            if (!window.groundCheckCounter) window.groundCheckCounter = 0;
+            window.groundCheckCounter++;
+            
+            if (window.groundCheckCounter >= 10) {
+                window.groundCheckCounter = 0;
+                
+                // Force ground check if player seems to be floating
+                if (!player.onGround && Math.abs(player.velocity.y) < 0.1) {
+                    const groundCheck = checkAdvancedGroundCollision();
+                    if (groundCheck.foundGround) {
+                        const distanceToGround = player.position.y - groundCheck.groundY;
+                        if (distanceToGround < 0.5 && distanceToGround > 0.01) {
+                            // Player is floating close to ground - snap them down
+                            player.position.y = groundCheck.groundY + 0.01;
+                            player.velocity.y = 0;
+                            player.onGround = true;
+                            
+                            if (window.debugMode) {
+                                console.log(`🔧 Auto-corrected floating player: Y=${player.position.y.toFixed(3)}`);
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Apply gravity (realistic game physics)
             if (!player.onGround) {
                 player.velocity.y -= 25 * deltaTime; // Realistic gravity
+            }
+            
+            // PROFESSIONAL GROUND DETECTION - Force check on spawn
+            if (player.forceGroundCheck) {
+                console.log('🎯 FORCING ground detection on spawn...');
+                forceGroundDetection();
+                player.forceGroundCheck = false; // Only do this once
             }
             
             // Update position with collision detection
@@ -6061,16 +6540,25 @@
                 player.onStairs = stairClimbResult.onStairs;
                 
             } else {
-                // Enhanced ground collision with ramp support
+                // Professional ground collision with enhanced multi-ray detection
                 const groundCheck = checkAdvancedGroundCollision();
+                
                 if (groundCheck.foundGround) {
                     const groundY = groundCheck.groundY;
+                    const tolerance = 0.1; // 10cm tolerance for ground detection
+                    const distanceToGround = player.position.y - groundY;
                     
-                    if (player.position.y <= groundY + 0.01) { // Small tolerance
+                    // Professional ground snapping logic
+                    if (distanceToGround <= tolerance + 0.5) {
+                        // Player is close to ground - snap to it
                         player.position.y = groundY + 0.01; // Keep player slightly above ground
                         player.velocity.y = 0;
                         player.onGround = true;
                         player.onStairs = false;
+                        
+                        if (window.debugMode) {
+                            console.log(`🟢 Grounded at Y: ${groundY.toFixed(3)} (${groundCheck.groundHits} hits, dist: ${distanceToGround.toFixed(3)})`);
+                        }
                         
                         // Smooth movement on ramps
                         if (player.onRamp) {
@@ -6079,15 +6567,37 @@
                                 player.position.y += 0.005; // Tiny boost for smooth ramp movement
                             }
                         }
+                    } else if (distanceToGround > tolerance + 2.0) {
+                        // Player is too far above ground - definitely falling
+                        player.onGround = false;
+                        
+                        if (window.debugMode) {
+                            console.log(`🔴 Falling: Y=${player.position.y.toFixed(3)}, groundY=${groundY.toFixed(3)}, dist=${distanceToGround.toFixed(3)}`);
+                        }
                     }
                 } else {
-                    // Fallback to original ground level
-                    const floorLevel = player.spawnHeight;
-                    if (player.position.y <= floorLevel) {
-                        player.position.y = floorLevel;
+                    // No ground geometry found - use fallback system
+                    const fallbackGroundY = 0.0; // Default ground level
+                    const distanceToFallback = player.position.y - fallbackGroundY;
+                    
+                    if (distanceToFallback <= 0.1) {
+                        // Snap to fallback ground
+                        player.position.y = fallbackGroundY + 0.01;
                         player.velocity.y = 0;
                         player.onGround = true;
                         player.onStairs = false;
+                        
+                        if (window.debugMode) {
+                            console.log(`🟡 Fallback ground: Y=${fallbackGroundY.toFixed(3)}`);
+                        }
+                    } else if (distanceToFallback > 5.0) {
+                        // Player is way too high - force them down
+                        player.onGround = false;
+                        player.velocity.y = Math.min(player.velocity.y, -10); // Force downward velocity
+                        
+                        if (window.debugMode) {
+                            console.log(`🔴 Force falling: Y=${player.position.y.toFixed(3)}, vel=${player.velocity.y.toFixed(3)}`);
+                        }
                     }
                 }
             }
@@ -6240,13 +6750,14 @@
                 z: spawnConfig.position.z 
             };
             player.velocity = { x: 0, y: 0, z: 0 };
-            player.onGround = true;
+            player.onGround = false; // Start as not grounded to trigger detection
             player.isFalling = false;
             player.fallStartY = 0;
             player.moveForward = false;
             player.moveBackward = false;
             player.moveLeft = false;
             player.moveRight = false;
+            player.forceGroundCheck = true; // Force ground detection
             
             // Log current position for debugging
             console.log('🎯 Player spawned at:', player.position);
